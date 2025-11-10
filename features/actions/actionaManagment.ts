@@ -1,0 +1,5 @@
+export enum ManagmentRegister {
+    MACHINE_REGISTER = "MACHINE_REGISTER",
+    MACHINE_UPDATE = "MACHINE_UPDATE",
+    MACHINE_DELETE = "MACHINE_DELETE",
+  }

@@ -1,0 +1,453 @@
+import type { NextPage } from 'next'
+import Head from 'next/head'
+import Link from 'next/link'
+import { useEquipmentForm } from '@/features/hooks/useEquipmentForm'
+import styles from '@/styles/equipment.module.css'
+import { useEffect, useRef, useState } from 'react'
+import { useManagment } from '@/features/hooks/useManagment'
+import { EquipmentForm } from '@/components/EquipmentForm'
+import { MachineDetailsModal } from '@/components/MachineDetailsModal'
+import { NuevoUsuarioModal } from '@/components/NuevoUsuarioModal'
+import { UsuariosTable } from '@/components/UsuariosTable'
+import { CalendarView } from '@/components/CalendarView'
+import { IncidenciaDetailModal } from '@/components/IncidenciaDetailModal'
+import { MantenimientoDetailModal } from '@/components/MantenimientoDetailModal'
+import { QRReader } from '@/components/QRReader'
+import { FaCog, FaUserPlus, FaTools, FaTimes, FaQrcode } from 'react-icons/fa'
+import { Machine, Usuario, Incidencia } from '@/features/types/types'
+
+
+
+
+const Equipment: NextPage = () => {
+  const { getUbicaciones, ubicaciones, agregarMaquina, getMaquinas, maquinas, getMarcas, marcas, updateMaquinas, deleteMaquinas, createUsuario, getUsuarios, usuarios, updateUsuario, deleteUsuario, getAllEventos, eventos, updateIncidencia, deleteIncidencia, validateSiEsAdmin } = useManagment();
+  const { formData, handleChange, resetForm } = useEquipmentForm(agregarMaquina)
+  const [selectedMachine, setSelectedMachine] = useState<Machine | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isUsuarioModalOpen, setIsUsuarioModalOpen] = useState(false)
+  const [showEventoDetailModal, setShowEventoDetailModal] = useState(false)
+  const [selectedIncidencia, setSelectedIncidencia] = useState<Incidencia | null>(null)
+  const [isEquipmentFormModalOpen, setIsEquipmentFormModalOpen] = useState(false)
+  const [isQRReaderOpen, setIsQRReaderOpen] = useState(false)
+
+  const hasFetched = useRef(false);
+  const selectedIncidenciaIdRef = useRef<string | null>(null);
+
+  const handleOpenModal = (machine: Machine) => {
+    setSelectedMachine(machine)
+    setIsModalOpen(true)
+  }
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false)
+    setSelectedMachine(null)
+  }
+
+  const handleUpdateMachine = async (id: string, machine: Partial<Machine>) => {
+    try {
+      await updateMaquinas(id, machine)
+      await getMaquinas()
+      // Actualizar la máquina seleccionada con los nuevos datos
+      if (selectedMachine && selectedMachine.id === id) {
+        setSelectedMachine({ ...selectedMachine, ...machine })
+      }
+    } catch (error) {
+      console.error('Error al actualizar máquina:', error)
+      throw error
+    }
+  }
+
+  const handleDeleteMachine = async (id: string) => {
+    try {
+      await deleteMaquinas(id)
+      await getMaquinas()
+      // Cerrar el modal si la máquina eliminada era la seleccionada
+      if (selectedMachine && selectedMachine.id === id) {
+        handleCloseModal()
+      }
+    } catch (error) {
+      console.error('Error al eliminar máquina:', error)
+      throw error
+    }
+  }
+
+  const handleOpenUsuarioModal = () => {
+    setIsUsuarioModalOpen(true)
+  }
+
+  const handleCloseUsuarioModal = () => {
+    setIsUsuarioModalOpen(false)
+  }
+
+  const handleOpenEquipmentFormModal = () => {
+    setIsEquipmentFormModalOpen(true)
+  }
+
+  const handleCloseEquipmentFormModal = () => {
+    setIsEquipmentFormModalOpen(false)
+    resetForm()
+  }
+
+  const handleSubmitUsuario = async (usuario: {
+    dni: string
+    nombres: string
+    apellidos: string
+    rol: string
+    pin: number
+  }) => {
+    try {
+      createUsuario(usuario)
+      // Aquí puedes agregar la lógica para guardar el usuario
+      // Por ejemplo: await agregarUsuario(usuario)
+    } catch (error) {
+      console.error('Error al agregar usuario:', error)
+    }
+  }
+
+  const handleEditUsuario = async (usuario: Usuario) => {
+    try {
+      if (usuario.id || usuario.dni) {
+        const id = usuario.id || usuario.dni || '';
+        await updateUsuario(id, usuario);
+        await getUsuarios();
+      }
+    } catch (error) {
+      console.error('Error al editar usuario:', error);
+    }
+  }
+
+  const handleDeleteUsuario = async (usuario: Usuario) => {
+    try {
+      if (usuario.id || usuario.dni) {
+        const id = usuario.id || usuario.dni || '';
+        await deleteUsuario(id);
+        await getUsuarios();
+      }
+    } catch (error) {
+      console.error('Error al eliminar usuario:', error);
+    }
+  }
+  
+  useEffect(() => {
+    if (!hasFetched.current) {
+      getMaquinas();
+      hasFetched.current = true;
+    }
+    
+    const unsubscribeUbicaciones = getUbicaciones();
+    const unsubscribeMarcas = getMarcas();
+    
+    return () => {
+      unsubscribeUbicaciones();
+      unsubscribeMarcas();
+    };
+  }, [getUbicaciones, getMaquinas, getMarcas])
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      console.log('formData', formData)
+      await agregarMaquina(formData);
+      await getMaquinas();
+      resetForm();
+      setIsEquipmentFormModalOpen(false);
+    } catch (error) {
+      console.error('Error al agregar máquina:', error);
+    }
+  }
+  useEffect(() => {
+    getUsuarios();
+    getAllEventos();
+  },[getUsuarios, getAllEventos])
+
+  // Sincronizar selectedIncidencia cuando cambien los eventos
+  useEffect(() => {
+    if (selectedIncidenciaIdRef.current && eventos.length > 0) {
+      const updatedIncidencia = eventos.find(inc => inc.id === selectedIncidenciaIdRef.current)
+      if (updatedIncidencia) {
+        setSelectedIncidencia(updatedIncidencia)
+      }
+    }
+  }, [eventos])
+
+  const handleSelectEvent = (incidencia: Incidencia) => {
+    setSelectedIncidencia(incidencia)
+    selectedIncidenciaIdRef.current = incidencia.id || null
+    setShowEventoDetailModal(true)
+  }
+
+  const handleCloseEventoDetailModal = () => {
+    setShowEventoDetailModal(false)
+    setSelectedIncidencia(null)
+    selectedIncidenciaIdRef.current = null
+  }
+  
+  return (
+    <>
+      <Head>
+        <title>Equipos - Management Gym</title>
+        <meta name="description" content="Gestión de equipos del gimnasio" />
+      </Head>
+      <main className={styles.main}>
+        <div className={styles.header}>
+          <div className={styles.titleWithButtons}>
+            <h1 className={styles.title}>Gestión de Equipos</h1>
+            <div className={styles.headerButtons}>
+              <button
+                onClick={() => setIsQRReaderOpen(true)}
+                className={`${styles.button} ${styles.buttonIcon}`}
+                style={{ backgroundColor: '#8b5cf6', color: 'white' }}
+                title="Lector de Código QR"
+                aria-label="Lector de Código QR"
+              >
+                <FaQrcode size={16} />
+              </button>
+              <button
+                onClick={handleOpenUsuarioModal}
+                className={`${styles.button} ${styles.buttonIcon} ${styles.buttonUser}`}
+                title="Nuevo Usuario"
+                aria-label="Nuevo Usuario"
+              >
+                <FaUserPlus size={16} />
+              </button>
+              <button
+                onClick={handleOpenEquipmentFormModal}
+                className={`${styles.button} ${styles.buttonIcon} ${styles.buttonEquipment}`}
+                title="Agregar Nuevo Equipo"
+                aria-label="Agregar Nuevo Equipo"
+              >
+                <FaTools size={16} />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <QRReader
+          isOpen={isQRReaderOpen}
+          onClose={() => setIsQRReaderOpen(false)}
+          onScanSuccess={(decodedText) => {
+            console.log('Código QR escaneado:', decodedText)
+            // Aquí puedes agregar la lógica para procesar el código QR escaneado
+            alert(`Código QR escaneado: ${decodedText}`)
+          }}
+          onScanError={(errorMessage) => {
+            console.error('Error al escanear QR:', errorMessage)
+          }}
+        />
+
+        <UsuariosTable 
+          onEdit={handleEditUsuario}
+          onDelete={handleDeleteUsuario}
+        />
+
+        <CalendarView 
+          incidencias={eventos}
+          onSelectEvent={handleSelectEvent}
+        />
+
+        <div>
+          <h2 className={styles.sectionTitle}>
+            Equipos Registrados ({maquinas.length})
+          </h2>
+          {maquinas.length === 0 ? (
+            <div className={styles.emptyState}>
+              <p className={styles.emptyStateText}>
+                No hay equipos registrados. Haz clic en &quot;Agregar Nuevo Equipo&quot; para comenzar.
+              </p>
+            </div>
+          ) : (
+            <div className={styles.tableContainer}>
+              <table className={styles.equipmentTable}>
+                <thead>
+                  <tr>
+                    <th>Nombre</th>
+                    <th>Marca</th>
+                    <th>Modelo</th>
+                    <th>Fecha de Compra</th>
+                    <th>Ubicación</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {maquinas.map((machine) => (
+                    <tr key={machine.id}>
+                      <td className={styles.tableCellName}>
+                        <Link href={`/maquina/${machine.id}`} className={styles.tableCellLink}>
+                          {machine.name || 'N/A'}
+                        </Link>
+                      </td>
+                      <td>
+                        <Link href={`/maquina/${machine.id}`} className={styles.tableCellLink}>
+                          {machine.brand || 'N/A'}
+                        </Link>
+                      </td>
+                      <td>
+                        <Link href={`/maquina/${machine.id}`} className={styles.tableCellLink}>
+                          {machine.model || 'N/A'}
+                        </Link>
+                      </td>
+                      <td>
+                        <Link href={`/maquina/${machine.id}`} className={styles.tableCellLink}>
+                          {machine.purchaseDate 
+                            ? new Date(machine.purchaseDate).toLocaleDateString('es-ES')
+                            : 'N/A'}
+                        </Link>
+                      </td>
+                      <td>
+                        <Link href={`/maquina/${machine.id}`} className={styles.tableCellLink}>
+                          {machine.location || 'N/A'}
+                        </Link>
+                      </td>
+                      <td>
+                        <Link href={`/maquina/${machine.id}`} className={styles.tableCellLink}>
+                          <span className={`${styles.statusBadge} ${
+                            machine.status === 'active' ? styles.statusActive :
+                            machine.status === 'maintenance' ? styles.statusMaintenance :
+                            machine.status === 'inactive' ? styles.statusInactive : ''
+                          }`}>
+                            {machine.status === 'active' ? 'Activo' : 
+                             machine.status === 'maintenance' ? 'Mantenimiento' : 
+                             machine.status === 'inactive' ? 'Inactivo' : 'N/A'}
+                          </span>
+                        </Link>
+                      </td>
+                      <td>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleOpenModal(machine)
+                          }}
+                          className={styles.tableActionButton}
+                          aria-label="Ver detalles del equipo"
+                          title="Ver detalles"
+                        >
+                          <FaCog size={16} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </main>
+      <MachineDetailsModal
+        isOpen={isModalOpen}
+        machine={selectedMachine}
+        onClose={handleCloseModal}
+        onUpdate={handleUpdateMachine}
+        onDelete={handleDeleteMachine}
+        marcas={marcas}
+        ubicaciones={ubicaciones}
+        validateSiEsAdmin={validateSiEsAdmin}
+      />
+      <NuevoUsuarioModal
+        isOpen={isUsuarioModalOpen}
+        onClose={handleCloseUsuarioModal}
+        onSubmit={handleSubmitUsuario}
+      />
+
+      {/* Modal de Formulario de Equipo */}
+      {isEquipmentFormModalOpen && (
+        <div className={styles.modalOverlay} onClick={handleCloseEquipmentFormModal}>
+          <div className={`${styles.modalContent} ${styles.modalContentLarge}`} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h2 className={styles.modalTitle}>Nuevo Equipo</h2>
+              <button
+                type="button"
+                onClick={handleCloseEquipmentFormModal}
+                className={styles.modalCloseButton}
+                aria-label="Cerrar modal"
+              >
+                <FaTimes size={18} />
+              </button>
+            </div>
+            <div className={styles.modalBody}>
+              <EquipmentForm
+                formData={formData}
+                handleChange={handleChange}
+                handleSubmit={handleSubmit}
+                marcas={marcas}
+                ubicaciones={ubicaciones}
+                validateSiEsAdmin={validateSiEsAdmin}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Detalles del Mantenimiento */}
+      {selectedIncidencia?.tipo === 'mantenimiento' && (
+        <MantenimientoDetailModal
+          isOpen={showEventoDetailModal}
+          onClose={handleCloseEventoDetailModal}
+          mantenimiento={selectedIncidencia}
+          usuarios={usuarios}
+          onUpdateTareas={async (tareas, estado) => {
+            if (selectedIncidencia?.id && selectedIncidencia?.machineId) {
+              const updateData: any = { tareas }
+              if (estado) {
+                updateData.estado = estado
+              }
+              await updateIncidencia(selectedIncidencia.machineId, selectedIncidencia.id, updateData)
+              await getAllEventos()
+            }
+          }}
+          onUpdateNotas={async (notas) => {
+            if (selectedIncidencia?.id && selectedIncidencia?.machineId) {
+              await updateIncidencia(selectedIncidencia.machineId, selectedIncidencia.id, { notas })
+              await getAllEventos()
+            }
+          }}
+          onUpdate={async (data) => {
+            if (selectedIncidencia?.id && selectedIncidencia?.machineId) {
+              const updateData: any = {}
+              if (data.tecnicoAsignado !== undefined) {
+                updateData.tecnicoAsignado = Object.keys(data.tecnicoAsignado).length > 0 
+                  ? data.tecnicoAsignado 
+                  : null
+              }
+              if (data.descripcion !== undefined) {
+                updateData.descripcion = data.descripcion
+              }
+              if (data.tareas !== undefined) {
+                updateData.tareas = data.tareas
+              }
+              await updateIncidencia(selectedIncidencia.machineId, selectedIncidencia.id, updateData)
+              await getAllEventos()
+            }
+          }}
+          validateSiEsAdmin={validateSiEsAdmin}
+          onDelete={async (id) => {
+            if (selectedIncidencia?.id && selectedIncidencia?.machineId) {
+              await deleteIncidencia(selectedIncidencia.machineId, id)
+              await getAllEventos()
+              handleCloseEventoDetailModal()
+            }
+          }}
+        />
+      )}
+
+      {/* Modal de Detalles de la Incidencia */}
+      {selectedIncidencia?.tipo === 'incidencia' && (
+        <IncidenciaDetailModal
+          isOpen={showEventoDetailModal}
+          onClose={handleCloseEventoDetailModal}
+          incidencia={selectedIncidencia}
+          onDelete={async (id) => {
+            if (selectedIncidencia?.id && selectedIncidencia?.machineId) {
+              await deleteIncidencia(selectedIncidencia.machineId, id)
+              await getAllEventos()
+              handleCloseEventoDetailModal()
+            }
+          }}
+        />
+      )}
+    </>
+  )
+}
+
+export default Equipment
+
