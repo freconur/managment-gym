@@ -1,6 +1,7 @@
 import type { NextPage } from 'next'
 import Head from 'next/head'
 import Link from 'next/link'
+import { useRouter } from 'next/router'
 import { useEquipmentForm } from '@/features/hooks/useEquipmentForm'
 import styles from '@/styles/equipment.module.css'
 import { useEffect, useRef, useState } from 'react'
@@ -20,6 +21,7 @@ import { Machine, Usuario, Incidencia } from '@/features/types/types'
 
 
 const Equipment: NextPage = () => {
+  const router = useRouter()
   const { getUbicaciones, ubicaciones, agregarMaquina, getMaquinas, maquinas, getMarcas, marcas, updateMaquinas, deleteMaquinas, createUsuario, getUsuarios, usuarios, updateUsuario, deleteUsuario, getAllEventos, eventos, updateIncidencia, deleteIncidencia, validateSiEsAdmin } = useManagment();
   const { formData, handleChange, resetForm } = useEquipmentForm(agregarMaquina)
   const [selectedMachine, setSelectedMachine] = useState<Machine | null>(null)
@@ -227,8 +229,36 @@ const Equipment: NextPage = () => {
           onClose={() => setIsQRReaderOpen(false)}
           onScanSuccess={(decodedText) => {
             console.log('Código QR escaneado:', decodedText)
-            // Aquí puedes agregar la lógica para procesar el código QR escaneado
-            alert(`Código QR escaneado: ${decodedText}`)
+            
+            // Extraer el ID de la máquina del código QR
+            // Puede ser: un ID directo, una URL completa, o una ruta relativa
+            let machineId = decodedText.trim()
+            
+            // Si es una URL completa, extraer el ID
+            try {
+              const url = new URL(decodedText)
+              const pathParts = url.pathname.split('/')
+              const idIndex = pathParts.findIndex(part => part === 'maquina')
+              if (idIndex !== -1 && pathParts[idIndex + 1]) {
+                machineId = pathParts[idIndex + 1]
+              }
+            } catch {
+              // Si no es una URL válida, verificar si es una ruta relativa
+              if (decodedText.includes('/maquina/')) {
+                const parts = decodedText.split('/maquina/')
+                if (parts[1]) {
+                  machineId = parts[1].split('/')[0].split('?')[0]
+                }
+              }
+              // Si no, asumimos que decodedText es directamente el ID
+            }
+            
+            // Redirigir a la página de la máquina
+            if (machineId) {
+              router.push(`/maquina/${machineId}`)
+            } else {
+              alert('No se pudo extraer el ID de la máquina del código QR')
+            }
           }}
           onScanError={(errorMessage) => {
             console.error('Error al escanear QR:', errorMessage)
