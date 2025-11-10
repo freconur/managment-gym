@@ -228,36 +228,65 @@ const Equipment: NextPage = () => {
           isOpen={isQRReaderOpen}
           onClose={() => setIsQRReaderOpen(false)}
           onScanSuccess={(decodedText) => {
-            console.log('Código QR escaneado:', decodedText)
-            
-            // Extraer el ID de la máquina del código QR
-            // Puede ser: un ID directo, una URL completa, o una ruta relativa
-            let machineId = decodedText.trim()
-            
-            // Si es una URL completa, extraer el ID
             try {
-              const url = new URL(decodedText)
-              const pathParts = url.pathname.split('/')
-              const idIndex = pathParts.findIndex(part => part === 'maquina')
-              if (idIndex !== -1 && pathParts[idIndex + 1]) {
-                machineId = pathParts[idIndex + 1]
-              }
-            } catch {
-              // Si no es una URL válida, verificar si es una ruta relativa
-              if (decodedText.includes('/maquina/')) {
-                const parts = decodedText.split('/maquina/')
-                if (parts[1]) {
-                  machineId = parts[1].split('/')[0].split('?')[0]
+              console.log('Código QR escaneado:', decodedText)
+              
+              // Extraer el ID de la máquina del código QR
+              // Puede ser: un ID directo, una URL completa, o una ruta relativa
+              let machineId = decodedText.trim()
+              
+              // Si es una URL completa, extraer el ID
+              try {
+                const url = new URL(decodedText)
+                const pathParts = url.pathname.split('/').filter(part => part)
+                const idIndex = pathParts.findIndex(part => part === 'maquina')
+                if (idIndex !== -1 && pathParts[idIndex + 1]) {
+                  machineId = pathParts[idIndex + 1]
                 }
+              } catch {
+                // Si no es una URL válida, verificar si es una ruta relativa
+                if (decodedText.includes('/maquina/')) {
+                  const parts = decodedText.split('/maquina/')
+                  if (parts[1]) {
+                    machineId = parts[1].split('/')[0].split('?')[0].split('#')[0]
+                  }
+                }
+                // Si no, asumimos que decodedText es directamente el ID
               }
-              // Si no, asumimos que decodedText es directamente el ID
-            }
-            
-            // Redirigir a la página de la máquina
-            if (machineId) {
-              router.push(`/maquina/${machineId}`)
-            } else {
-              alert('No se pudo extraer el ID de la máquina del código QR')
+              
+              // Limpiar el ID de caracteres inválidos
+              machineId = machineId.replace(/[^a-zA-Z0-9_-]/g, '')
+              
+              // Validar que el ID no esté vacío
+              if (!machineId || machineId.length === 0) {
+                alert('No se pudo extraer un ID válido de la máquina del código QR')
+                return
+              }
+              
+              // Redirigir a la página de la máquina de forma segura
+              // El QRReader ya cerrará el modal, así que esperamos un momento antes de navegar
+              setTimeout(() => {
+                try {
+                  // Intentar navegar con router.push
+                  const navigationPromise = router.push(`/maquina/${machineId}`)
+                  
+                  // Si router.push devuelve una promesa, manejarla
+                  if (navigationPromise && typeof navigationPromise.catch === 'function') {
+                    navigationPromise.catch((error) => {
+                      console.error('Error al navegar con router.push:', error)
+                      // Fallback a window.location si router.push falla
+                      window.location.href = `/maquina/${machineId}`
+                    })
+                  }
+                } catch (error) {
+                  console.error('Error al navegar:', error)
+                  // Fallback a window.location si router.push falla
+                  window.location.href = `/maquina/${machineId}`
+                }
+              }, 200)
+            } catch (error) {
+              console.error('Error al procesar código QR:', error)
+              alert(`Error al procesar el código QR: ${error instanceof Error ? error.message : 'Error desconocido'}`)
             }
           }}
           onScanError={(errorMessage) => {
