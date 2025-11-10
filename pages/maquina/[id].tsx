@@ -28,24 +28,53 @@ const MaquinaPAge = () => {
   const [selectedIncidencia, setSelectedIncidencia] = useState<Incidencia | null>(null)
   const [showAuthModal, setShowAuthModal] = useState(false)
   const [authError, setAuthError] = useState<string>('')
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-useEffect(() => {
-    if (id && typeof id === 'string') {
-      getMaquina(id)
-      getUsuarios()
-      // Suscribirse a incidencias
-      if (unsubscribeRef.current) {
-        unsubscribeRef.current()
-      }
-      unsubscribeRef.current = getIncidencias(id)
+  useEffect(() => {
+    // Verificar que router esté listo y que id esté disponible
+    if (!router.isReady) {
+      return
     }
+
+    const machineId = id && typeof id === 'string' ? id : null
+    
+    if (!machineId) {
+      setError('ID de máquina no válido')
+      setIsLoading(false)
+      return
+    }
+
+    // Limpiar estado anterior
+    setIsLoading(true)
+    setError(null)
+
+    // Función para cargar los datos
+    const loadData = async () => {
+      try {
+        await getMaquina(machineId)
+        getUsuarios()
+        // Suscribirse a incidencias
+        if (unsubscribeRef.current) {
+          unsubscribeRef.current()
+        }
+        unsubscribeRef.current = getIncidencias(machineId)
+        setIsLoading(false)
+      } catch (err) {
+        console.error('Error al cargar datos de la máquina:', err)
+        setError('Error al cargar los datos de la máquina')
+        setIsLoading(false)
+      }
+    }
+
+    loadData()
     
     return () => {
       if (unsubscribeRef.current) {
         unsubscribeRef.current()
       }
     }
-  }, [id, getMaquina, getIncidencias,getUsuarios])
+  }, [router.isReady, id, getMaquina, getIncidencias, getUsuarios])
 
   // Sincronizar selectedIncidencia cuando cambien las incidencias
   useEffect(() => {
@@ -262,7 +291,8 @@ useEffect(() => {
     }
   }
 
-  if (!maquina) {
+  // Mostrar estado de carga o error
+  if (isLoading) {
     return (
       <>
         <Head>
@@ -271,6 +301,28 @@ useEffect(() => {
         <main className={styles.main}>
           <div className={styles.emptyState}>
             <p className={styles.emptyStateText}>Cargando información del equipo...</p>
+          </div>
+        </main>
+      </>
+    )
+  }
+
+  // Mostrar error si no se pudo cargar la máquina
+  if (error || !maquina) {
+    return (
+      <>
+        <Head>
+          <title>Error - Management Gym</title>
+        </Head>
+        <main className={styles.main}>
+          <div className={styles.emptyState}>
+            <p className={styles.emptyStateText}>
+              {error || 'No se encontró la máquina con el ID proporcionado'}
+            </p>
+            <Link href="/equipment" className={styles.backButton} style={{ marginTop: '1rem' }}>
+              <FaArrowLeft size={18} />
+              <span>Volver a Equipos</span>
+            </Link>
           </div>
         </main>
       </>

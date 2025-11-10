@@ -264,7 +264,7 @@ const Equipment: NextPage = () => {
               }
               
               // Redirigir a la página de la máquina de forma segura
-              // El QRReader ya cerrará el modal, así que esperamos un momento antes de navegar
+              // El QRReader ya cerró el modal y detuvo la cámara, esperamos un momento adicional antes de navegar
               setTimeout(() => {
                 try {
                   // Intentar navegar con router.push
@@ -283,7 +283,7 @@ const Equipment: NextPage = () => {
                   // Fallback a window.location si router.push falla
                   window.location.href = `/maquina/${machineId}`
                 }
-              }, 200)
+              }, 300)
             } catch (error) {
               console.error('Error al procesar código QR:', error)
               alert(`Error al procesar el código QR: ${error instanceof Error ? error.message : 'Error desconocido'}`)

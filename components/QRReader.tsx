@@ -31,6 +31,7 @@ export const QRReader: React.FC<QRReaderProps> = ({
         qrCodeRef.current.stop().catch(() => {
           // Ignorar errores al detener
         })
+        qrCodeRef.current = null
       }
     }
   }, [isOpen, isScanning])
@@ -47,9 +48,41 @@ export const QRReader: React.FC<QRReaderProps> = ({
           qrbox: { width: 250, height: 250 }
         },
         (decodedText: string) => {
-          onScanSuccess(decodedText)
-          stopScanning()
-          onClose()
+          // Detener la cámara completamente antes de llamar al callback
+          const handleScanSuccess = async () => {
+            try {
+              const scanner = qrCodeRef.current
+              if (scanner) {
+                try {
+                  await scanner.stop()
+                  setIsScanning(false)
+                  // Esperar un momento adicional para asegurar que la cámara se libere
+                  await new Promise(resolve => setTimeout(resolve, 200))
+                } catch (stopError) {
+                  console.error('Error al detener la cámara:', stopError)
+                  setIsScanning(false)
+                }
+              }
+              
+              // Limpiar la referencia del escáner
+              qrCodeRef.current = null
+              
+              // Cerrar el modal
+              onClose()
+              
+              // Llamar al callback de éxito después de detener la cámara
+              onScanSuccess(decodedText)
+            } catch (error) {
+              console.error('Error al procesar el escaneo:', error)
+              setIsScanning(false)
+              qrCodeRef.current = null
+              onClose()
+              onScanSuccess(decodedText)
+            }
+          }
+          
+          // Ejecutar la función asíncrona
+          handleScanSuccess()
         },
         (errorMessage: string) => {
           // No mostrar errores de "no se encontró código QR"
@@ -72,14 +105,19 @@ export const QRReader: React.FC<QRReaderProps> = ({
       try {
         await qrCodeRef.current.stop()
         setIsScanning(false)
+        // Limpiar la referencia después de detener
+        qrCodeRef.current = null
       } catch (err) {
         console.error('Error al detener el escáner:', err)
+        qrCodeRef.current = null
       }
     }
   }
 
   const handleClose = async () => {
     await stopScanning()
+    // Esperar un momento adicional para asegurar que la cámara se libere
+    await new Promise(resolve => setTimeout(resolve, 100))
     onClose()
     setError(null)
   }

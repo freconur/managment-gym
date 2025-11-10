@@ -196,12 +196,23 @@ const deleteMaquinas = async(id: string) => {
 }
 
 const getMaquina = useCallback(async(id: string) => {
-  const docRef = doc(db, "maquinas", id);
-  const docSnap = await getDoc(docRef);
-  if (docSnap.exists()) {
-    setMaquina({ id: docSnap.id, ...docSnap.data() } as Machine);
-  } else {
+  try {
+    if (!id || typeof id !== 'string' || id.trim() === '') {
+      throw new Error('ID de máquina no válido');
+    }
+    
+    const docRef = doc(db, "maquinas", id);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      setMaquina({ id: docSnap.id, ...docSnap.data() } as Machine);
+    } else {
+      setMaquina(null);
+      throw new Error(`No se encontró la máquina con ID: ${id}`);
+    }
+  } catch (error) {
+    console.error('Error en getMaquina:', error);
     setMaquina(null);
+    throw error;
   }
 }, [])
 //////////////////////MAQUINAS//////////////////////////
