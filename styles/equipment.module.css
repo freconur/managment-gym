@@ -264,14 +264,37 @@
   background-color: white;
   border-radius: 0.75rem;
   border: 1px solid #e5e7eb;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f1f5f9;
+}
+
+.tableContainer::-webkit-scrollbar {
+  height: 8px;
+}
+
+.tableContainer::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.tableContainer::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.tableContainer::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 
 .equipmentTable {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.875rem;
+  min-width: 500px;
 }
 
 .equipmentTable thead {
@@ -287,6 +310,7 @@
   font-size: 0.875rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  white-space: nowrap;
 }
 
 .equipmentTable tbody tr {
@@ -306,6 +330,7 @@
   padding: 0.75rem 1rem;
   color: #111827;
   vertical-align: middle;
+  white-space: nowrap;
 }
 
 .tableCellName {
@@ -443,6 +468,38 @@
   color: #111827;
 }
 
+/* Modal animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+}
+
 /* Modal styles */
 .modalOverlay {
   position: fixed;
@@ -456,6 +513,8 @@
   justify-content: center;
   z-index: 1000;
   padding: 1rem;
+  animation: fadeIn 0.2s ease-out;
+  backdrop-filter: blur(2px);
 }
 
 .modalContent {
@@ -466,6 +525,8 @@
   max-width: 500px;
   max-height: 90vh;
   overflow-y: auto;
+  animation: slideUp 0.3s ease-out;
+  transform-origin: center;
 }
 
 .modalContentLarge {
@@ -1026,6 +1087,88 @@
     gap: 0.5rem;
     flex-shrink: 0;
   }
+
+  /* Table responsive styles */
+  .tableContainer {
+    border-radius: 0.5rem;
+    margin: 0;
+    width: 100%;
+  }
+
+  .equipmentTable {
+    font-size: 0.8125rem;
+    min-width: 450px;
+  }
+
+  .equipmentTable th {
+    padding: 0.75rem 0.875rem;
+    font-size: 0.75rem;
+    letter-spacing: 0.03em;
+  }
+
+  .equipmentTable td {
+    padding: 0.75rem 0.875rem;
+    font-size: 0.8125rem;
+  }
+
+  .tableCellLink {
+    font-size: 0.8125rem;
+  }
+
+  .statusBadge {
+    font-size: 0.6875rem;
+    padding: 0.1875rem 0.375rem;
+  }
+
+  .tableActionButton {
+    padding: 0.25rem;
+  }
+
+  .tableActionButton svg {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .tableContainer {
+    margin: 0;
+    width: 100%;
+    border-radius: 0.375rem;
+  }
+
+  .equipmentTable {
+    font-size: 0.75rem;
+    min-width: 400px;
+  }
+
+  .equipmentTable th {
+    padding: 0.625rem 0.75rem;
+    font-size: 0.6875rem;
+  }
+
+  .equipmentTable td {
+    padding: 0.625rem 0.75rem;
+    font-size: 0.75rem;
+  }
+
+  .tableCellLink {
+    font-size: 0.75rem;
+  }
+
+  .statusBadge {
+    font-size: 0.625rem;
+    padding: 0.125rem 0.3125rem;
+  }
+
+  .tableActionButton {
+    padding: 0.1875rem;
+  }
+
+  .tableActionButton svg {
+    width: 12px;
+    height: 12px;
+  }
 }
 
 /* Responsive Styles for Modal */
@@ -1034,6 +1177,7 @@
     padding: 0.5rem;
     align-items: flex-start;
     padding-top: 1rem;
+    animation: fadeIn 0.2s ease-out;
   }
 
   .modalContent,
@@ -1042,6 +1186,7 @@
     max-height: 95vh;
     border-radius: 0.5rem;
     margin: 0;
+    animation: slideUp 0.25s ease-out;
   }
 
   .modalHeader {
@@ -1120,12 +1265,14 @@
 
   .modalOverlay {
     padding: 0;
+    animation: fadeIn 0.2s ease-out;
   }
 
   .modalContent,
   .modalContentLarge {
     border-radius: 0;
     max-height: 100vh;
+    animation: slideUp 0.25s ease-out;
   }
 
   .modalHeader {

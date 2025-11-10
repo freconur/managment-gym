@@ -320,9 +320,6 @@ const Equipment: NextPage = () => {
                 <thead>
                   <tr>
                     <th>Nombre</th>
-                    <th>Marca</th>
-                    <th>Modelo</th>
-                    <th>Fecha de Compra</th>
                     <th>Ubicación</th>
                     <th>Estado</th>
                     <th>Acciones</th>
@@ -334,23 +331,6 @@ const Equipment: NextPage = () => {
                       <td className={styles.tableCellName}>
                         <Link href={`/maquina/${machine.id}`} className={styles.tableCellLink}>
                           {machine.name || 'N/A'}
-                        </Link>
-                      </td>
-                      <td>
-                        <Link href={`/maquina/${machine.id}`} className={styles.tableCellLink}>
-                          {machine.brand || 'N/A'}
-                        </Link>
-                      </td>
-                      <td>
-                        <Link href={`/maquina/${machine.id}`} className={styles.tableCellLink}>
-                          {machine.model || 'N/A'}
-                        </Link>
-                      </td>
-                      <td>
-                        <Link href={`/maquina/${machine.id}`} className={styles.tableCellLink}>
-                          {machine.purchaseDate 
-                            ? new Date(machine.purchaseDate).toLocaleDateString('es-ES')
-                            : 'N/A'}
                         </Link>
                       </td>
                       <td>
