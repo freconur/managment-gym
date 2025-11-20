@@ -205,7 +205,7 @@ export const QRReader: React.FC<QRReaderProps> = ({
                     padding: '0 1rem',
                     margin: 0
                   }}>
-                    Presiona "Iniciar Escaneo" para comenzar
+                    Presiona &quot;Iniciar Escaneo&quot; para comenzar
                   </p>
                 </div>
               )}

@@ -65,19 +65,19 @@ const GenerarQr = () => {
 
     // Inicializar todas las máquinas como seleccionadas
     useEffect(() => {
-        const nuevasSelecciones: { [key: string]: boolean } = { ...maquinasSeleccionadas }
-        let hayCambios = false
-        
-        maquinas.forEach(maquina => {
-            if (maquina.id && nuevasSelecciones[maquina.id] === undefined) {
-                nuevasSelecciones[maquina.id] = true
-                hayCambios = true
-            }
+        setMaquinasSeleccionadas(prev => {
+            const nuevasSelecciones: { [key: string]: boolean } = { ...prev }
+            let hayCambios = false
+            
+            maquinas.forEach(maquina => {
+                if (maquina.id && nuevasSelecciones[maquina.id] === undefined) {
+                    nuevasSelecciones[maquina.id] = true
+                    hayCambios = true
+                }
+            })
+            
+            return hayCambios ? nuevasSelecciones : prev
         })
-        
-        if (hayCambios) {
-            setMaquinasSeleccionadas(nuevasSelecciones)
-        }
     }, [maquinas])
 
     const maquinasFiltradas = useMemo(() => {
