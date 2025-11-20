@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEquipmentForm } from '@/features/hooks/useEquipmentForm'
 import styles from '@/styles/equipment.module.css'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useMemo } from 'react'
 import { useManagment } from '@/features/hooks/useManagment'
 import { EquipmentForm } from '@/components/EquipmentForm'
 import { MachineDetailsModal } from '@/components/MachineDetailsModal'
@@ -31,6 +31,8 @@ const Equipment: NextPage = () => {
   const [selectedIncidencia, setSelectedIncidencia] = useState<Incidencia | null>(null)
   const [isEquipmentFormModalOpen, setIsEquipmentFormModalOpen] = useState(false)
   const [isQRReaderOpen, setIsQRReaderOpen] = useState(false)
+  const [filtroUbicacion, setFiltroUbicacion] = useState<string>('')
+  const [filtroEstado, setFiltroEstado] = useState<string>('')
 
   const hasFetched = useRef(false);
   const selectedIncidenciaIdRef = useRef<string | null>(null);
@@ -183,7 +185,23 @@ const Equipment: NextPage = () => {
     setSelectedIncidencia(null)
     selectedIncidenciaIdRef.current = null
   }
-  
+
+  // Filtrar máquinas según los filtros
+  const maquinasFiltradas = useMemo(() => {
+    return maquinas.filter(maquina => {
+      // Filtro por ubicación
+      if (filtroUbicacion && maquina.location !== filtroUbicacion) {
+        return false
+      }
+      
+      // Filtro por estado
+      if (filtroEstado && maquina.status !== filtroEstado) {
+        return false
+      }
+      
+      return true
+    })
+  }, [maquinas, filtroUbicacion, filtroEstado])
   return (
     <>
       <Head>
@@ -320,13 +338,70 @@ const Equipment: NextPage = () => {
                 <thead>
                   <tr>
                     <th>Nombre</th>
-                    <th>Ubicación</th>
-                    <th>Estado</th>
+                    <th>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        <span>Ubicación</span>
+                        <select
+                          value={filtroUbicacion}
+                          onChange={(e) => setFiltroUbicacion(e.target.value)}
+                          onClick={(e) => e.stopPropagation()}
+                          style={{
+                            padding: '0.375rem 0.5rem',
+                            border: '1px solid #d1d5db',
+                            borderRadius: '0.375rem',
+                            fontSize: '0.875rem',
+                            backgroundColor: '#fff',
+                            color: '#374151',
+                            cursor: 'pointer',
+                            minWidth: '150px'
+                          }}
+                        >
+                          <option value="">Todas</option>
+                          {ubicaciones.map((ubicacion) => (
+                            <option key={ubicacion.id} value={ubicacion.name}>
+                              {ubicacion.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </th>
+                    <th>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        <span>Estado</span>
+                        <select
+                          value={filtroEstado}
+                          onChange={(e) => setFiltroEstado(e.target.value)}
+                          onClick={(e) => e.stopPropagation()}
+                          style={{
+                            padding: '0.375rem 0.5rem',
+                            border: '1px solid #d1d5db',
+                            borderRadius: '0.375rem',
+                            fontSize: '0.875rem',
+                            backgroundColor: '#fff',
+                            color: '#374151',
+                            cursor: 'pointer',
+                            minWidth: '120px'
+                          }}
+                        >
+                          <option value="">Todos</option>
+                          <option value="active">Activo</option>
+                          <option value="maintenance">Mantenimiento</option>
+                          <option value="inactive">Inactivo</option>
+                        </select>
+                      </div>
+                    </th>
                     <th>Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {maquinas.map((machine) => (
+                  {maquinasFiltradas.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>
+                        No se encontraron máquinas con los filtros seleccionados
+                      </td>
+                    </tr>
+                  ) : (
+                    maquinasFiltradas.map((machine) => (
                     <tr key={machine.id}>
                       <td className={styles.tableCellName}>
                         <Link href={`/maquina/${machine.id}`} className={styles.tableCellLink}>
@@ -365,7 +440,8 @@ const Equipment: NextPage = () => {
                         </button>
                       </td>
                     </tr>
-                  ))}
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>

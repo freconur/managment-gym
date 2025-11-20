@@ -1,10 +1,11 @@
-import React, { useMemo, useState } from 'react'
+import React, { useMemo, useState, useEffect } from 'react'
 import { Calendar, momentLocalizer, View, Event } from 'react-big-calendar'
 import moment from 'moment'
 import 'moment/locale/es'
 import 'react-big-calendar/lib/css/react-big-calendar.css'
 import { FaChevronLeft, FaChevronRight } from 'react-icons/fa'
 import { Incidencia } from '@/features/types/types'
+import { useManagment } from '@/features/hooks/useManagment'
 import styles from '@/styles/equipment.module.css'
 
 // Configurar moment.js en español
@@ -28,6 +29,15 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
 }) => {
   const [currentView, setCurrentView] = useState<View>('month')
   const [currentDate, setCurrentDate] = useState(new Date())
+  const [filtroUbicacion, setFiltroUbicacion] = useState<string>('')
+  const { getUbicaciones, ubicaciones } = useManagment()
+
+  useEffect(() => {
+    const unsubscribeUbicaciones = getUbicaciones()
+    return () => {
+      unsubscribeUbicaciones()
+    }
+  }, [getUbicaciones])
 
   // Función para obtener el título del evento
   const getEventTitle = (incidencia: Incidencia): string => {
@@ -97,6 +107,11 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   const events: CalendarEvent[] = useMemo(() => {
     return incidencias
       .filter(incidencia => {
+        // Filtrar por ubicación si hay un filtro activo
+        if (filtroUbicacion && incidencia.maquina?.location !== filtroUbicacion) {
+          return false
+        }
+        
         // Mostrar eventos que tengan fecha de reporte, fecha programada o createdAt (para incidencias)
         return incidencia.fechaReporte || incidencia.fechaProgramada || (incidencia.tipo === 'incidencia' && incidencia.createdAt)
       })
@@ -173,7 +188,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         } as CalendarEvent
       })
       .filter((event): event is CalendarEvent => event !== null) // Filtrar eventos nulos
-  }, [incidencias])
+  }, [incidencias, filtroUbicacion])
 
   // Función para obtener el estilo del evento según tipo, estado y prioridad
   const eventStyleGetter = (event: CalendarEvent) => {
@@ -316,7 +331,34 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           <span>📅</span>
           Calendario de Eventos
         </h3>
-        <div className={styles.calendarLegend}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', width: '100%' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <label style={{ fontSize: '0.875rem', fontWeight: '500', color: '#374151', whiteSpace: 'nowrap' }}>
+              Filtrar por ubicación:
+            </label>
+            <select
+              value={filtroUbicacion}
+              onChange={(e) => setFiltroUbicacion(e.target.value)}
+              style={{
+                padding: '0.5rem 0.75rem',
+                border: '1px solid #d1d5db',
+                borderRadius: '0.375rem',
+                fontSize: '0.875rem',
+                backgroundColor: '#fff',
+                color: '#374151',
+                cursor: 'pointer',
+                minWidth: '200px'
+              }}
+            >
+              <option value="">Todas las ubicaciones</option>
+              {ubicaciones.map((ubicacion) => (
+                <option key={ubicacion.id} value={ubicacion.name}>
+                  {ubicacion.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className={styles.calendarLegend}>
           <div className={styles.legendItem}>
             <span className={styles.legendColor} style={{ backgroundColor: '#f97316' }}></span>
             <span>Incidencia</span>
@@ -337,6 +379,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
             <span className={styles.legendColor} style={{ backgroundColor: '#6b7280' }}></span>
             <span>Cancelado</span>
           </div>
+        </div>
         </div>
       </div>
       <div className={styles.calendarWrapper}>

@@ -106,6 +106,13 @@
   min-height: 44px;
 }
 
+@media (max-width: 768px) {
+  .button {
+    white-space: normal;
+    word-wrap: break-word;
+  }
+}
+
 .buttonPrimary {
   background-color: #3b82f6;
 }
@@ -524,13 +531,18 @@
   width: 100%;
   max-width: 500px;
   max-height: 90vh;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   animation: slideUp 0.3s ease-out;
   transform-origin: center;
 }
 
 .modalContentLarge {
   max-width: 600px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .modalHeader {
@@ -539,6 +551,8 @@
   align-items: center;
   padding: 1.5rem;
   border-bottom: 1px solid #e5e7eb;
+  flex-shrink: 0;
+  gap: 0.5rem;
 }
 
 .modalTitle {
@@ -578,6 +592,9 @@
 
 .modalBody {
   padding: 1.5rem;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
 }
 
 .modalSection {
@@ -597,12 +614,15 @@
 .modalButtonGroup {
   display: flex;
   gap: 0.75rem;
+  flex-wrap: wrap;
 }
 
 .modalButton {
   flex: 1;
   padding: 0.75rem 1rem;
   font-size: 0.875rem;
+  min-width: 0;
+  min-height: 44px;
 }
 
 .modalButton:disabled {
@@ -1187,21 +1207,30 @@
     border-radius: 0.5rem;
     margin: 0;
     animation: slideUp 0.25s ease-out;
+    display: flex;
+    flex-direction: column;
   }
 
   .modalHeader {
     padding: 1rem;
     flex-wrap: wrap;
+    flex-shrink: 0;
+    gap: 0.5rem;
   }
 
   .modalTitle {
     font-size: 1.125rem;
     flex: 1;
     min-width: 0;
+    word-break: break-word;
   }
 
   .modalBody {
     padding: 1rem;
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+    padding-bottom: 1.5rem;
   }
 
   .formGrid {
@@ -1211,10 +1240,22 @@
 
   .modalButtonGroup {
     flex-direction: column;
+    gap: 0.5rem;
+    width: 100%;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e5e7eb;
+    position: sticky;
+    bottom: 0;
+    background-color: white;
+    z-index: 10;
   }
 
   .modalButton {
     width: 100%;
+    min-height: 44px;
+    white-space: normal;
+    word-wrap: break-word;
   }
 
   .piezasInputs {
@@ -1273,18 +1314,27 @@
     border-radius: 0;
     max-height: 100vh;
     animation: slideUp 0.25s ease-out;
+    display: flex;
+    flex-direction: column;
   }
 
   .modalHeader {
     padding: 0.75rem;
+    flex-shrink: 0;
+    gap: 0.5rem;
   }
 
   .modalTitle {
     font-size: 1rem;
+    word-break: break-word;
   }
 
   .modalBody {
     padding: 0.75rem;
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+    padding-bottom: 1.5rem;
   }
 
   .formField {
@@ -1305,6 +1355,27 @@
   .button {
     font-size: 0.875rem;
     padding: 0.625rem 1rem;
+    min-height: 44px;
+  }
+
+  .modalButtonGroup {
+    flex-direction: column;
+    gap: 0.5rem;
+    width: 100%;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e5e7eb;
+    position: sticky;
+    bottom: 0;
+    background-color: white;
+    z-index: 10;
+  }
+
+  .modalButton {
+    width: 100%;
+    min-height: 44px;
+    white-space: normal;
+    word-wrap: break-word;
   }
 }
 
@@ -1569,6 +1640,15 @@
   padding: 1rem 1.5rem;
   border-bottom: 1px solid #e5e7eb;
   background-color: #fff;
+  flex-shrink: 0;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+  .mantenimientoDetailHeader {
+    padding: 0.75rem 1rem;
+  }
 }
 
 .mantenimientoDetailHeaderGroup {
@@ -1624,6 +1704,15 @@
   padding: 1.5rem;
   max-height: calc(90vh - 100px);
   overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+@media (max-width: 768px) {
+  .mantenimientoDetailBody {
+    padding: 1rem;
+    padding-bottom: 1.5rem;
+  }
 }
 
 .mantenimientoDetailInfoGrid {
@@ -1959,6 +2048,17 @@
   justify-content: flex-end;
 }
 
+@media (max-width: 768px) {
+  .mantenimientoDetailCloseButtonContainer {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .mantenimientoDetailCloseButtonContainer .button {
+    width: 100%;
+  }
+}
+
 .mantenimientoDetailCloseButtonPrimary {
   padding: 0.625rem 1.25rem;
   background-color: #6366f1;
@@ -1973,5 +2073,24 @@
 
 .mantenimientoDetailCloseButtonPrimary:hover {
   background-color: #4f46e5;
+}
+
+/* Asegurar que los botones en modales siempre sean visibles */
+.modalBody > .modalButtonGroup:last-child {
+  margin-top: auto;
+  padding-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+@media (max-width: 768px) {
+  .modalBody > .modalButtonGroup:last-child {
+    position: sticky;
+    bottom: 0;
+    background-color: white;
+    z-index: 10;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    padding-bottom: 0.5rem;
+  }
 }
 
