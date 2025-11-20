@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { Html5Qrcode } from 'html5-qrcode'
-import { FaTimes, FaCamera, FaStop } from 'react-icons/fa'
+import { FaTimes, FaCamera, FaStop, FaQrcode } from 'react-icons/fa'
 import styles from '@/styles/equipment.module.css'
 
 interface QRReaderProps {
@@ -17,6 +17,7 @@ export const QRReader: React.FC<QRReaderProps> = ({
   onScanError
 }) => {
   const [isScanning, setIsScanning] = useState(false)
+  const [isStarting, setIsStarting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const qrCodeRef = useRef<Html5Qrcode | null>(null)
   const scannerId = 'qr-reader'
@@ -41,6 +42,8 @@ export const QRReader: React.FC<QRReaderProps> = ({
 
     try {
       setError(null)
+      setIsStarting(true)
+      
       await qrCodeRef.current.start(
         { facingMode: 'environment' },
         {
@@ -94,9 +97,11 @@ export const QRReader: React.FC<QRReaderProps> = ({
         }
       )
       setIsScanning(true)
+      setIsStarting(false)
     } catch (err: any) {
       setError(err.message || 'Error al iniciar la cámara')
       setIsScanning(false)
+      setIsStarting(false)
     }
   }
 
@@ -128,7 +133,21 @@ export const QRReader: React.FC<QRReaderProps> = ({
     <div className={styles.modalOverlay} onClick={handleClose}>
       <div className={`${styles.modalContent} ${styles.modalContentLarge}`} onClick={(e) => e.stopPropagation()}>
         <div className={styles.modalHeader}>
-          <h2 className={styles.modalTitle}>Lector de Código QR</h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <div style={{
+              width: '40px',
+              height: '40px',
+              borderRadius: '0.5rem',
+              backgroundColor: '#eff6ff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#3b82f6'
+            }}>
+              <FaQrcode size={20} />
+            </div>
+            <h2 className={styles.modalTitle}>Lector de Código QR</h2>
+          </div>
           <button
             type="button"
             onClick={handleClose}
@@ -139,62 +158,183 @@ export const QRReader: React.FC<QRReaderProps> = ({
           </button>
         </div>
         <div className={styles.modalBody}>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
-            <div
-              id={scannerId}
-              style={{
-                width: '100%',
-                maxWidth: '500px',
-                minHeight: '300px',
-                border: '2px solid #ddd',
-                borderRadius: '8px',
-                overflow: 'hidden'
-              }}
-            />
+          <div style={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            alignItems: 'center', 
+            gap: '1.5rem',
+            width: '100%'
+          }}>
+            {/* Scanner Container */}
+            <div className={styles.qrScannerContainer}>
+              <div
+                id={scannerId}
+                className={isScanning ? styles.qrScannerActive : styles.qrScannerInactive}
+                style={{
+                  width: '100%',
+                  maxWidth: '500px',
+                  minHeight: isScanning ? '400px' : '300px',
+                  borderRadius: '0.75rem',
+                  overflow: 'hidden',
+                  backgroundColor: '#000',
+                  transition: 'all 0.3s ease',
+                  margin: '0 auto'
+                }}
+              />
+              
+              {/* Overlay cuando no está escaneando */}
+              {!isScanning && (
+                <div className={styles.qrScannerOverlay}>
+                  <div style={{
+                    width: '80px',
+                    height: '80px',
+                    borderRadius: '50%',
+                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backdropFilter: 'blur(10px)'
+                  }}>
+                    <FaQrcode size={40} color="#fff" />
+                  </div>
+                  <p style={{
+                    color: '#fff',
+                    fontSize: '0.875rem',
+                    fontWeight: 500,
+                    textAlign: 'center',
+                    padding: '0 1rem',
+                    margin: 0
+                  }}>
+                    Presiona "Iniciar Escaneo" para comenzar
+                  </p>
+                </div>
+              )}
+            </div>
             
+            {/* Error Message */}
             {error && (
               <div style={{ 
-                padding: '10px', 
-                backgroundColor: '#fee', 
-                color: '#c33', 
-                borderRadius: '4px',
+                padding: '0.875rem 1rem', 
+                backgroundColor: '#fee2e2', 
+                color: '#dc2626', 
+                borderRadius: '0.5rem',
                 width: '100%',
-                textAlign: 'center'
+                maxWidth: '500px',
+                textAlign: 'center',
+                fontSize: '0.875rem',
+                fontWeight: 500,
+                border: '1px solid #fecaca',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem'
               }}>
+                <FaTimes size={14} />
                 {error}
               </div>
             )}
 
-            <div style={{ display: 'flex', gap: '10px' }}>
+            {/* Button Container */}
+            <div style={{ 
+              display: 'flex', 
+              gap: '0.75rem',
+              width: '100%',
+              maxWidth: '500px',
+              justifyContent: 'center'
+            }}>
               {!isScanning ? (
                 <button
                   onClick={startScanning}
-                  className={`${styles.button} ${styles.buttonIcon}`}
-                  style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+                  disabled={isStarting}
+                  className={`${styles.button} ${styles.buttonPrimary}`}
+                  style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '0.5rem',
+                    padding: '0.875rem 2rem',
+                    fontSize: '1rem',
+                    fontWeight: 600,
+                    minWidth: '200px',
+                    justifyContent: 'center',
+                    position: 'relative',
+                    overflow: 'hidden'
+                  }}
                 >
-                  <FaCamera size={16} />
-                  Iniciar Escaneo
+                  {isStarting ? (
+                    <>
+                      <div className={styles.qrLoadingSpinner} />
+                      <span>Iniciando...</span>
+                    </>
+                  ) : (
+                    <>
+                      <FaCamera size={18} />
+                      <span>Iniciar Escaneo</span>
+                    </>
+                  )}
                 </button>
               ) : (
                 <button
                   onClick={stopScanning}
-                  className={`${styles.button} ${styles.buttonIcon}`}
-                  style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: '#dc3545' }}
+                  className={`${styles.button} ${styles.buttonDanger} ${styles.qrPulseButton}`}
+                  style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '0.5rem',
+                    padding: '0.875rem 2rem',
+                    fontSize: '1rem',
+                    fontWeight: 600,
+                    minWidth: '200px',
+                    justifyContent: 'center'
+                  }}
                 >
-                  <FaStop size={16} />
-                  Detener Escaneo
+                  <FaStop size={18} />
+                  <span>Detener Escaneo</span>
                 </button>
               )}
             </div>
 
-            <p style={{ 
-              fontSize: '14px', 
-              color: '#666', 
-              textAlign: 'center',
-              marginTop: '10px'
+            {/* Instructions */}
+            <div style={{ 
+              width: '100%',
+              maxWidth: '500px',
+              padding: '1rem',
+              backgroundColor: '#f8fafc',
+              borderRadius: '0.5rem',
+              border: '1px solid #e2e8f0'
             }}>
-              Apunta la cámara hacia el código QR para escanearlo
-            </p>
+              <div style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: '0.75rem'
+              }}>
+                <div style={{
+                  width: '24px',
+                  height: '24px',
+                  borderRadius: '50%',
+                  backgroundColor: '#dbeafe',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                  marginTop: '0.125rem'
+                }}>
+                  <FaQrcode size={12} color="#3b82f6" />
+                </div>
+                <div>
+                  <p style={{ 
+                    fontSize: '0.875rem', 
+                    color: '#475569', 
+                    margin: 0,
+                    lineHeight: '1.5',
+                    fontWeight: 500
+                  }}>
+                    {isScanning 
+                      ? 'Apunta la cámara hacia el código QR. El escaneo se realizará automáticamente.'
+                      : 'Apunta la cámara hacia el código QR para escanearlo. Asegúrate de tener buena iluminación.'}
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
