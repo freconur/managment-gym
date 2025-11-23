@@ -101,13 +101,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 DNI *
               </label>
               <input
-                type="text"
+                type="number"
                 value={dni}
                 onChange={handleDniChange}
                 className={styles.input}
                 required
                 placeholder="Ingrese su DNI (8 dígitos)"
-                maxLength={8}
+                min="0"
+                max="99999999"
+                inputMode="numeric"
+                pattern="[0-9]*"
               />
             </div>
 
@@ -117,13 +120,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 PIN *
               </label>
               <input
-                type="password"
+                type="number"
                 value={pin}
                 onChange={handlePinChange}
                 className={styles.input}
                 required
                 placeholder="Ingrese su PIN (4 dígitos)"
-                maxLength={4}
+                min="0"
+                max="9999"
+                inputMode="numeric"
+                pattern="[0-9]*"
               />
             </div>
 

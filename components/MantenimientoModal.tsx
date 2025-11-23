@@ -3,11 +3,13 @@ import { FaTools, FaTimes, FaUser, FaCalendarAlt, FaPlus, FaCheckSquare } from '
 import styles from '@/styles/equipment.module.css'
 import { tipoDeMantenimiento, estadoDeMantenimiento, prioridadDeMantenimiento } from '@/utils/data'
 import { Tarea, Usuario } from '@/features/types/types'
+import { AuthModal } from '@/components/AuthModal'
 
 interface MantenimientoModalProps {
   isOpen: boolean
   onClose: () => void
   usuarios?: Usuario[]
+  validateSiEsAdmin?: (dni: string, pin: string) => Promise<boolean>
   onSubmit: (data: {
     subTipo: string
     fechaProgramada: Date
@@ -26,6 +28,7 @@ export const MantenimientoModal: React.FC<MantenimientoModalProps> = ({
   isOpen,
   onClose,
   usuarios = [],
+  validateSiEsAdmin,
   onSubmit
 }) => {
   // Función helper para obtener el valor del primer elemento del array
@@ -62,6 +65,8 @@ export const MantenimientoModal: React.FC<MantenimientoModalProps> = ({
     frecuenciaDias: 7
   })
   const [nuevaTarea, setNuevaTarea] = useState('')
+  const [showAuthModal, setShowAuthModal] = useState(false)
+  const [authError, setAuthError] = useState<string>('')
 
   // Función helper para convertir Date a string YYYY-MM-DD sin problemas de zona horaria
   const formatDateToString = (date: Date): string => {
@@ -103,6 +108,19 @@ export const MantenimientoModal: React.FC<MantenimientoModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Si hay función de validación, mostrar modal de autenticación primero
+    if (validateSiEsAdmin) {
+      setShowAuthModal(true)
+      setAuthError('')
+      return
+    }
+    
+    // Si no hay validación, proceder directamente
+    await performSubmit()
+  }
+
+  const performSubmit = async () => {
     try {
       await onSubmit(mantenimientoForm)
       // Resetear formulario después de enviar
@@ -119,9 +137,40 @@ export const MantenimientoModal: React.FC<MantenimientoModalProps> = ({
         frecuenciaDias: 7
       })
       setNuevaTarea('')
+      setShowAuthModal(false)
+      onClose()
     } catch (error) {
       console.error('Error al guardar mantenimiento:', error)
+      throw error
     }
+  }
+
+  const handleAuthAccept = async (dni: string, pin: string) => {
+    if (!validateSiEsAdmin) {
+      setAuthError('Error de validación')
+      return
+    }
+
+    try {
+      const esAdmin = await validateSiEsAdmin(dni, pin)
+      
+      if (esAdmin) {
+        // Si es admin, proceder con el registro del mantenimiento
+        setShowAuthModal(false)
+        setAuthError('')
+        await performSubmit()
+      } else {
+        setAuthError('Acceso denegado. Solo administradores y desarrolladores pueden registrar mantenimientos.')
+      }
+    } catch (error) {
+      console.error('Error al validar administrador:', error)
+      setAuthError('Error al validar credenciales. Intente nuevamente.')
+    }
+  }
+
+  const handleCloseAuthModal = () => {
+    setShowAuthModal(false)
+    setAuthError('')
   }
 
   if (!isOpen) return null
@@ -434,6 +483,14 @@ export const MantenimientoModal: React.FC<MantenimientoModalProps> = ({
           </form>
         </div>
       </div>
+
+      {/* Modal de Autenticación */}
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={handleCloseAuthModal}
+        onAccept={handleAuthAccept}
+        error={authError}
+      />
     </div>
   )
 }

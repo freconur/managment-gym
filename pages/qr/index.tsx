@@ -2,6 +2,8 @@ import { useManagment } from '@/features/hooks/useManagment'
 import React, { useEffect, useState, useMemo, useRef } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
 import { Document, Page, Text, Image, View, StyleSheet, pdf } from '@react-pdf/renderer'
+import Link from 'next/link'
+import { FaArrowLeft } from 'react-icons/fa'
 import styles from '@/styles/qr.module.css'
 import { Machine } from '@/features/types/types'
 
@@ -231,9 +233,15 @@ const GenerarQr = () => {
     return (
         <div className={styles.main}>
             <div className={styles.header}>
-                <h1 className={styles.title}>
-                    Códigos QR de Máquinas
-                </h1>
+                <div className={styles.titleContainer}>
+                    <Link href="/equipment" className={styles.backButton}>
+                        <FaArrowLeft size={18} />
+                        <span>Regresar</span>
+                    </Link>
+                    <h1 className={styles.title}>
+                        Códigos QR de Máquinas
+                    </h1>
+                </div>
                 {maquinas.length > 0 && (
                     <button 
                         className={styles.generateButton}

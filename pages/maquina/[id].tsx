@@ -16,7 +16,23 @@ import { Machine, Incidencia, Usuario, Tarea } from '@/features/types/types'
 
 const MaquinaPAge = () => {
   const router = useRouter()
-  const { id } = router.query
+  const { id, from } = router.query
+  
+  // Determinar la ruta de retorno basada en el query parameter 'from'
+  const getBackUrl = () => {
+    const fromParam = Array.isArray(from) ? from[0] : from
+    if (fromParam === 'mis-equipos') {
+      return '/mis-equipos'
+    }
+    // Por defecto, volver a equipment
+    return '/equipment'
+  }
+  
+  // Obtener el texto del botón de volver
+  const getBackButtonText = () => {
+    const fromParam = Array.isArray(from) ? from[0] : from
+    return fromParam === 'mis-equipos' ? 'Volver a Mis Equipos' : 'Volver a Equipos'
+  }
   const { getMaquina, maquina, getIncidencias, incidencias, createIncidencia, createMantenimiento, updateIncidencia, deleteIncidencia, getUsuarios, usuarios, validateUsuario, usuariosValidate, validateSiEsAdmin } = useManagment()
   const unsubscribeRef = useRef<(() => void) | null>(null)
   const selectedIncidenciaIdRef = useRef<string | null>(null)
@@ -319,9 +335,9 @@ const MaquinaPAge = () => {
             <p className={styles.emptyStateText}>
               {error || 'No se encontró la máquina con el ID proporcionado'}
             </p>
-            <Link href="/equipment" className={styles.backButton} style={{ marginTop: '1rem' }}>
+            <Link href={getBackUrl()} className={styles.backButton} style={{ marginTop: '1rem' }}>
               <FaArrowLeft size={18} />
-              <span>Volver a Equipos</span>
+              <span>{getBackButtonText()}</span>
             </Link>
           </div>
         </main>
@@ -338,9 +354,9 @@ const MaquinaPAge = () => {
       <main className={styles.main}>
         {/* Header con botón de volver */}
         <div className={styles.detailHeader}>
-          <Link href="/equipment" className={styles.backButton}>
+          <Link href={getBackUrl()} className={styles.backButton}>
             <FaArrowLeft size={18} />
-            <span>Volver a Equipos</span>
+            <span>{getBackButtonText()}</span>
           </Link>
         </div>
 
@@ -502,6 +518,7 @@ const MaquinaPAge = () => {
           isOpen={showMantenimientoModal}
           onClose={handleCloseMantenimientoModal}
           usuarios={usuarios}
+          validateSiEsAdmin={validateSiEsAdmin}
           onSubmit={handleSubmitMantenimiento}
         />
 

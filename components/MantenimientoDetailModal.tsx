@@ -1439,7 +1439,7 @@ export const MantenimientoDetailModal: React.FC<MantenimientoDetailModalProps> =
                     DNI
                   </label>
                   <input
-                    type="text"
+                    type="number"
                     inputMode="numeric"
                     pattern="[0-9]*"
                     value={adminDni}
@@ -1447,7 +1447,8 @@ export const MantenimientoDetailModal: React.FC<MantenimientoDetailModalProps> =
                     className={styles.input}
                     placeholder="Ingrese su DNI (8 dígitos)"
                     autoFocus
-                    maxLength={8}
+                    min="0"
+                    max="99999999"
                   />
                 </div>
                 <div className={styles.formField}>
@@ -1455,14 +1456,15 @@ export const MantenimientoDetailModal: React.FC<MantenimientoDetailModalProps> =
                     PIN de Seguridad
                   </label>
                   <input
-                    type="password"
+                    type="number"
                     inputMode="numeric"
                     pattern="[0-9]*"
                     value={adminPin}
                     onChange={handleAdminPinChange}
                     className={styles.input}
                     placeholder="Ingrese su PIN (4 dígitos)"
-                    maxLength={4}
+                    min="0"
+                    max="9999"
                   />
                   {adminAuthError && (
                     <p style={{ 
@@ -1525,7 +1527,7 @@ export const MantenimientoDetailModal: React.FC<MantenimientoDetailModalProps> =
                     DNI
                   </label>
                   <input
-                    type="text"
+                    type="number"
                     inputMode="numeric"
                     pattern="[0-9]*"
                     value={deleteDni}
@@ -1533,7 +1535,8 @@ export const MantenimientoDetailModal: React.FC<MantenimientoDetailModalProps> =
                     className={styles.input}
                     placeholder="Ingrese su DNI (8 dígitos)"
                     autoFocus
-                    maxLength={8}
+                    min="0"
+                    max="99999999"
                   />
                 </div>
                 <div className={styles.formField}>
@@ -1541,14 +1544,15 @@ export const MantenimientoDetailModal: React.FC<MantenimientoDetailModalProps> =
                     PIN de Seguridad
                   </label>
                   <input
-                    type="password"
+                    type="number"
                     inputMode="numeric"
                     pattern="[0-9]*"
                     value={deletePin}
                     onChange={handleDeletePinChange}
                     className={styles.input}
                     placeholder="Ingrese su PIN (4 dígitos)"
-                    maxLength={4}
+                    min="0"
+                    max="9999"
                   />
                   {deleteAuthError && (
                     <p style={{ 
