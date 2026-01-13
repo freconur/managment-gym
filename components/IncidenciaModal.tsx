@@ -5,6 +5,7 @@ import { useManagment } from '@/features/hooks/useManagment'
 import { Usuario } from '@/features/types/types'
 import { storage } from '@/firebase/firebase.config'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
+import { compressImage } from '@/utils/imageCompression'
 
 interface IncidenciaModalProps {
   isOpen: boolean
@@ -55,9 +56,19 @@ export const IncidenciaModal: React.FC<IncidenciaModalProps> = ({
     return `${year}-${month}-${day}`
   }
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setFotoFile(e.target.files[0])
+      const file = e.target.files[0]
+      try {
+        setIsUploading(true) // Reuse uploading state to indicate processing
+        const compressed = await compressImage(file)
+        setFotoFile(compressed)
+      } catch (error) {
+        console.error('Error compressing image:', error)
+        alert('Error al procesar la imagen. Intenta con otra.')
+      } finally {
+        setIsUploading(false)
+      }
     }
   }
 
@@ -298,7 +309,7 @@ export const IncidenciaModal: React.FC<IncidenciaModalProps> = ({
                     gap: '0.5rem'
                   }}>
                     <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#16a34a' }}></div>
-                    Foto seleccionada: {fotoFile.name}
+                    Foto seleccionada: {fotoFile.name} ({(fotoFile.size / 1024).toFixed(2)} KB)
                   </div>
                 )}
               </div>

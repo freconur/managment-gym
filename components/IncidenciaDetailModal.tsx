@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { FaTimes, FaClock, FaExclamationCircle, FaStickyNote, FaCalendarAlt, FaInfoCircle, FaUser, FaIdCard, FaTrash, FaLock, FaCog, FaMapMarkerAlt, FaTag } from 'react-icons/fa'
+import { FaTimes, FaClock, FaExclamationCircle, FaStickyNote, FaCalendarAlt, FaInfoCircle, FaUser, FaIdCard, FaTrash, FaLock, FaCog, FaMapMarkerAlt, FaTag, FaCamera } from 'react-icons/fa'
 import styles from '@/styles/equipment.module.css'
 import { Incidencia, Machine } from '@/features/types/types'
 
@@ -167,22 +167,22 @@ export const IncidenciaDetailModal: React.FC<IncidenciaDetailModalProps> = ({
   // Función para convertir Timestamp de Firebase a Date
   const convertTimestampToDate = (timestamp: any): Date | null => {
     if (!timestamp) return null
-    
+
     // Si es un Timestamp de Firebase con método toDate
     if (timestamp.toDate && typeof timestamp.toDate === 'function') {
       return timestamp.toDate()
     }
-    
+
     // Si ya es un Date
     if (timestamp instanceof Date) {
       return timestamp
     }
-    
+
     // Si es un objeto con seconds (formato Firestore)
     if (typeof timestamp === 'object' && timestamp.seconds) {
       return new Date(timestamp.seconds * 1000)
     }
-    
+
     // Intentar convertir directamente
     try {
       return new Date(timestamp)
@@ -207,7 +207,7 @@ export const IncidenciaDetailModal: React.FC<IncidenciaDetailModalProps> = ({
                 type="button"
                 onClick={handleDeleteClick}
                 className={styles.modalCloseButton}
-                style={{ 
+                style={{
                   backgroundColor: '#ef4444',
                   color: '#fff'
                 }}
@@ -255,8 +255,8 @@ export const IncidenciaDetailModal: React.FC<IncidenciaDetailModalProps> = ({
           </div> */}
 
           {/* Sección de Información Principal */}
-          <div style={{ 
-            display: 'grid', 
+          <div style={{
+            display: 'grid',
             gap: '1.5rem',
             marginBottom: '2rem'
           }}>
@@ -286,7 +286,7 @@ export const IncidenciaDetailModal: React.FC<IncidenciaDetailModalProps> = ({
                     <FaUser size={14} style={{ color: '#3b82f6' }} />
                     <span>Usuario:</span>
                   </div>
-                  
+
                   {(incidencia.usuario.nombres || incidencia.usuario.apellidos) && (
                     <>
                       <div style={{
@@ -308,7 +308,7 @@ export const IncidenciaDetailModal: React.FC<IncidenciaDetailModalProps> = ({
                       }} />
                     </>
                   )}
-                  
+
                   {incidencia.usuario.dni && (
                     <>
                       <div style={{
@@ -334,7 +334,7 @@ export const IncidenciaDetailModal: React.FC<IncidenciaDetailModalProps> = ({
                       )}
                     </>
                   )}
-                  
+
                   {incidencia.usuario.rol && (
                     <div style={{
                       display: 'flex',
@@ -600,17 +600,17 @@ export const IncidenciaDetailModal: React.FC<IncidenciaDetailModalProps> = ({
                     const lines = incidencia.descripcion.split('\n')
                     const items: JSX.Element[] = []
                     let processedIndex = -1
-                    
+
                     lines.forEach((line, index) => {
                       // Saltar líneas ya procesadas o vacías
                       if (index <= processedIndex || !line.trim()) return
-                      
+
                       // Detectar preguntas
                       if (line.includes('¿') && line.includes('?')) {
                         const parts = line.split('?')
                         const pregunta = parts[0] + '?'
                         const respuesta = parts.slice(1).join('?').trim()
-                        
+
                         items.push(
                           <div key={index} style={{
                             display: 'flex',
@@ -642,7 +642,7 @@ export const IncidenciaDetailModal: React.FC<IncidenciaDetailModalProps> = ({
                         const parts = line.split(':')
                         const etiqueta = parts[0] + ':'
                         let valor = parts.slice(1).join(':').trim()
-                        
+
                         // Si no hay valor en la misma línea, buscar en las siguientes líneas
                         if (!valor && index + 1 < lines.length) {
                           const siguienteLinea = lines[index + 1]?.trim()
@@ -651,7 +651,7 @@ export const IncidenciaDetailModal: React.FC<IncidenciaDetailModalProps> = ({
                             processedIndex = index + 1
                           }
                         }
-                        
+
                         if (valor) {
                           items.push(
                             <div key={index} style={{
@@ -686,7 +686,7 @@ export const IncidenciaDetailModal: React.FC<IncidenciaDetailModalProps> = ({
                         const parts = line.split(':')
                         const etiqueta = parts[0] + ':'
                         const valor = parts.slice(1).join(':').trim()
-                        
+
                         if (valor) {
                           items.push(
                             <div key={index} style={{
@@ -730,7 +730,7 @@ export const IncidenciaDetailModal: React.FC<IncidenciaDetailModalProps> = ({
                         )
                       }
                     })
-                    
+
                     return items.length > 0 ? items : (
                       <div style={{
                         fontSize: '0.8125rem',
@@ -742,6 +742,65 @@ export const IncidenciaDetailModal: React.FC<IncidenciaDetailModalProps> = ({
                       </div>
                     )
                   })()}
+                </div>
+              </div>
+            )}
+
+            {/* Card de Evidencia (Foto) */}
+            {incidencia.fotoUrl && (
+              <div style={{
+                backgroundColor: '#f8fafc',
+                border: '1px solid #e2e8f0',
+                borderRadius: '0.5rem',
+                padding: '0.875rem 1rem',
+                boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
+              }}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  marginBottom: '0.75rem',
+                  color: '#475569',
+                  fontSize: '0.8125rem',
+                  fontWeight: '600'
+                }}>
+                  <FaCamera size={14} style={{ marginRight: '0.5rem', color: '#3b82f6' }} />
+                  Evidencia Fotográfica
+                </div>
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  backgroundColor: '#ffffff',
+                  padding: '0.5rem',
+                  borderRadius: '0.375rem',
+                  border: '1px solid #e2e8f0'
+                }}>
+                  <a href={incidencia.fotoUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'block', maxWidth: '100%' }}>
+                    <img
+                      src={incidencia.fotoUrl}
+                      alt="Evidencia de la incidencia"
+                      style={{
+                        maxWidth: '100%',
+                        maxHeight: '300px',
+                        objectFit: 'contain',
+                        borderRadius: '0.25rem'
+                      }}
+                    />
+                  </a>
+                </div>
+                <div style={{ marginTop: '0.5rem', textAlign: 'center' }}>
+                  <a
+                    href={incidencia.fotoUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      fontSize: '0.75rem',
+                      color: '#3b82f6',
+                      textDecoration: 'none',
+                      fontWeight: '500'
+                    }}
+                  >
+                    Ver imagen en tamaño completo
+                  </a>
                 </div>
               </div>
             )}
@@ -802,8 +861,8 @@ export const IncidenciaDetailModal: React.FC<IncidenciaDetailModalProps> = ({
                   <FaStickyNote size={18} style={{ marginRight: '0.5rem', color: '#f59e0b' }} />
                   Notas Adicionales
                 </div>
-                <div style={{ 
-                  padding: '1rem', 
+                <div style={{
+                  padding: '1rem',
                   backgroundColor: '#fffbeb',
                   border: '1px solid #fde68a',
                   borderRadius: '0.5rem',
@@ -819,7 +878,7 @@ export const IncidenciaDetailModal: React.FC<IncidenciaDetailModalProps> = ({
           </div>
 
           {/* Botón de Cerrar */}
-          <div className={styles.modalButtonGroup} style={{ 
+          <div className={styles.modalButtonGroup} style={{
             marginTop: '2rem',
             paddingTop: '1.5rem',
             borderTop: '2px solid #e5e7eb',
@@ -843,8 +902,8 @@ export const IncidenciaDetailModal: React.FC<IncidenciaDetailModalProps> = ({
       {/* Modal de Validación de PIN */}
       {showPinModal && (
         <div className={styles.modalOverlay} onClick={handleClosePinModal} style={{ zIndex: 2000 }}>
-          <div 
-            className={styles.modalContent} 
+          <div
+            className={styles.modalContent}
             onClick={(e) => e.stopPropagation()}
             style={{ maxWidth: '400px' }}
           >
@@ -881,11 +940,11 @@ export const IncidenciaDetailModal: React.FC<IncidenciaDetailModalProps> = ({
                     disabled={isDeleting}
                   />
                   {pinError && (
-                    <p style={{ 
-                      margin: '0.5rem 0 0 0', 
-                      fontSize: '0.875rem', 
-                      color: '#ef4444', 
-                      fontWeight: 500 
+                    <p style={{
+                      margin: '0.5rem 0 0 0',
+                      fontSize: '0.875rem',
+                      color: '#ef4444',
+                      fontWeight: 500
                     }}>
                       {pinError}
                     </p>
