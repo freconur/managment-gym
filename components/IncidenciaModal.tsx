@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react'
-import { FaExclamationCircle, FaTimes, FaTools, FaCalendarAlt, FaUser, FaIdCard, FaCamera } from 'react-icons/fa'
+import { FaTimes, FaClock, FaExclamationCircle, FaStickyNote, FaCalendarAlt, FaInfoCircle, FaUser, FaIdCard, FaTrash, FaLock, FaCog, FaMapMarkerAlt, FaTag, FaCamera, FaImage, FaTools } from 'react-icons/fa'
 import styles from '@/styles/equipment.module.css'
 import { useManagment } from '@/features/hooks/useManagment'
 import { Usuario } from '@/features/types/types'
@@ -45,8 +45,10 @@ export const IncidenciaModal: React.FC<IncidenciaModalProps> = ({
     usuario: usuariosValidate
   })
   const [fotoFile, setFotoFile] = useState<File | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [isUploading, setIsUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const galleryInputRef = useRef<HTMLInputElement>(null)
 
   // Función helper para convertir Date a string YYYY-MM-DD sin problemas de zona horaria
   const formatDateToString = (date: Date): string => {
@@ -60,9 +62,19 @@ export const IncidenciaModal: React.FC<IncidenciaModalProps> = ({
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0]
       try {
-        setIsUploading(true) // Reuse uploading state to indicate processing
+        setIsUploading(true)
+
+        // Create preview immediately for better UX
+        const objectUrl = URL.createObjectURL(file)
+        setPreviewUrl(prev => {
+          if (prev) URL.revokeObjectURL(prev)
+          return objectUrl
+        })
+
         const compressed = await compressImage(file)
         setFotoFile(compressed)
+
+        // Update preview with compressed if needed, but original is fine for preview
       } catch (error) {
         console.error('Error compressing image:', error)
         alert('Error al procesar la imagen. Intenta con otra.')
@@ -71,6 +83,13 @@ export const IncidenciaModal: React.FC<IncidenciaModalProps> = ({
       }
     }
   }
+
+  // Cleanup preview URL on unmount
+  React.useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl)
+    }
+  }, [previewUrl])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -273,28 +292,82 @@ export const IncidenciaModal: React.FC<IncidenciaModalProps> = ({
                   capture="environment"
                   onChange={handleFileChange}
                   className={styles.input}
-                  required
+                  required={!fotoFile}
                   ref={fileInputRef}
                   style={{ display: 'none' }}
                 />
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className={styles.button}
-                  style={{
-                    width: '100%',
-                    backgroundColor: '#e5e7eb',
-                    color: '#374151',
-                    border: '1px solid #d1d5db',
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className={styles.input}
+                  ref={galleryInputRef}
+                  style={{ display: 'none' }}
+                />
+
+                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className={styles.button}
+                    style={{
+                      flex: 1,
+                      backgroundColor: '#e5e7eb',
+                      color: '#374151',
+                      border: '1px solid #d1d5db',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.5rem'
+                    }}
+                  >
+                    <FaCamera size={16} />
+                    Tomar Foto
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => galleryInputRef.current?.click()}
+                    className={styles.button}
+                    style={{
+                      flex: 1,
+                      backgroundColor: '#e5e7eb',
+                      color: '#374151',
+                      border: '1px solid #d1d5db',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.5rem'
+                    }}
+                  >
+                    <FaImage size={16} />
+                    Galería
+                  </button>
+                </div>
+
+                {previewUrl && (
+                  <div style={{
+                    marginTop: '0.5rem',
+                    marginBottom: '0.5rem',
                     display: 'flex',
-                    alignItems: 'center',
                     justifyContent: 'center',
-                    gap: '0.5rem'
-                  }}
-                >
-                  <FaCamera size={16} />
-                  {fotoFile ? 'Cambiar Foto' : 'Tomar Foto'}
-                </button>
+                    backgroundColor: '#f3f4f6',
+                    padding: '0.5rem',
+                    borderRadius: '0.375rem',
+                    border: '1px solid #e5e7eb'
+                  }}>
+                    <img
+                      src={previewUrl}
+                      alt="Vista previa"
+                      style={{
+                        maxWidth: '100%',
+                        maxHeight: '200px',
+                        objectFit: 'contain',
+                        borderRadius: '0.25rem'
+                      }}
+                    />
+                  </div>
+                )}
+
                 {fotoFile && (
                   <div style={{
                     marginTop: '0.5rem',
