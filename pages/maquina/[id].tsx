@@ -46,6 +46,7 @@ const MaquinaPAge = () => {
   const [authError, setAuthError] = useState<string>('')
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [pendingAction, setPendingAction] = useState<'incidencia' | 'mantenimiento' | null>(null)
 
   useEffect(() => {
     // Verificar que router esté listo y que id esté disponible
@@ -65,32 +66,37 @@ const MaquinaPAge = () => {
     setIsLoading(true)
     setError(null)
 
-    // Función para cargar los datos
-    const loadData = async () => {
-      try {
-        await getMaquina(machineId)
-        getUsuarios()
-        // Suscribirse a incidencias
-        if (unsubscribeRef.current) {
-          unsubscribeRef.current()
-        }
-        unsubscribeRef.current = getIncidencias(machineId)
-        setIsLoading(false)
-      } catch (err) {
-        console.error('Error al cargar datos de la máquina:', err)
-        setError('Error al cargar los datos de la máquina')
-        setIsLoading(false)
-      }
+    // Suscribirse a los datos
+    const unsubscribeMaquina = getMaquina(machineId)
+    const unsubscribeIncidencias = getIncidencias(machineId)
+
+    // Cargar usuarios (esto podría mejorarse para ser también una suscripción manejada en el effect)
+    getUsuarios()
+
+    // Guardar referencia para cleanup (aunque el return limpia esto específicamente variables locales son mejores)
+    unsubscribeRef.current = () => {
+      if (unsubscribeMaquina) unsubscribeMaquina()
+      if (unsubscribeIncidencias) unsubscribeIncidencias()
     }
 
-    loadData()
+    // Nota: Como getMaquina es ahora real-time y actualiza el state, isLoading se debe manejar
+    // observando 'maquina' o asumiendo carga inicial rápida.
+    // Para simplificar, podemos poner isLoading a false después de un breve timeout o 
+    // idealmente la suscripción nos daría el estado de carga.
+    // Dado que el hook no expone loading, usaremos un efecto en 'maquina'.
 
     return () => {
-      if (unsubscribeRef.current) {
-        unsubscribeRef.current()
-      }
+      if (typeof unsubscribeMaquina === 'function') unsubscribeMaquina()
+      if (typeof unsubscribeIncidencias === 'function') unsubscribeIncidencias()
     }
   }, [router.isReady, id, getMaquina, getIncidencias, getUsuarios])
+
+  // Efecto para controlar el loading state basado en si ya tenemos máquina
+  useEffect(() => {
+    if (maquina) {
+      setIsLoading(false)
+    }
+  }, [maquina])
 
   // Sincronizar selectedIncidencia cuando cambien las incidencias
   useEffect(() => {
@@ -143,7 +149,9 @@ const MaquinaPAge = () => {
 
   // Handlers para los modales
   const handleOpenMantenimientoModal = () => {
-    setShowMantenimientoModal(true)
+    setPendingAction('mantenimiento')
+    setShowAuthModal(true)
+    setAuthError('')
   }
 
   const handleCloseMantenimientoModal = () => {
@@ -232,6 +240,7 @@ const MaquinaPAge = () => {
   }
 
   const handleOpenIncidenciaModal = () => {
+    setPendingAction('incidencia')
     setShowAuthModal(true)
     setAuthError('')
   }
@@ -256,10 +265,17 @@ const MaquinaPAge = () => {
       return
     }
 
-    // Si el usuario existe (retorna true), cerrar el modal de auth y abrir el de incidencia
+    // Si el usuario existe (retorna true), cerrar el modal de auth y abrir el modal correspondiente
     setShowAuthModal(false)
     setAuthError('')
-    setShowIncidenciaModal(true)
+
+    if (pendingAction === 'incidencia') {
+      setShowIncidenciaModal(true)
+    } else if (pendingAction === 'mantenimiento') {
+      setShowMantenimientoModal(true)
+    }
+
+    setPendingAction(null)
   }
 
   const handleSubmitIncidencia = async (data: {

@@ -42,6 +42,12 @@ export type Tarea = {
   completada: boolean;
 }
 
+export type ReusableTask = {
+  id?: string;
+  descripcion: string;
+  createdAt?: any;
+}
+
 export type Incidencia = {
   id?: string;
   machineId: string; // ID de la máquina

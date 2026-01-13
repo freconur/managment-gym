@@ -69,7 +69,6 @@ const Equipment: NextPage = () => {
   const handleUpdateMachine = async (id: string, machine: Partial<Machine>) => {
     try {
       await updateMaquinas(id, machine);
-      await getMaquinas();
       // Actualizar la máquina seleccionada con los nuevos datos
       if (selectedMachine && selectedMachine.id === id) {
         setSelectedMachine({ ...selectedMachine, ...machine });
@@ -83,7 +82,6 @@ const Equipment: NextPage = () => {
   const handleDeleteMachine = async (id: string) => {
     try {
       await deleteMaquinas(id);
-      await getMaquinas();
       // Cerrar el modal si la máquina eliminada era la seleccionada
       if (selectedMachine && selectedMachine.id === id) {
         handleCloseModal();
@@ -152,15 +150,12 @@ const Equipment: NextPage = () => {
   };
 
   useEffect(() => {
-    if (!hasFetched.current) {
-      getMaquinas();
-      hasFetched.current = true;
-    }
-
+    const unsubscribeMaquinas = getMaquinas();
     const unsubscribeUbicaciones = getUbicaciones();
     const unsubscribeMarcas = getMarcas();
 
     return () => {
+      unsubscribeMaquinas();
       unsubscribeUbicaciones();
       unsubscribeMarcas();
     };
@@ -171,7 +166,6 @@ const Equipment: NextPage = () => {
     try {
       console.log("formData", formData);
       await agregarMaquina(formData);
-      await getMaquinas();
       resetForm();
       setIsEquipmentFormModalOpen(false);
     } catch (error) {
@@ -324,8 +318,7 @@ const Equipment: NextPage = () => {
             } catch (error) {
               console.error("Error al procesar código QR:", error);
               alert(
-                `Error al procesar el código QR: ${
-                  error instanceof Error ? error.message : "Error desconocido"
+                `Error al procesar el código QR: ${error instanceof Error ? error.message : "Error desconocido"
                 }`
               );
             }
