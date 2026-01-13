@@ -179,6 +179,93 @@
   margin-bottom: 1rem;
 }
 
+.imageUploadContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.fileInput {
+  display: none;
+}
+
+.uploadButtonsContainer {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.uploadButton {
+  background-color: #3b82f6;
+  color: white;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  width: fit-content;
+  transition: background-color 0.2s;
+}
+
+.uploadButton:hover {
+  background-color: #2563eb;
+}
+
+.cameraButton {
+  background-color: #8b5cf6;
+  color: white;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  width: fit-content;
+  transition: background-color 0.2s;
+}
+
+.cameraButton:hover {
+  background-color: #7c3aed;
+}
+
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.imagePreview {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.previewImg {
+  max-width: 200px;
+  max-height: 200px;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  object-fit: cover;
+}
+
+.imageSuccess {
+  color: #10b981;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
 .label {
   display: block;
   margin-bottom: 0.5rem;
@@ -552,6 +639,7 @@
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -562,6 +650,7 @@
     opacity: 0;
     transform: translateY(20px) scale(0.95);
   }
+
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -573,6 +662,7 @@
     opacity: 1;
     transform: translateY(0) scale(1);
   }
+
   to {
     opacity: 0;
     transform: translateY(20px) scale(0.95);
@@ -2125,7 +2215,7 @@
     flex-direction: column;
     gap: 0.5rem;
   }
-  
+
   .mantenimientoDetailCloseButtonContainer .button {
     width: 100%;
   }
@@ -2148,14 +2238,14 @@
 }
 
 /* Asegurar que los botones en modales siempre sean visibles */
-.modalBody > .modalButtonGroup:last-child {
+.modalBody>.modalButtonGroup:last-child {
   margin-top: auto;
   padding-top: 1rem;
   border-top: 1px solid #e5e7eb;
 }
 
 @media (max-width: 768px) {
-  .modalBody > .modalButtonGroup:last-child {
+  .modalBody>.modalButtonGroup:last-child {
     position: sticky;
     bottom: 0;
     background-color: white;
@@ -2171,15 +2261,19 @@
   from {
     transform: rotate(0deg);
   }
+
   to {
     transform: rotate(360deg);
   }
 }
 
 @keyframes pulse {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 1;
   }
+
   50% {
     opacity: 0.8;
   }
@@ -2236,33 +2330,32 @@
   .qrScannerContainer {
     max-width: 100%;
   }
-  
-  .qrScannerContainer > div {
+
+  .qrScannerContainer>div {
     min-height: 300px !important;
   }
-  
+
   .qrScannerOverlay {
     padding: 1rem;
   }
-  
-  .qrScannerOverlay > div:first-child {
+
+  .qrScannerOverlay>div:first-child {
     width: 60px;
     height: 60px;
   }
-  
-  .qrScannerOverlay > div:first-child svg {
+
+  .qrScannerOverlay>div:first-child svg {
     width: 30px;
     height: 30px;
   }
-  
+
   .qrScannerOverlay p {
     font-size: 0.8125rem !important;
   }
 }
 
 @media (max-width: 480px) {
-  .qrScannerContainer > div {
+  .qrScannerContainer>div {
     min-height: 250px !important;
   }
 }
-

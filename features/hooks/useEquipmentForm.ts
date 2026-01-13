@@ -13,7 +13,8 @@ export const useEquipmentForm = (agregarMaquina: (maquina: Machine) => Promise<s
     purchaseDate: '',
     status: 'active',
     location: '',
-    notes: ''
+    notes: '',
+    image: ''
   })
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -31,11 +32,11 @@ export const useEquipmentForm = (agregarMaquina: (maquina: Machine) => Promise<s
       ...formData,
       id: Date.now().toString() + Math.random().toString(36).substr(2, 9)
     } */
-   /*  dispatch({
-      type: ManagmentRegister.MACHINE_REGISTER,
-      payload: newMachine
-    }) */
-   /*  resetForm() */
+    /*  dispatch({
+       type: ManagmentRegister.MACHINE_REGISTER,
+       payload: newMachine
+     }) */
+    /*  resetForm() */
   }
 
   const resetForm = () => {
@@ -46,7 +47,8 @@ export const useEquipmentForm = (agregarMaquina: (maquina: Machine) => Promise<s
       purchaseDate: '',
       status: 'active',
       location: '',
-      notes: ''
+      notes: '',
+      image: ''
     })
     setShowForm(false)
   }

@@ -3,6 +3,7 @@ import { ManagmentRegister } from "../actions/actionaManagment";
 export type Machine = {
   id?: string;
   name?: string;
+  image?: string;
   brand?: string;
   model?: string;
   serialNumber?: string;
@@ -72,7 +73,7 @@ export type Usuario = {
   nombres?: string;
   apellidos?: string;
   rol?: string;
-  pin?:number;
+  pin?: number;
   createdAt?: any; // Timestamp de Firebase
   updatedAt?: any; // Timestamp de Firebase
 }

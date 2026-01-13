@@ -1,7 +1,10 @@
 import React, { useState } from 'react'
-import { FaCog } from 'react-icons/fa'
+import { FaCog, FaCloudUploadAlt, FaSpinner, FaCamera } from 'react-icons/fa'
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
+import { storage } from '@/firebase/firebase.config'
 import styles from '@/styles/equipment.module.css'
 import { estadoDeMaquina } from '@/utils/data'
+import { compressImage } from '@/utils/imageUtils'
 import { Machine } from '@/features/types/types'
 import { Marca } from '@/features/types/types'
 import { Ubicacion, useManagment } from '@/features/hooks/useManagment'
@@ -48,6 +51,9 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
   const [ubicacionName, setUbicacionName] = useState<string>('')
   const [ubicacionToDelete, setUbicacionToDelete] = useState<{ id: string; name: string } | null>(null)
   const [isEditingUbicacion, setIsEditingUbicacion] = useState<boolean>(false)
+
+  // Estados para Imagen
+  const [uploadingImage, setUploadingImage] = useState(false)
 
   const { createMarcas, updateMarcas, deleteMarcas, createUbicaciones, updateUbicaciones, deleteUbicaciones } = useManagment()
 
@@ -114,7 +120,7 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
         setAuthError('')
         return
       }
-      
+
       // Si no hay validación, abrir modal de eliminación directamente
       setMarcaToDelete({ id: selectedMarcaId, name: marca.name || '' })
       setIsDeleteModalOpen(true)
@@ -129,12 +135,12 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
 
     try {
       const esAdmin = await validateSiEsAdmin(dni, pin)
-      
+
       if (esAdmin) {
         // Si es admin, proceder con la acción correspondiente
         setShowAuthModal(false)
         setAuthError('')
-        
+
         if (authType === 'marca') {
           setIsDeleteModalOpen(true)
         } else if (authType === 'ubicacion') {
@@ -252,7 +258,7 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
         setAuthError('')
         return
       }
-      
+
       // Si no hay validación, abrir modal de eliminación directamente
       setUbicacionToDelete({ id: selectedUbicacionId, name: ubicacion.name || '' })
       setIsDeleteUbicacionModalOpen(true)
@@ -272,6 +278,37 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
   const cancelDeleteUbicacion = () => {
     setIsDeleteUbicacionModalOpen(false)
     setUbicacionToDelete(null)
+  }
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setUploadingImage(true)
+    try {
+      console.log(`Original file size: ${(file.size / 1024 / 1024).toFixed(2)} MB`)
+
+      const compressedFile = await compressImage(file, 0.1) // 0.1 MB = ~100KB
+      console.log(`Compressed file size: ${(compressedFile.size / 1024 / 1024).toFixed(4)} MB`)
+
+      const storageRef = ref(storage, `imagen-equipos/${file.name}-${Date.now()}`)
+      await uploadBytes(storageRef, compressedFile)
+      const url = await getDownloadURL(storageRef)
+
+      // Actualizar el formData con la URL de la imagen (simulando el evento)
+      const event = {
+        target: {
+          name: 'image',
+          value: url
+        }
+      } as React.ChangeEvent<HTMLInputElement>
+      handleChange(event)
+    } catch (error) {
+      console.error('Error uploading image:', error)
+      alert('Error al subir la imagen. Por favor intente de nuevo.')
+    } finally {
+      setUploadingImage(false)
+    }
   }
 
   // Limpiar búsqueda cuando se cierra el modal
@@ -299,6 +336,58 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
               required
               className={styles.input}
             />
+          </div>
+
+          <div className={styles.formField}>
+            <label className={styles.label}>
+              Imagen del Equipo *
+            </label>
+            <div className={styles.imageUploadContainer}>
+              {/* Input para seleccionar archivo (escritorio/móvil) */}
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                className={styles.fileInput}
+                id="image-upload"
+                disabled={uploadingImage}
+              />
+
+              {/* Input específico para cámara (móvil) */}
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={handleImageUpload}
+                className={styles.fileInput}
+                id="camera-upload"
+                disabled={uploadingImage}
+              />
+
+              <div className={styles.uploadButtonsContainer}>
+                <label htmlFor="image-upload" className={`${styles.button} ${styles.uploadButton}`}>
+                  {uploadingImage ? <FaSpinner className={styles.spinner} /> : <FaCloudUploadAlt />}
+                  {uploadingImage ? ' Subiendo...' : ' Subir Imagen'}
+                </label>
+
+                <label htmlFor="camera-upload" className={`${styles.button} ${styles.cameraButton}`}>
+                  {uploadingImage ? <FaSpinner className={styles.spinner} /> : <FaCamera />}
+                  {uploadingImage ? ' Tomando...' : ' Tomar Foto'}
+                </label>
+              </div>
+              <input
+                type="hidden"
+                name="image"
+                value={formData.image || ''}
+                required
+              />
+              {formData.image && (
+                <div className={styles.imagePreview}>
+                  <img src={formData.image} alt="Vista previa" className={styles.previewImg} />
+                  <span className={styles.imageSuccess}>✓ Imagen cargada correctamente</span>
+                </div>
+              )}
+            </div>
           </div>
           <div className={styles.formField}>
             <div className={styles.labelContainer}>
