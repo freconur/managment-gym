@@ -63,6 +63,7 @@ export type Incidencia = {
   usuario?: Usuario;
   maquina?: Machine;
   maquinaDejoFuncionar?: boolean;
+  fotoUrl?: string;
 }
 
 export type Mantenimiento = Incidencia;

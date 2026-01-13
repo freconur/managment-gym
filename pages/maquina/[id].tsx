@@ -272,6 +272,8 @@ const MaquinaPAge = () => {
     descripcion: string
     prioridad: 'baja' | 'media' | 'alta' | 'urgente'
     usuario?: Usuario
+
+    fotoUrl: string
   }) => {
     if (!maquina?.id) return
 
@@ -297,6 +299,7 @@ const MaquinaPAge = () => {
         descripcion: descripcionCompleta,
         prioridad: data.prioridad,
         maquinaDejoFuncionar: data.maquinaDejoFuncionar,
+        fotoUrl: data.fotoUrl
       }
 
       await createIncidencia(incidenciaData, maquina)

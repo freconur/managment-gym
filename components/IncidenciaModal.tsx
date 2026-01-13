@@ -1,8 +1,10 @@
-import React, { useState } from 'react'
-import { FaExclamationCircle, FaTimes, FaTools, FaCalendarAlt, FaUser, FaIdCard } from 'react-icons/fa'
+import React, { useState, useRef } from 'react'
+import { FaExclamationCircle, FaTimes, FaTools, FaCalendarAlt, FaUser, FaIdCard, FaCamera } from 'react-icons/fa'
 import styles from '@/styles/equipment.module.css'
 import { useManagment } from '@/features/hooks/useManagment'
 import { Usuario } from '@/features/types/types'
+import { storage } from '@/firebase/firebase.config'
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 
 interface IncidenciaModalProps {
   isOpen: boolean
@@ -17,6 +19,7 @@ interface IncidenciaModalProps {
     descripcion: string
     prioridad: 'baja' | 'media' | 'alta' | 'urgente'
     usuario?: Usuario
+    fotoUrl: string
   }) => Promise<void>
   usuariosValidate: Usuario
 }
@@ -37,8 +40,12 @@ export const IncidenciaModal: React.FC<IncidenciaModalProps> = ({
     fechaProgramada: new Date(),
     descripcion: '',
     prioridad: 'media' as 'baja' | 'media' | 'alta' | 'urgente',
+
     usuario: usuariosValidate
   })
+  const [fotoFile, setFotoFile] = useState<File | null>(null)
+  const [isUploading, setIsUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Función helper para convertir Date a string YYYY-MM-DD sin problemas de zona horaria
   const formatDateToString = (date: Date): string => {
@@ -48,11 +55,38 @@ export const IncidenciaModal: React.FC<IncidenciaModalProps> = ({
     return `${year}-${month}-${day}`
   }
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setFotoFile(e.target.files[0])
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (!fotoFile) {
+      alert('La foto de la incidencia es obligatoria')
+      return
+    }
+
     try {
-      /* setIncidenciaForm({...incidenciaForm,usuario:usuariosValidate}) */
-      await onSubmit({...incidenciaForm,usuario:usuariosValidate})
+      setIsUploading(true)
+      let fotoUrl = ''
+
+      // Upload image to Firebase Storage
+      const timestamp = new Date().getTime()
+      const filename = `${timestamp}_${fotoFile.name}`
+      const storageRef = ref(storage, `incidencias-maquinas/${filename}`)
+
+      await uploadBytes(storageRef, fotoFile)
+      fotoUrl = await getDownloadURL(storageRef)
+
+      await onSubmit({
+        ...incidenciaForm,
+        usuario: usuariosValidate,
+        fotoUrl
+      })
+
       // Resetear formulario después de enviar
       setIncidenciaForm({
         tipo: 'incidencia',
@@ -65,8 +99,11 @@ export const IncidenciaModal: React.FC<IncidenciaModalProps> = ({
         prioridad: 'media',
         usuario: {}
       })
+      setFotoFile(null)
     } catch (error) {
       console.error('Error al guardar incidencia:', error)
+    } finally {
+      setIsUploading(false)
     }
   }
 
@@ -91,16 +128,16 @@ export const IncidenciaModal: React.FC<IncidenciaModalProps> = ({
         <div className={styles.modalBody}>
           {/* Información del usuario validado */}
           {usuariosValidate && usuariosValidate.dni && (
-            <div style={{ 
-              marginBottom: '1.5rem', 
-              padding: '1rem', 
-              backgroundColor: '#f3f4f6', 
+            <div style={{
+              marginBottom: '1.5rem',
+              padding: '1rem',
+              backgroundColor: '#f3f4f6',
               borderRadius: '8px',
               border: '1px solid #e5e7eb'
             }}>
-              <div style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
                 marginBottom: '0.75rem',
                 color: '#374151',
                 fontWeight: '600',
@@ -134,7 +171,7 @@ export const IncidenciaModal: React.FC<IncidenciaModalProps> = ({
               </div>
             </div>
           )}
-          
+
           <form onSubmit={handleSubmit}>
             <div className={styles.formGrid}>
               <div className={styles.formField}>
@@ -215,6 +252,58 @@ export const IncidenciaModal: React.FC<IncidenciaModalProps> = ({
               </div>
 
               <div className={styles.formField}>
+                <label className={styles.label}>
+                  <FaCamera size={14} style={{ marginRight: '0.5rem' }} />
+                  Foto de la incidencia *
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handleFileChange}
+                  className={styles.input}
+                  required
+                  ref={fileInputRef}
+                  style={{ display: 'none' }}
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className={styles.button}
+                  style={{
+                    width: '100%',
+                    backgroundColor: '#e5e7eb',
+                    color: '#374151',
+                    border: '1px solid #d1d5db',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.5rem'
+                  }}
+                >
+                  <FaCamera size={16} />
+                  {fotoFile ? 'Cambiar Foto' : 'Tomar Foto'}
+                </button>
+                {fotoFile && (
+                  <div style={{
+                    marginTop: '0.5rem',
+                    padding: '0.5rem',
+                    backgroundColor: '#f0fdf4',
+                    border: '1px solid #bbf7d0',
+                    borderRadius: '0.375rem',
+                    fontSize: '0.875rem',
+                    color: '#166534',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem'
+                  }}>
+                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#16a34a' }}></div>
+                    Foto seleccionada: {fotoFile.name}
+                  </div>
+                )}
+              </div>
+
+              <div className={styles.formField}>
                 <label className={styles.label}>Prioridad *</label>
                 <select
                   value={incidenciaForm.prioridad}
@@ -252,8 +341,9 @@ export const IncidenciaModal: React.FC<IncidenciaModalProps> = ({
               <button
                 type="submit"
                 className={`${styles.button} ${styles.buttonSubmit} ${styles.modalButton}`}
+                disabled={isUploading}
               >
-                Reportar Incidencia
+                {isUploading ? 'Subiendo...' : 'Reportar Incidencia'}
               </button>
             </div>
           </form>
