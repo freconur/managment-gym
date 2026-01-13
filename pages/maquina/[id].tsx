@@ -3,7 +3,7 @@ import { useRouter } from 'next/router'
 import React, { useEffect, useRef, useState } from 'react'
 import Head from 'next/head'
 import Link from 'next/link'
-import { FaArrowLeft, FaCog, FaCalendarAlt, FaMapMarkerAlt, FaTag, FaStickyNote, FaCheckCircle, FaExclamationTriangle, FaTimesCircle, FaTools, FaExclamationCircle } from 'react-icons/fa'
+import { FaArrowLeft, FaCog, FaCalendarAlt, FaMapMarkerAlt, FaTag, FaStickyNote, FaCheckCircle, FaExclamationTriangle, FaTimesCircle, FaTools, FaExclamationCircle, FaCamera } from 'react-icons/fa'
 import styles from '@/styles/equipment.module.css'
 import { IncidenciasSection } from '@/components/IncidenciasSection'
 import { MantenimientoModal } from '@/components/MantenimientoModal'
@@ -17,7 +17,7 @@ import { Machine, Incidencia, Usuario, Tarea } from '@/features/types/types'
 const MaquinaPAge = () => {
   const router = useRouter()
   const { id, from } = router.query
-  
+
   // Determinar la ruta de retorno basada en el query parameter 'from'
   const getBackUrl = () => {
     const fromParam = Array.isArray(from) ? from[0] : from
@@ -27,7 +27,7 @@ const MaquinaPAge = () => {
     // Por defecto, volver a equipment
     return '/equipment'
   }
-  
+
   // Obtener el texto del botón de volver
   const getBackButtonText = () => {
     const fromParam = Array.isArray(from) ? from[0] : from
@@ -36,7 +36,7 @@ const MaquinaPAge = () => {
   const { getMaquina, maquina, getIncidencias, incidencias, createIncidencia, createMantenimiento, updateIncidencia, deleteIncidencia, getUsuarios, usuarios, validateUsuario, usuariosValidate, validateSiEsAdmin } = useManagment()
   const unsubscribeRef = useRef<(() => void) | null>(null)
   const selectedIncidenciaIdRef = useRef<string | null>(null)
-  
+
   // Estado para los modales
   const [showMantenimientoModal, setShowMantenimientoModal] = useState(false)
   const [showIncidenciaModal, setShowIncidenciaModal] = useState(false)
@@ -54,7 +54,7 @@ const MaquinaPAge = () => {
     }
 
     const machineId = id && typeof id === 'string' ? id : null
-    
+
     if (!machineId) {
       setError('ID de máquina no válido')
       setIsLoading(false)
@@ -84,7 +84,7 @@ const MaquinaPAge = () => {
     }
 
     loadData()
-    
+
     return () => {
       if (unsubscribeRef.current) {
         unsubscribeRef.current()
@@ -166,27 +166,27 @@ const MaquinaPAge = () => {
 
     try {
       const fechaReporte = new Date()
-      
+
       // Obtener el objeto Usuario completo o undefined si es un objeto vacío
-      const tecnicoAsignado = Object.keys(data.tecnicoAsignado).length > 0 
+      const tecnicoAsignado = Object.keys(data.tecnicoAsignado).length > 0
         ? (data.tecnicoAsignado as Usuario)
         : undefined
-      
+
       // Si es mantenimiento recurrente, crear múltiples mantenimientos (12 para un año completo)
       if (data.mantenimientoRecurrente && data.fechaProgramada && data.frecuenciaDias) {
         const frecuenciaDias = data.frecuenciaDias || 7
         const numeroRepeticiones = 12 // Número fijo de repeticiones (un año)
-        
+
         // Crear una copia de la fecha base para no mutarla
         const fechaBaseOriginal = new Date(data.fechaProgramada)
-        
+
         // Crear mantenimientos para cada repetición
         for (let i = 0; i < numeroRepeticiones; i++) {
           // Crear una nueva fecha para cada evento sumando la frecuencia de días
           const fechaProgramada = new Date(fechaBaseOriginal)
           fechaProgramada.setDate(fechaProgramada.getDate() + (i * frecuenciaDias))
-          
-          
+
+
           const mantenimientoData = {
             machineId: maquina.id,
             tipo: 'mantenimiento',
@@ -201,7 +201,7 @@ const MaquinaPAge = () => {
             tareas: data.tareas || [],
             notas: data.notas || ""
           }
-          
+
           await createMantenimiento(mantenimientoData, maquina)
         }
       } else {
@@ -220,10 +220,10 @@ const MaquinaPAge = () => {
           tareas: data.tareas || [],
           notas: data.notas || ""
         }
-        
+
         await createMantenimiento(mantenimientoData, maquina)
       }
-      
+
       handleCloseMantenimientoModal()
     } catch (error) {
       console.error('Error al guardar mantenimiento:', error)
@@ -245,17 +245,17 @@ const MaquinaPAge = () => {
     setAuthError('')
   }
 
-  const handleAuthAccept = async(dni: string, pin: string) => {
+  const handleAuthAccept = async (dni: string, pin: string) => {
     // Validar DNI y PIN contra los usuarios
     // validateUsuario retorna true si existe el usuario, false si no existe
     const usuarioValidado = await validateUsuario(dni, pin)
-    
+
     if (!usuarioValidado) {
       // Si no existe el usuario, mostrar error y no continuar
       setAuthError('DNI o PIN incorrecto')
       return
     }
-    
+
     // Si el usuario existe (retorna true), cerrar el modal de auth y abrir el de incidencia
     setShowAuthModal(false)
     setAuthError('')
@@ -280,11 +280,11 @@ const MaquinaPAge = () => {
       let descripcionCompleta = `Reporte de Incidencia\n\n`
       descripcionCompleta += `¿La máquina dejó de funcionar? ${data.maquinaDejoFuncionar ? 'Sí' : 'No'}\n`
       descripcionCompleta += `¿Se rompió alguna pieza? ${data.piezaRota ? 'Sí' : 'No'}\n`
-      
+
       if (data.piezaRota && data.nombrePiezaRota) {
         descripcionCompleta += `Pieza rota: ${data.nombrePiezaRota}\n`
       }
-      
+
       if (data.descripcion) {
         descripcionCompleta += `Descripción adicional:\n${data.descripcion}`
       }
@@ -298,7 +298,7 @@ const MaquinaPAge = () => {
         prioridad: data.prioridad,
         maquinaDejoFuncionar: data.maquinaDejoFuncionar,
       }
-      
+
       await createIncidencia(incidenciaData, maquina)
       handleCloseIncidenciaModal()
     } catch (error) {
@@ -398,6 +398,22 @@ const MaquinaPAge = () => {
 
         {/* Grid de información */}
         <div className={styles.detailGrid}>
+          {/* Imagen del Equipo */}
+          {maquina.image && (
+            <div className={styles.detailCard}>
+              <div className={styles.detailCardHeader}>
+                <FaCamera size={20} />
+                <h2 className={styles.detailCardTitle}>Imagen del Equipo</h2>
+              </div>
+              <div className={styles.detailCardBody}>
+                <div className={styles.detailImageContainer}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={maquina.image} alt={maquina.name} className={styles.detailImage} />
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Información General */}
           <div className={styles.detailCard}>
             <div className={styles.detailCardHeader}>
@@ -446,12 +462,12 @@ const MaquinaPAge = () => {
                   Fecha de Compra
                 </span>
                 <span className={styles.detailInfoValue}>
-                  {maquina.purchaseDate 
+                  {maquina.purchaseDate
                     ? new Date(maquina.purchaseDate).toLocaleDateString('es-ES', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                      })
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })
                     : 'N/A'}
                 </span>
               </div>
@@ -567,8 +583,8 @@ const MaquinaPAge = () => {
               if (selectedIncidencia?.id && maquina?.id) {
                 const updateData: any = {}
                 if (data.tecnicoAsignado !== undefined) {
-                  updateData.tecnicoAsignado = Object.keys(data.tecnicoAsignado).length > 0 
-                    ? data.tecnicoAsignado 
+                  updateData.tecnicoAsignado = Object.keys(data.tecnicoAsignado).length > 0
+                    ? data.tecnicoAsignado
                     : null
                 }
                 if (data.descripcion !== undefined) {
