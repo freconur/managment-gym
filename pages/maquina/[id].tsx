@@ -33,7 +33,7 @@ const MaquinaPAge = () => {
     const fromParam = Array.isArray(from) ? from[0] : from
     return fromParam === 'mis-equipos' ? 'Volver a Mis Equipos' : 'Volver a Equipos'
   }
-  const { getMaquina, maquina, getIncidencias, incidencias, createIncidencia, createMantenimiento, updateIncidencia, deleteIncidencia, getUsuarios, usuarios, validateUsuario, usuariosValidate, validateSiEsAdmin } = useManagment()
+  const { getMaquina, maquina, getIncidencias, incidencias, createIncidencia, createMantenimiento, updateIncidencia, deleteIncidencia, getUsuarios, usuarios, validateUsuario, usuariosValidate, validateSiEsAdmin, updateMaquinas } = useManagment()
   const unsubscribeRef = useRef<(() => void) | null>(null)
   const selectedIncidenciaIdRef = useRef<string | null>(null)
 
@@ -621,6 +621,11 @@ const MaquinaPAge = () => {
                 await deleteIncidencia(maquina.id, id)
               }
             }}
+            onUpdateMachineStatus={async (status) => {
+              if (maquina?.id) {
+                await updateMaquinas(maquina.id, { status: status as any })
+              }
+            }}
           />
         )}
 
@@ -638,6 +643,10 @@ const MaquinaPAge = () => {
               if (selectedIncidencia?.id && maquina?.id) {
                 await deleteIncidencia(maquina.id, id)
               }
+            }}
+            onCreateMaintenance={() => {
+              setShowEventoDetailModal(false)
+              handleOpenMantenimientoModal()
             }}
           />
         )}

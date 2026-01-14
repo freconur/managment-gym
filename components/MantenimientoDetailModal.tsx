@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { FaTimes, FaClock, FaCheckCircle, FaUser, FaDollarSign, FaTools, FaStickyNote, FaCheckSquare, FaSave, FaPlay, FaLock, FaEdit, FaPlus, FaTrash, FaCog, FaMapMarkerAlt, FaTag, FaCalendarAlt } from 'react-icons/fa'
+import { FaTimes, FaClock, FaCheckCircle, FaUser, FaDollarSign, FaTools, FaStickyNote, FaCheckSquare, FaSave, FaPlay, FaLock, FaEdit, FaPlus, FaTrash, FaCog, FaMapMarkerAlt, FaTag, FaCalendarAlt, FaTimesCircle } from 'react-icons/fa'
 import styles from '@/styles/equipment.module.css'
 import { Incidencia, Tarea, Usuario, Machine } from '@/features/types/types'
 
@@ -13,6 +13,7 @@ interface MantenimientoDetailModalProps {
   onUpdate?: (data: { tecnicoAsignado?: Usuario | {}, descripcion?: string, tareas?: Tarea[] }) => Promise<void>
   onDelete?: (id: string) => Promise<void>
   validateSiEsAdmin?: (dni: string, pin: string) => Promise<boolean>
+  onUpdateMachineStatus?: (status: string) => Promise<void>
 }
 
 export const MantenimientoDetailModal: React.FC<MantenimientoDetailModalProps> = ({
@@ -24,7 +25,8 @@ export const MantenimientoDetailModal: React.FC<MantenimientoDetailModalProps> =
   onUpdateNotas,
   onUpdate,
   onDelete,
-  validateSiEsAdmin
+  validateSiEsAdmin,
+  onUpdateMachineStatus
 }) => {
   const [tareas, setTareas] = useState<Tarea[]>([])
   const [isUpdating, setIsUpdating] = useState(false)
@@ -38,6 +40,7 @@ export const MantenimientoDetailModal: React.FC<MantenimientoDetailModalProps> =
   const [isEditing, setIsEditing] = useState(false)
   const [descripcionEditada, setDescripcionEditada] = useState<string>('')
   const [tecnicoEditado, setTecnicoEditado] = useState<Usuario | {}>({})
+  const [statusEditado, setStatusEditado] = useState<string>('')
   const [nuevaTarea, setNuevaTarea] = useState('')
   const [isSaving, setIsSaving] = useState(false)
   const [showAdminAuthModal, setShowAdminAuthModal] = useState(false)
@@ -75,6 +78,13 @@ export const MantenimientoDetailModal: React.FC<MantenimientoDetailModalProps> =
       setTecnicoEditado(mantenimiento.tecnicoAsignado)
     } else {
       setTecnicoEditado({})
+    }
+  }, [mantenimiento])
+
+  // Sincronizar status de máquina cuando cambia el mantenimiento
+  useEffect(() => {
+    if (mantenimiento?.maquina?.status) {
+      setStatusEditado(mantenimiento.maquina.status)
     }
   }, [mantenimiento])
 
@@ -135,7 +145,7 @@ export const MantenimientoDetailModal: React.FC<MantenimientoDetailModalProps> =
   const handleToggleTarea = async (index: number) => {
     if (!onUpdateTareas || isUpdating) return
 
-    const nuevasTareas = tareas.map((tarea, i) => 
+    const nuevasTareas = tareas.map((tarea, i) =>
       i === index ? { ...tarea, completada: !tarea.completada } : tarea
     )
 
@@ -240,22 +250,22 @@ export const MantenimientoDetailModal: React.FC<MantenimientoDetailModalProps> =
   // Función para convertir Timestamp de Firebase a Date
   const convertTimestampToDate = (timestamp: any): Date | null => {
     if (!timestamp) return null
-    
+
     // Si es un Timestamp de Firebase con método toDate
     if (timestamp.toDate && typeof timestamp.toDate === 'function') {
       return timestamp.toDate()
     }
-    
+
     // Si ya es un Date
     if (timestamp instanceof Date) {
       return timestamp
     }
-    
+
     // Si es un objeto con seconds (formato Firestore)
     if (typeof timestamp === 'object' && timestamp.seconds) {
       return new Date(timestamp.seconds * 1000)
     }
-    
+
     // Intentar convertir directamente
     try {
       return new Date(timestamp)
@@ -343,14 +353,14 @@ export const MantenimientoDetailModal: React.FC<MantenimientoDetailModalProps> =
   }
 
   const handleEditTarea = (index: number, nuevaDescripcion: string) => {
-    setTareas(prev => prev.map((tarea, i) => 
+    setTareas(prev => prev.map((tarea, i) =>
       i === index ? { ...tarea, descripcion: nuevaDescripcion } : tarea
     ))
   }
 
   const handleSaveEdit = async () => {
     if (!onUpdate || isSaving) return
-    
+
     // Si hay función de validación, mostrar modal de autenticación primero
     if (validateSiEsAdmin) {
       setShowAdminAuthModal(true)
@@ -359,26 +369,30 @@ export const MantenimientoDetailModal: React.FC<MantenimientoDetailModalProps> =
       setAdminAuthError('')
       return
     }
-    
+
     // Si no hay validación, guardar directamente
     await performSave()
   }
 
   const performSave = async () => {
     if (!onUpdate || isSaving) return
-    
+
     setIsSaving(true)
     try {
+      if (onUpdateMachineStatus && mantenimiento?.maquina?.status && statusEditado !== mantenimiento.maquina.status) {
+        await onUpdateMachineStatus(statusEditado)
+      }
+
       const updateData: { tecnicoAsignado?: Usuario | {}, descripcion?: string, tareas?: Tarea[] } = {}
-      
+
       if (descripcionEditada !== mantenimiento?.descripcion) {
         updateData.descripcion = descripcionEditada
       }
-      
+
       // Comparar técnico por ID o DNI
       const tecnicoActualId = (mantenimiento?.tecnicoAsignado as Usuario)?.id || (mantenimiento?.tecnicoAsignado as Usuario)?.dni || ''
       const tecnicoEditadoId = (tecnicoEditado as Usuario)?.id || (tecnicoEditado as Usuario)?.dni || ''
-      
+
       if (tecnicoEditadoId !== tecnicoActualId) {
         if (Object.keys(tecnicoEditado).length > 0) {
           updateData.tecnicoAsignado = tecnicoEditado
@@ -386,15 +400,15 @@ export const MantenimientoDetailModal: React.FC<MantenimientoDetailModalProps> =
           updateData.tecnicoAsignado = {}
         }
       }
-      
+
       if (JSON.stringify(tareas) !== JSON.stringify(mantenimiento?.tareas || [])) {
         updateData.tareas = tareas
       }
-      
+
       if (Object.keys(updateData).length > 0) {
         await onUpdate(updateData)
       }
-      
+
       setIsEditing(false)
       setShowAdminAuthModal(false)
     } catch (error) {
@@ -453,7 +467,7 @@ export const MantenimientoDetailModal: React.FC<MantenimientoDetailModalProps> =
 
     try {
       const esAdmin = await validateSiEsAdmin(adminDni, adminPin)
-      
+
       if (esAdmin) {
         // Si es admin, proceder a guardar
         setShowAdminAuthModal(false)
@@ -490,7 +504,7 @@ export const MantenimientoDetailModal: React.FC<MantenimientoDetailModalProps> =
 
   const handleDeleteConfirm = async () => {
     if (!onDelete || !mantenimiento?.id || isDeleting) return
-    
+
     setIsDeleting(true)
     try {
       await onDelete(mantenimiento.id)
@@ -550,7 +564,7 @@ export const MantenimientoDetailModal: React.FC<MantenimientoDetailModalProps> =
 
     try {
       const esAdmin = await validateSiEsAdmin(deleteDni, deletePin)
-      
+
       if (esAdmin) {
         setShowDeleteAuthModal(false)
         setShowDeleteConfirmModal(true)
@@ -611,7 +625,7 @@ export const MantenimientoDetailModal: React.FC<MantenimientoDetailModalProps> =
                       type="button"
                       onClick={() => setIsEditing(true)}
                       className={styles.mantenimientoDetailCloseButton}
-                      style={{ 
+                      style={{
                         backgroundColor: '#3b82f6',
                         color: '#fff'
                       }}
@@ -626,7 +640,7 @@ export const MantenimientoDetailModal: React.FC<MantenimientoDetailModalProps> =
                       type="button"
                       onClick={handleDeleteClick}
                       className={styles.mantenimientoDetailCloseButton}
-                      style={{ 
+                      style={{
                         backgroundColor: '#ef4444',
                         color: '#fff'
                       }}
@@ -644,7 +658,7 @@ export const MantenimientoDetailModal: React.FC<MantenimientoDetailModalProps> =
                     onClick={handleSaveEdit}
                     disabled={isSaving}
                     className={styles.mantenimientoDetailCloseButton}
-                    style={{ 
+                    style={{
                       backgroundColor: isSaving ? '#9ca3af' : '#22c55e',
                       color: '#fff'
                     }}
@@ -666,6 +680,9 @@ export const MantenimientoDetailModal: React.FC<MantenimientoDetailModalProps> =
                       } else {
                         setTecnicoEditado({})
                       }
+                      if (mantenimiento?.maquina?.status) {
+                        setStatusEditado(mantenimiento.maquina.status)
+                      }
                       if (mantenimiento?.tareas) {
                         setTareas(mantenimiento.tareas)
                       } else {
@@ -674,7 +691,7 @@ export const MantenimientoDetailModal: React.FC<MantenimientoDetailModalProps> =
                       setNuevaTarea('')
                     }}
                     className={styles.mantenimientoDetailCloseButton}
-                    style={{ 
+                    style={{
                       backgroundColor: '#6b7280',
                       color: '#fff'
                     }}
@@ -841,13 +858,32 @@ export const MantenimientoDetailModal: React.FC<MantenimientoDetailModalProps> =
                       }}>
                         Estado:
                       </span>
-                      <span className={`${styles.statusBadge} ${getStatusClass(mantenimiento.maquina.status)}`} style={{
-                        fontSize: '0.75rem',
-                        padding: '0.25rem 0.5rem',
-                        fontWeight: '500'
-                      }}>
-                        {getStatusLabel(mantenimiento.maquina.status)}
-                      </span>
+                      {isEditing ? (
+                        <select
+                          value={statusEditado}
+                          onChange={(e) => setStatusEditado(e.target.value)}
+                          className={styles.select}
+                          style={{
+                            fontSize: '0.75rem',
+                            padding: '0.125rem 0.25rem',
+                            height: 'auto',
+                            minHeight: 'auto',
+                            width: 'auto'
+                          }}
+                        >
+                          <option value="active">Activo</option>
+                          <option value="maintenance">En Mantenimiento</option>
+                          <option value="inactive">Inactivo</option>
+                        </select>
+                      ) : (
+                        <span className={`${styles.statusBadge} ${getStatusClass(mantenimiento.maquina.status)}`} style={{
+                          fontSize: '0.75rem',
+                          padding: '0.25rem 0.5rem',
+                          fontWeight: '500'
+                        }}>
+                          {getStatusLabel(mantenimiento.maquina.status)}
+                        </span>
+                      )}
                     </div>
                   )}
 
@@ -1047,11 +1083,11 @@ export const MantenimientoDetailModal: React.FC<MantenimientoDetailModalProps> =
                   </span>
                 )}
               </div>
-              
+
               {isEditing ? (
-                <div style={{ 
-                  padding: '0.75rem', 
-                  backgroundColor: '#f9fafb', 
+                <div style={{
+                  padding: '0.75rem',
+                  backgroundColor: '#f9fafb',
                   borderRadius: '0.375rem',
                   border: '1px solid #e5e7eb'
                 }}>
@@ -1083,11 +1119,11 @@ export const MantenimientoDetailModal: React.FC<MantenimientoDetailModalProps> =
                   {tareas.length > 0 && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                       {tareas.map((tarea, index) => (
-                        <div 
-                          key={index} 
-                          style={{ 
-                            display: 'flex', 
-                            alignItems: 'center', 
+                        <div
+                          key={index}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
                             gap: '0.75rem',
                             padding: '0.5rem',
                             backgroundColor: '#fff',
@@ -1099,7 +1135,7 @@ export const MantenimientoDetailModal: React.FC<MantenimientoDetailModalProps> =
                             type="checkbox"
                             checked={tarea.completada}
                             onChange={() => {
-                              setTareas(prev => prev.map((t, i) => 
+                              setTareas(prev => prev.map((t, i) =>
                                 i === index ? { ...t, completada: !t.completada } : t
                               ))
                             }}
@@ -1125,9 +1161,9 @@ export const MantenimientoDetailModal: React.FC<MantenimientoDetailModalProps> =
                     </div>
                   )}
                   {tareas.length === 0 && (
-                    <p style={{ 
-                      color: '#6b7280', 
-                      fontSize: '0.875rem', 
+                    <p style={{
+                      color: '#6b7280',
+                      fontSize: '0.875rem',
                       fontStyle: 'italic',
                       textAlign: 'center',
                       padding: '1rem 0'
@@ -1142,12 +1178,11 @@ export const MantenimientoDetailModal: React.FC<MantenimientoDetailModalProps> =
                     <>
                       {/* Barra de progreso */}
                       <div className={styles.mantenimientoDetailProgressBar}>
-                        <div 
-                          className={`${styles.mantenimientoDetailProgressFill} ${
-                            progresoTareas === 100 
-                              ? styles.mantenimientoDetailProgressFillComplete 
-                              : styles.mantenimientoDetailProgressFillIncomplete
-                          }`}
+                        <div
+                          className={`${styles.mantenimientoDetailProgressFill} ${progresoTareas === 100
+                            ? styles.mantenimientoDetailProgressFillComplete
+                            : styles.mantenimientoDetailProgressFillIncomplete
+                            }`}
                           style={{ width: `${progresoTareas}%` }}
                         />
                       </div>
@@ -1155,30 +1190,26 @@ export const MantenimientoDetailModal: React.FC<MantenimientoDetailModalProps> =
                       <div className={styles.mantenimientoDetailTareasList}>
                         {tareas.map((tarea, index) => (
                           <label
-                            key={index} 
-                            className={`${styles.mantenimientoDetailTareaItem} ${
-                              tarea.completada 
-                                ? styles.mantenimientoDetailTareaItemCompleted 
-                                : styles.mantenimientoDetailTareaItemPending
-                            } ${isUpdating || !hasStarted ? styles.mantenimientoDetailTareaItemDisabled : ''} ${
-                              onUpdateTareas && !isUpdating && hasStarted ? '' : styles.mantenimientoDetailTareaItemDisabled
-                            }`}
+                            key={index}
+                            className={`${styles.mantenimientoDetailTareaItem} ${tarea.completada
+                              ? styles.mantenimientoDetailTareaItemCompleted
+                              : styles.mantenimientoDetailTareaItemPending
+                              } ${isUpdating || !hasStarted ? styles.mantenimientoDetailTareaItemDisabled : ''} ${onUpdateTareas && !isUpdating && hasStarted ? '' : styles.mantenimientoDetailTareaItemDisabled
+                              }`}
                           >
                             <input
                               type="checkbox"
                               checked={tarea.completada}
                               onChange={() => handleToggleTarea(index)}
                               disabled={!onUpdateTareas || isUpdating || !hasStarted}
-                              className={`${styles.mantenimientoDetailTareaCheckbox} ${
-                                !onUpdateTareas || isUpdating || !hasStarted ? styles.mantenimientoDetailTareaCheckboxDisabled : ''
-                              }`}
+                              className={`${styles.mantenimientoDetailTareaCheckbox} ${!onUpdateTareas || isUpdating || !hasStarted ? styles.mantenimientoDetailTareaCheckboxDisabled : ''
+                                }`}
                             />
-                            <span 
-                              className={`${styles.mantenimientoDetailTareaText} ${
-                                tarea.completada 
-                                  ? styles.mantenimientoDetailTareaTextCompleted 
-                                  : styles.mantenimientoDetailTareaTextPending
-                              }`}
+                            <span
+                              className={`${styles.mantenimientoDetailTareaText} ${tarea.completada
+                                ? styles.mantenimientoDetailTareaTextCompleted
+                                : styles.mantenimientoDetailTareaTextPending
+                                }`}
                             >
                               {tarea.descripcion}
                             </span>
@@ -1188,9 +1219,9 @@ export const MantenimientoDetailModal: React.FC<MantenimientoDetailModalProps> =
                     </>
                   )}
                   {(!tareas || tareas.length === 0) && (
-                    <p style={{ 
-                      color: '#6b7280', 
-                      fontSize: '0.875rem', 
+                    <p style={{
+                      color: '#6b7280',
+                      fontSize: '0.875rem',
                       fontStyle: 'italic',
                       textAlign: 'center',
                       padding: '1rem 0'
@@ -1202,6 +1233,80 @@ export const MantenimientoDetailModal: React.FC<MantenimientoDetailModalProps> =
               )}
             </div>
 
+            {/* Selector de Estado del Equipo para el Técnico */}
+            {!isEditing && hasStarted && (
+              <div className={styles.mantenimientoDetailSection}>
+                <h4 className={styles.mantenimientoDetailSectionTitleWithIcon}>
+                  <FaTag size={14} />
+                  Estado del Equipo
+                </h4>
+                <div style={{
+                  padding: '1rem',
+                  backgroundColor: '#f8fafc',
+                  borderRadius: '0.5rem',
+                  border: '1px solid #e2e8f0'
+                }}>
+                  <p style={{
+                    fontSize: '0.875rem',
+                    color: '#64748b',
+                    marginBottom: '0.75rem'
+                  }}>
+                    Determine el estado operativo del equipo al finalizar el mantenimiento:
+                  </p>
+                  <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                    {[
+                      { value: 'active', label: 'Activo', color: '#10b981', bg: '#ecfdf5', icon: FaCheckCircle },
+                      { value: 'maintenance', label: 'En Mantenimiento', color: '#f59e0b', bg: '#fffbeb', icon: FaTools },
+                      { value: 'inactive', label: 'Inactivo', color: '#ef4444', bg: '#fef2f2', icon: FaTimesCircle }
+                    ].map((statusOption) => {
+                      const isSelected = statusEditado === statusOption.value
+                      const Icon = statusOption.icon
+                      return (
+                        <button
+                          key={statusOption.value}
+                          type="button"
+                          onClick={async () => {
+                            // Actualizar estado localmente
+                            setStatusEditado(statusOption.value)
+
+                            // Llamar al callback de actualización si existe
+                            if (onUpdateMachineStatus) {
+                              try {
+                                await onUpdateMachineStatus(statusOption.value)
+                              } catch (error) {
+                                console.error('Error al actualizar estado:', error)
+                                // Revertir si falla (opcional, por ahora confiamos en el update)
+                              }
+                            }
+                          }}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                            padding: '0.625rem 1rem',
+                            borderRadius: '0.375rem',
+                            border: `2px solid ${isSelected ? statusOption.color : 'transparent'}`,
+                            backgroundColor: isSelected ? statusOption.bg : '#fff',
+                            color: isSelected ? statusOption.color : '#64748b',
+                            fontWeight: isSelected ? '600' : '500',
+                            fontSize: '0.875rem',
+                            cursor: 'pointer',
+                            boxShadow: isSelected ? '0 1px 2px 0 rgba(0, 0, 0, 0.05)' : '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                            transition: 'all 0.2s',
+                            flex: '1 1 auto',
+                            justifyContent: 'center'
+                          }}
+                        >
+                          <Icon size={16} />
+                          {statusOption.label}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Piezas Reemplazadas compactas */}
             {mantenimiento.piezasReemplazadas && mantenimiento.piezasReemplazadas.length > 0 && (
               <div className={styles.mantenimientoDetailSection}>
@@ -1211,7 +1316,7 @@ export const MantenimientoDetailModal: React.FC<MantenimientoDetailModalProps> =
                 </h4>
                 <div className={styles.mantenimientoDetailPiezasList}>
                   {mantenimiento.piezasReemplazadas.map((pieza, index) => (
-                    <div 
+                    <div
                       key={index}
                       className={styles.mantenimientoDetailPiezaItem}
                     >
@@ -1279,21 +1384,19 @@ export const MantenimientoDetailModal: React.FC<MantenimientoDetailModalProps> =
                 />
               ) : (
                 <div className={styles.mantenimientoDetailNotasContainer}>
-                  <p 
+                  <p
                     onClick={() => {
                       if (onUpdateNotas && hasStarted) {
                         setIsEditingNotas(true)
                       }
                     }}
-                    className={`${styles.mantenimientoDetailNotasParagraph} ${
-                      notas 
-                        ? styles.mantenimientoDetailNotasParagraphFilled 
-                        : styles.mantenimientoDetailNotasParagraphEmpty
-                    } ${
-                      onUpdateNotas && hasStarted
-                        ? styles.mantenimientoDetailNotasParagraphEditable 
+                    className={`${styles.mantenimientoDetailNotasParagraph} ${notas
+                      ? styles.mantenimientoDetailNotasParagraphFilled
+                      : styles.mantenimientoDetailNotasParagraphEmpty
+                      } ${onUpdateNotas && hasStarted
+                        ? styles.mantenimientoDetailNotasParagraphEditable
                         : styles.mantenimientoDetailNotasParagraphNotEditable
-                    }`}
+                      }`}
                   >
                     {notas || (onUpdateNotas && hasStarted ? 'Haz clic para agregar notas...' : 'Sin notas')}
                   </p>
@@ -1303,9 +1406,9 @@ export const MantenimientoDetailModal: React.FC<MantenimientoDetailModalProps> =
 
             {/* Botón Comenzar - Solo se muestra si no se ha comenzado y no está en modo edición */}
             {!hasStarted && !isEditing && (
-              <div style={{ 
-                display: 'flex', 
-                justifyContent: 'center', 
+              <div style={{
+                display: 'flex',
+                justifyContent: 'center',
                 alignItems: 'center',
                 padding: '1rem 0',
                 borderTop: '1px solid #e5e7eb',
@@ -1342,8 +1445,8 @@ export const MantenimientoDetailModal: React.FC<MantenimientoDetailModalProps> =
       {/* Modal de PIN */}
       {showPinModal && (
         <div className={styles.modalOverlay} onClick={handleClosePinModal} style={{ zIndex: 2000 }}>
-          <div 
-            className={styles.modalContent} 
+          <div
+            className={styles.modalContent}
             onClick={(e) => e.stopPropagation()}
             style={{ maxWidth: '400px' }}
           >
@@ -1379,11 +1482,11 @@ export const MantenimientoDetailModal: React.FC<MantenimientoDetailModalProps> =
                     maxLength={4}
                   />
                   {pinError && (
-                    <p style={{ 
-                      margin: '0.5rem 0 0 0', 
-                      fontSize: '0.875rem', 
-                      color: '#ef4444', 
-                      fontWeight: 500 
+                    <p style={{
+                      margin: '0.5rem 0 0 0',
+                      fontSize: '0.875rem',
+                      color: '#ef4444',
+                      fontWeight: 500
                     }}>
                       {pinError}
                     </p>
@@ -1413,8 +1516,8 @@ export const MantenimientoDetailModal: React.FC<MantenimientoDetailModalProps> =
       {/* Modal de Autenticación de Administrador */}
       {showAdminAuthModal && (
         <div className={styles.modalOverlay} onClick={handleCloseAdminAuthModal} style={{ zIndex: 2000 }}>
-          <div 
-            className={styles.modalContent} 
+          <div
+            className={styles.modalContent}
             onClick={(e) => e.stopPropagation()}
             style={{ maxWidth: '400px' }}
           >
@@ -1467,11 +1570,11 @@ export const MantenimientoDetailModal: React.FC<MantenimientoDetailModalProps> =
                     max="9999"
                   />
                   {adminAuthError && (
-                    <p style={{ 
-                      margin: '0.5rem 0 0 0', 
-                      fontSize: '0.875rem', 
-                      color: '#ef4444', 
-                      fontWeight: 500 
+                    <p style={{
+                      margin: '0.5rem 0 0 0',
+                      fontSize: '0.875rem',
+                      color: '#ef4444',
+                      fontWeight: 500
                     }}>
                       {adminAuthError}
                     </p>
@@ -1501,8 +1604,8 @@ export const MantenimientoDetailModal: React.FC<MantenimientoDetailModalProps> =
       {/* Modal de Autenticación para Eliminar */}
       {showDeleteAuthModal && (
         <div className={styles.modalOverlay} onClick={handleCloseDeleteAuthModal} style={{ zIndex: 2000 }}>
-          <div 
-            className={styles.modalContent} 
+          <div
+            className={styles.modalContent}
             onClick={(e) => e.stopPropagation()}
             style={{ maxWidth: '400px' }}
           >
@@ -1555,11 +1658,11 @@ export const MantenimientoDetailModal: React.FC<MantenimientoDetailModalProps> =
                     max="9999"
                   />
                   {deleteAuthError && (
-                    <p style={{ 
-                      margin: '0.5rem 0 0 0', 
-                      fontSize: '0.875rem', 
-                      color: '#ef4444', 
-                      fontWeight: 500 
+                    <p style={{
+                      margin: '0.5rem 0 0 0',
+                      fontSize: '0.875rem',
+                      color: '#ef4444',
+                      fontWeight: 500
                     }}>
                       {deleteAuthError}
                     </p>
@@ -1589,8 +1692,8 @@ export const MantenimientoDetailModal: React.FC<MantenimientoDetailModalProps> =
       {/* Modal de Confirmación para Eliminar */}
       {showDeleteConfirmModal && (
         <div className={styles.modalOverlay} onClick={handleCloseDeleteConfirmModal} style={{ zIndex: 2000 }}>
-          <div 
-            className={styles.modalContent} 
+          <div
+            className={styles.modalContent}
             onClick={(e) => e.stopPropagation()}
             style={{ maxWidth: '400px' }}
           >
@@ -1609,9 +1712,9 @@ export const MantenimientoDetailModal: React.FC<MantenimientoDetailModalProps> =
               </button>
             </div>
             <div className={styles.modalBody}>
-              <p style={{ 
-                margin: '0 0 1.5rem 0', 
-                fontSize: '1rem', 
+              <p style={{
+                margin: '0 0 1.5rem 0',
+                fontSize: '1rem',
                 color: '#374151',
                 lineHeight: '1.5'
               }}>

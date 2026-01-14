@@ -23,6 +23,7 @@ import {
   startAfter,
   updateDoc,
   where,
+  collectionGroup,
 } from "firebase/firestore";
 import { useState, useCallback } from "react";
 import { Machine, Marca, Incidencia, Mantenimiento, Usuario, ReusableTask } from "../types/types";
@@ -348,19 +349,16 @@ export const useManagment = () => {
 
   ///////////////////////MAIN CALENDARVIEW///////////////////////
 
-  const getAllEventos = useCallback(async () => {
-    const pathRef = collection(db, 'maquinas');
-    const todasLasMaquinas = await getDocs(pathRef);
-    const todasLasMaquinasIds = todasLasMaquinas.docs.map(doc => doc.id);
-    const todasLasIncidencias = await Promise.all(todasLasMaquinasIds.map(async (maquinaId) => {
-      const pathRefIncidencias = collection(db, `maquinas/${maquinaId}/eventos/`);
-      const incidencias = await getDocs(pathRefIncidencias);
-      return incidencias.docs.map(doc => doc.data() as Incidencia);
-    }));
-
-    const eventosPlano = todasLasIncidencias.flat();
-    setEventos(eventosPlano);
-    return eventosPlano;
+  const getAllEventos = useCallback(() => {
+    const q = query(collectionGroup(db, 'eventos'), orderBy('createdAt', 'desc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const eventos = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Incidencia[];
+      setEventos(eventos);
+    });
+    return unsubscribe;
   }, [])
 
   ///////////////////////MAIN CALENDARVIEW///////////////////////

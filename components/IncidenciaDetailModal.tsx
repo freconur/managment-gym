@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { FaTimes, FaClock, FaExclamationCircle, FaStickyNote, FaCalendarAlt, FaInfoCircle, FaUser, FaIdCard, FaTrash, FaLock, FaCog, FaMapMarkerAlt, FaTag, FaCamera } from 'react-icons/fa'
+import { FaTimes, FaClock, FaExclamationCircle, FaStickyNote, FaCalendarAlt, FaInfoCircle, FaUser, FaIdCard, FaTrash, FaLock, FaCog, FaMapMarkerAlt, FaTag, FaCamera, FaTools } from 'react-icons/fa'
 import styles from '@/styles/equipment.module.css'
 import { Incidencia, Machine } from '@/features/types/types'
 
@@ -8,13 +8,15 @@ interface IncidenciaDetailModalProps {
   onClose: () => void
   incidencia: Incidencia | null
   onDelete?: (id: string) => Promise<void>
+  onCreateMaintenance?: () => void
 }
 
 export const IncidenciaDetailModal: React.FC<IncidenciaDetailModalProps> = ({
   isOpen,
   onClose,
   incidencia,
-  onDelete
+  onDelete,
+  onCreateMaintenance
 }) => {
   const [showPinModal, setShowPinModal] = useState(false)
   const [pin, setPin] = useState('')
@@ -202,6 +204,21 @@ export const IncidenciaDetailModal: React.FC<IncidenciaDetailModalProps> = ({
             </h3>
           </div>
           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            {onCreateMaintenance && (
+              <button
+                type="button"
+                onClick={onCreateMaintenance}
+                className={styles.modalCloseButton}
+                style={{
+                  backgroundColor: '#3b82f6',
+                  color: '#fff'
+                }}
+                aria-label="Crear Mantenimiento"
+                title="Crear Mantenimiento"
+              >
+                <FaTools size={18} />
+              </button>
+            )}
             {onDelete && (
               <button
                 type="button"

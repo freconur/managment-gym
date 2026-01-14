@@ -12,11 +12,12 @@ import { NuevoUsuarioModal } from "@/components/NuevoUsuarioModal";
 import { UsuariosTable } from "@/components/UsuariosTable";
 import { CalendarView } from "@/components/CalendarView";
 import { IncidenciaDetailModal } from "@/components/IncidenciaDetailModal";
+import { MantenimientoModal } from "@/components/MantenimientoModal";
 import { MantenimientoDetailModal } from "@/components/MantenimientoDetailModal";
 import { QRReader } from "@/components/QRReader";
 import { EquiposTable } from "@/components/EquiposTable";
 import { FaUserPlus, FaTools, FaTimes, FaQrcode } from "react-icons/fa";
-import { Machine, Usuario, Incidencia } from "@/features/types/types";
+import { Machine, Usuario, Incidencia, Tarea } from "@/features/types/types";
 
 const Equipment: NextPage = () => {
   const router = useRouter();
@@ -40,6 +41,7 @@ const Equipment: NextPage = () => {
     updateIncidencia,
     deleteIncidencia,
     validateSiEsAdmin,
+    createMantenimiento,
   } = useManagment();
   const { formData, handleChange, resetForm } =
     useEquipmentForm(agregarMaquina);
@@ -51,6 +53,7 @@ const Equipment: NextPage = () => {
     useState<Incidencia | null>(null);
   const [isEquipmentFormModalOpen, setIsEquipmentFormModalOpen] =
     useState(false);
+  const [showMantenimientoModal, setShowMantenimientoModal] = useState(false);
   const [isQRReaderOpen, setIsQRReaderOpen] = useState(false);
 
   const hasFetched = useRef(false);
@@ -174,7 +177,13 @@ const Equipment: NextPage = () => {
   };
   useEffect(() => {
     getUsuarios();
-    getAllEventos();
+    const unsubscribeEventos = getAllEventos();
+
+    return () => {
+      if (typeof unsubscribeEventos === 'function') {
+        unsubscribeEventos();
+      }
+    };
   }, [getUsuarios, getAllEventos]);
 
   // Sincronizar selectedIncidencia cuando cambien los eventos
@@ -200,6 +209,105 @@ const Equipment: NextPage = () => {
     setSelectedIncidencia(null);
     selectedIncidenciaIdRef.current = null;
   };
+
+  const handleOpenMantenimientoModal = () => {
+    // Verificar si hay una incidencia seleccionada para obtener la máquina
+    if (selectedIncidencia?.machineId) {
+      setShowMantenimientoModal(true);
+    }
+  };
+
+  const handleCloseMantenimientoModal = () => {
+    setShowMantenimientoModal(false);
+  };
+
+  const handleSubmitMantenimiento = async (data: {
+    subTipo: string;
+    fechaProgramada: Date;
+    estado: string;
+    descripcion: string;
+    prioridad: string;
+    tecnicoAsignado: Usuario | {};
+    notas: string;
+    tareas: Tarea[];
+    mantenimientoRecurrente?: boolean;
+    frecuenciaDias?: number;
+  }) => {
+    try {
+      if (!selectedIncidencia?.machineId) return;
+
+      const maquina = maquinas.find((m) => m.id === selectedIncidencia.machineId);
+      if (!maquina || !maquina.id) return;
+
+      const fechaReporte = new Date();
+
+      // Obtener el objeto Usuario completo o undefined si es un objeto vacío
+      const tecnicoAsignado =
+        Object.keys(data.tecnicoAsignado).length > 0
+          ? (data.tecnicoAsignado as Usuario)
+          : undefined;
+
+      // Si es mantenimiento recurrente
+      if (
+        data.mantenimientoRecurrente &&
+        data.fechaProgramada &&
+        data.frecuenciaDias
+      ) {
+        const frecuenciaDias = data.frecuenciaDias || 7;
+        const numeroRepeticiones = 12; // Número fijo de repeticiones (un año)
+
+        const fechaBaseOriginal = new Date(data.fechaProgramada);
+
+        for (let i = 0; i < numeroRepeticiones; i++) {
+          const fechaProgramada = new Date(fechaBaseOriginal);
+          fechaProgramada.setDate(
+            fechaProgramada.getDate() + i * frecuenciaDias
+          );
+
+          const mantenimientoData = {
+            machineId: maquina.id,
+            tipo: "mantenimiento",
+            subTipo: data.subTipo,
+            fechaReporte: fechaReporte,
+            fechaProgramada: fechaProgramada,
+            estado: data.estado,
+            descripcion: data.descripcion,
+            prioridad: data.prioridad,
+            tecnicoAsignado: tecnicoAsignado,
+            piezasReemplazadas: [],
+            tareas: data.tareas || [],
+            notas: data.notas || "",
+          };
+
+          await createMantenimiento(mantenimientoData, maquina);
+        }
+      } else {
+        // Mantenimiento único
+        const mantenimientoData = {
+          machineId: maquina.id,
+          tipo: "mantenimiento",
+          subTipo: data.subTipo,
+          fechaReporte: fechaReporte,
+          fechaProgramada: data.fechaProgramada,
+          estado: data.estado,
+          descripcion: data.descripcion,
+          prioridad: data.prioridad,
+          tecnicoAsignado: tecnicoAsignado,
+          piezasReemplazadas: [],
+          tareas: data.tareas || [],
+          notas: data.notas || "",
+        };
+
+        await createMantenimiento(mantenimientoData, maquina);
+      }
+
+      handleCloseMantenimientoModal();
+    } catch (error) {
+      console.error("Error al guardar mantenimiento:", error);
+      throw error;
+    }
+  };
+
 
   return (
     <>
@@ -393,6 +501,15 @@ const Equipment: NextPage = () => {
         </div>
       )}
 
+      {/* Modal de Mantenimiento */}
+      <MantenimientoModal
+        isOpen={showMantenimientoModal}
+        onClose={handleCloseMantenimientoModal}
+        usuarios={usuarios}
+        validateSiEsAdmin={validateSiEsAdmin}
+        onSubmit={handleSubmitMantenimiento}
+      />
+
       {/* Modal de Detalles del Mantenimiento */}
       {selectedIncidencia?.tipo === "mantenimiento" && (
         <MantenimientoDetailModal
@@ -411,7 +528,6 @@ const Equipment: NextPage = () => {
                 selectedIncidencia.id,
                 updateData
               );
-              await getAllEventos();
             }
           }}
           onUpdateNotas={async (notas) => {
@@ -421,7 +537,6 @@ const Equipment: NextPage = () => {
                 selectedIncidencia.id,
                 { notas }
               );
-              await getAllEventos();
             }
           }}
           onUpdate={async (data) => {
@@ -444,15 +559,18 @@ const Equipment: NextPage = () => {
                 selectedIncidencia.id,
                 updateData
               );
-              await getAllEventos();
             }
           }}
           validateSiEsAdmin={validateSiEsAdmin}
           onDelete={async (id) => {
             if (selectedIncidencia?.id && selectedIncidencia?.machineId) {
               await deleteIncidencia(selectedIncidencia.machineId, id);
-              await getAllEventos();
               handleCloseEventoDetailModal();
+            }
+          }}
+          onUpdateMachineStatus={async (status) => {
+            if (selectedIncidencia?.machineId) {
+              await updateMaquinas(selectedIncidencia.machineId, { status: status as any });
             }
           }}
         />
@@ -467,9 +585,12 @@ const Equipment: NextPage = () => {
           onDelete={async (id) => {
             if (selectedIncidencia?.id && selectedIncidencia?.machineId) {
               await deleteIncidencia(selectedIncidencia.machineId, id);
-              await getAllEventos();
               handleCloseEventoDetailModal();
             }
+          }}
+          onCreateMaintenance={() => {
+            setShowEventoDetailModal(false);
+            handleOpenMantenimientoModal();
           }}
         />
       )}
