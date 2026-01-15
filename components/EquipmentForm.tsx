@@ -420,14 +420,13 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
           </div>
           <div className={styles.formField}>
             <label className={styles.label}>
-              Modelo *
+              Modelo
             </label>
             <input
               type="text"
               name="model"
               value={formData.model}
               onChange={handleChange}
-              required
               className={styles.input}
             />
           </div>

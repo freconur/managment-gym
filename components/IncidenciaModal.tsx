@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react'
-import { FaTimes, FaClock, FaExclamationCircle, FaStickyNote, FaCalendarAlt, FaInfoCircle, FaUser, FaIdCard, FaTrash, FaLock, FaCog, FaMapMarkerAlt, FaTag, FaCamera, FaImage, FaTools } from 'react-icons/fa'
-import styles from '@/styles/equipment.module.css'
-import { useManagment } from '@/features/hooks/useManagment'
+import { FaTimes, FaCamera, FaImage, FaExclamationCircle, FaUser, FaIdCard, FaCalendarAlt, FaTools } from 'react-icons/fa'
+import Image from 'next/image'
+import styles from './IncidenciaModal.module.css'
 import { Usuario } from '@/features/types/types'
 import { storage } from '@/firebase/firebase.config'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
@@ -31,7 +31,6 @@ export const IncidenciaModal: React.FC<IncidenciaModalProps> = ({
   onSubmit,
   usuariosValidate
 }) => {
-  /* const { usuariosValidate } = useManagment() */
   const [incidenciaForm, setIncidenciaForm] = useState({
     tipo: 'incidencia' as const,
     maquinaDejoFuncionar: false,
@@ -41,7 +40,6 @@ export const IncidenciaModal: React.FC<IncidenciaModalProps> = ({
     fechaProgramada: new Date(),
     descripcion: '',
     prioridad: 'media' as 'baja' | 'media' | 'alta' | 'urgente',
-
     usuario: usuariosValidate
   })
   const [fotoFile, setFotoFile] = useState<File | null>(null)
@@ -74,7 +72,6 @@ export const IncidenciaModal: React.FC<IncidenciaModalProps> = ({
         const compressed = await compressImage(file)
         setFotoFile(compressed)
 
-        // Update preview with compressed if needed, but original is fine for preview
       } catch (error) {
         console.error('Error compressing image:', error)
         alert('Error al procesar la imagen. Intenta con otra.')
@@ -130,6 +127,7 @@ export const IncidenciaModal: React.FC<IncidenciaModalProps> = ({
         usuario: {}
       })
       setFotoFile(null)
+      setPreviewUrl(null)
     } catch (error) {
       console.error('Error al guardar incidencia:', error)
     } finally {
@@ -138,63 +136,55 @@ export const IncidenciaModal: React.FC<IncidenciaModalProps> = ({
   }
 
   if (!isOpen) return null
+
   return (
-    <div className={styles.modalOverlay} onClick={onClose}>
-      <div className={`${styles.modalContent} ${styles.modalContentLarge}`} onClick={(e) => e.stopPropagation()}>
-        <div className={styles.modalHeader}>
-          <h3 className={styles.modalTitle}>
-            <FaExclamationCircle size={20} style={{ marginRight: '0.5rem', verticalAlign: 'middle' }} />
+    <div className={styles.overlay} onClick={onClose}>
+      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+
+        {/* Header */}
+        <div className={styles.header}>
+          <h3 className={styles.title}>
+            <FaExclamationCircle size={20} style={{ marginRight: '0.5rem' }} />
             Reportar Incidencia
           </h3>
           <button
             type="button"
             onClick={onClose}
-            className={styles.modalCloseButton}
+            className={styles.closeButton}
             aria-label="Cerrar modal"
           >
             <FaTimes size={20} />
           </button>
         </div>
-        <div className={styles.modalBody}>
+
+        {/* Scrollable Body */}
+        <div className={styles.body}>
           {/* Información del usuario validado */}
           {usuariosValidate && usuariosValidate.dni && (
-            <div style={{
-              marginBottom: '1.5rem',
-              padding: '1rem',
-              backgroundColor: '#f3f4f6',
-              borderRadius: '8px',
-              border: '1px solid #e5e7eb'
-            }}>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                marginBottom: '0.75rem',
-                color: '#374151',
-                fontWeight: '600',
-                fontSize: '0.875rem'
-              }}>
+            <div className={styles.userInfoCard}>
+              <div className={styles.userInfoHeader}>
                 <FaUser size={16} style={{ marginRight: '0.5rem' }} />
                 Información del Usuario
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem' }}>
+              <div className={styles.userInfoGrid}>
                 <div>
-                  <span style={{ fontSize: '0.75rem', color: '#6b7280', display: 'block', marginBottom: '0.25rem' }}>Nombres</span>
-                  <span style={{ fontSize: '0.875rem', color: '#111827', fontWeight: '500' }}>
+                  <span className={styles.userInfoLabel}>Nombres</span>
+                  <span className={styles.userInfoValue}>
                     {usuariosValidate.nombres || 'N/A'}
                   </span>
                 </div>
                 <div>
-                  <span style={{ fontSize: '0.75rem', color: '#6b7280', display: 'block', marginBottom: '0.25rem' }}>Apellidos</span>
-                  <span style={{ fontSize: '0.875rem', color: '#111827', fontWeight: '500' }}>
+                  <span className={styles.userInfoLabel}>Apellidos</span>
+                  <span className={styles.userInfoValue}>
                     {usuariosValidate.apellidos || 'N/A'}
                   </span>
                 </div>
                 <div>
-                  <span style={{ fontSize: '0.75rem', color: '#6b7280', display: 'block', marginBottom: '0.25rem' }}>
+                  <span className={styles.userInfoLabel}>
                     <FaIdCard size={12} style={{ marginRight: '0.25rem', display: 'inline' }} />
                     DNI
                   </span>
-                  <span style={{ fontSize: '0.875rem', color: '#111827', fontWeight: '500' }}>
+                  <span className={styles.userInfoValue}>
                     {usuariosValidate.dni || 'N/A'}
                   </span>
                 </div>
@@ -202,7 +192,7 @@ export const IncidenciaModal: React.FC<IncidenciaModalProps> = ({
             </div>
           )}
 
-          <form onSubmit={handleSubmit}>
+          <form id="incidencia-form" onSubmit={handleSubmit}>
             <div className={styles.formGrid}>
               <div className={styles.formField}>
                 <label className={styles.label}>
@@ -250,20 +240,6 @@ export const IncidenciaModal: React.FC<IncidenciaModalProps> = ({
                 </div>
               )}
 
-              {/* <div className={styles.formField}>
-                <label className={styles.label}>
-                  <FaCalendarAlt size={14} style={{ marginRight: '0.5rem' }} />
-                  Fecha del reporte *
-                </label>
-                <input
-                  type="date"
-                  value={incidenciaForm.fechaReporte}
-                  onChange={(e) => setIncidenciaForm(prev => ({ ...prev, fechaReporte: e.target.value }))}
-                  className={styles.input}
-                  required
-                />
-              </div> */}
-
               <div className={styles.formField}>
                 <label className={styles.label}>
                   <FaCalendarAlt size={14} style={{ marginRight: '0.5rem' }} />
@@ -291,8 +267,6 @@ export const IncidenciaModal: React.FC<IncidenciaModalProps> = ({
                   accept="image/*"
                   capture="environment"
                   onChange={handleFileChange}
-                  className={styles.input}
-                  required={!fotoFile}
                   ref={fileInputRef}
                   style={{ display: 'none' }}
                 />
@@ -300,26 +274,15 @@ export const IncidenciaModal: React.FC<IncidenciaModalProps> = ({
                   type="file"
                   accept="image/*"
                   onChange={handleFileChange}
-                  className={styles.input}
                   ref={galleryInputRef}
                   style={{ display: 'none' }}
                 />
 
-                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                <div className={styles.uploadButtons}>
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className={styles.button}
-                    style={{
-                      flex: 1,
-                      backgroundColor: '#e5e7eb',
-                      color: '#374151',
-                      border: '1px solid #d1d5db',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '0.5rem'
-                    }}
+                    className={styles.uploadBtn}
                   >
                     <FaCamera size={16} />
                     Tomar Foto
@@ -327,17 +290,7 @@ export const IncidenciaModal: React.FC<IncidenciaModalProps> = ({
                   <button
                     type="button"
                     onClick={() => galleryInputRef.current?.click()}
-                    className={styles.button}
-                    style={{
-                      flex: 1,
-                      backgroundColor: '#e5e7eb',
-                      color: '#374151',
-                      border: '1px solid #d1d5db',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '0.5rem'
-                    }}
+                    className={styles.uploadBtn}
                   >
                     <FaImage size={16} />
                     Galería
@@ -345,43 +298,20 @@ export const IncidenciaModal: React.FC<IncidenciaModalProps> = ({
                 </div>
 
                 {previewUrl && (
-                  <div style={{
-                    marginTop: '0.5rem',
-                    marginBottom: '0.5rem',
-                    display: 'flex',
-                    justifyContent: 'center',
-                    backgroundColor: '#f3f4f6',
-                    padding: '0.5rem',
-                    borderRadius: '0.375rem',
-                    border: '1px solid #e5e7eb'
-                  }}>
-                    <img
+                  <div className={styles.imagePreview}>
+                    <Image
                       src={previewUrl}
                       alt="Vista previa"
-                      style={{
-                        maxWidth: '100%',
-                        maxHeight: '200px',
-                        objectFit: 'contain',
-                        borderRadius: '0.25rem'
-                      }}
+                      width={400}
+                      height={200}
+                      className={styles.previewImg}
                     />
                   </div>
                 )}
 
                 {fotoFile && (
-                  <div style={{
-                    marginTop: '0.5rem',
-                    padding: '0.5rem',
-                    backgroundColor: '#f0fdf4',
-                    border: '1px solid #bbf7d0',
-                    borderRadius: '0.375rem',
-                    fontSize: '0.875rem',
-                    color: '#166534',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem'
-                  }}>
-                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#16a34a' }}></div>
+                  <div className={styles.fileInfo}>
+                    <div className={styles.fileInfoDot}></div>
                     Foto seleccionada: {fotoFile.name} ({(fotoFile.size / 1024).toFixed(2)} KB)
                   </div>
                 )}
@@ -413,25 +343,28 @@ export const IncidenciaModal: React.FC<IncidenciaModalProps> = ({
                 placeholder="Describe detalladamente el problema, qué estaba haciendo cuando ocurrió, síntomas observados, etc..."
               />
             </div>
-
-            <div className={styles.modalButtonGroup}>
-              <button
-                type="button"
-                onClick={onClose}
-                className={`${styles.button} ${styles.buttonSecondary} ${styles.modalButton}`}
-              >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                className={`${styles.button} ${styles.buttonSubmit} ${styles.modalButton}`}
-                disabled={isUploading}
-              >
-                {isUploading ? 'Subiendo...' : 'Reportar Incidencia'}
-              </button>
-            </div>
           </form>
         </div>
+
+        {/* Sticky Footer */}
+        <div className={styles.footer}>
+          <button
+            type="button"
+            onClick={onClose}
+            className={`${styles.btnFooter} ${styles.btnCancel}`}
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            form="incidencia-form"
+            className={`${styles.btnFooter} ${styles.btnSubmit}`}
+            disabled={isUploading}
+          >
+            {isUploading ? 'Subiendo...' : 'Reportar Incidencia'}
+          </button>
+        </div>
+
       </div>
     </div>
   )

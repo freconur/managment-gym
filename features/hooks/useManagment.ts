@@ -43,6 +43,7 @@ export const useManagment = () => {
   const [maquina, setMaquina] = useState<Machine | null>(null);
   const [incidencias, setIncidencias] = useState<Incidencia[]>([]);
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
+  const [loadingUsuarios, setLoadingUsuarios] = useState(true);
   const [usuariosValidate, setUsuariosValidate] = useState<Usuario>({});
   const [eventos, setEventos] = useState<Incidencia[]>([]);
   const [reusableTasks, setReusableTasks] = useState<ReusableTask[]>([]);
@@ -95,6 +96,7 @@ export const useManagment = () => {
         ...doc.data()
       })) as Usuario[];
       setUsuarios(usuarios);
+      setLoadingUsuarios(false);
     });
     return unsubscribe;
   }, [])
@@ -427,6 +429,7 @@ export const useManagment = () => {
     deleteIncidencia,
     createMantenimiento,
     getUsuarios,
+    loadingUsuarios,
     usuarios,
     createUsuario,
     updateUsuario,

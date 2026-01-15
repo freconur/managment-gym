@@ -1,16 +1,14 @@
 import React, { useState, useEffect } from 'react'
-import { FaTools, FaTimes, FaUser, FaCalendarAlt, FaPlus, FaCheckSquare, FaCog, FaEdit, FaTrash, FaCheck } from 'react-icons/fa'
-import styles from '@/styles/equipment.module.css'
+import { FaTools, FaTimes, FaUser, FaCalendarAlt, FaPlus, FaCheckSquare, FaCog, FaEdit, FaTrash, FaCheck, FaSpinner } from 'react-icons/fa'
 import { tipoDeMantenimiento, estadoDeMantenimiento, prioridadDeMantenimiento } from '@/utils/data'
 import { Tarea, Usuario } from '@/features/types/types'
-import { AuthModal } from '@/components/AuthModal'
 import { useManagment } from '@/features/hooks/useManagment'
+import styles from './MantenimientoModal.module.css'
 
 interface MantenimientoModalProps {
   isOpen: boolean
   onClose: () => void
   usuarios?: Usuario[]
-  validateSiEsAdmin?: (dni: string, pin: string) => Promise<boolean>
   onSubmit: (data: {
     subTipo: string
     fechaProgramada: Date
@@ -29,7 +27,6 @@ export const MantenimientoModal: React.FC<MantenimientoModalProps> = ({
   isOpen,
   onClose,
   usuarios = [],
-  validateSiEsAdmin,
   onSubmit
 }) => {
   // Función helper para obtener el valor del primer elemento del array
@@ -66,9 +63,8 @@ export const MantenimientoModal: React.FC<MantenimientoModalProps> = ({
     frecuenciaDias: 7
   })
   const [nuevaTarea, setNuevaTarea] = useState('')
-  const [showAuthModal, setShowAuthModal] = useState(false)
-  const [authError, setAuthError] = useState<string>('')
   const [saveAsReusable, setSaveAsReusable] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
 
   // Estados para la gestión de tareas frecuentes
   const [isManagingTasks, setIsManagingTasks] = useState(false)
@@ -152,19 +148,12 @@ export const MantenimientoModal: React.FC<MantenimientoModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-
-    // Si hay función de validación, mostrar modal de autenticación primero
-    if (validateSiEsAdmin) {
-      setShowAuthModal(true)
-      setAuthError('')
-      return
-    }
-
     // Si no hay validación, proceder directamente
     await performSubmit()
   }
 
   const performSubmit = async () => {
+    setIsSaving(true)
     try {
       await onSubmit(mantenimientoForm)
       // Resetear formulario después de enviar
@@ -184,64 +173,51 @@ export const MantenimientoModal: React.FC<MantenimientoModalProps> = ({
       setSaveAsReusable(false)
       setIsManagingTasks(false)
       setEditingTaskId(null)
-      setShowAuthModal(false)
       onClose()
     } catch (error) {
       console.error('Error al guardar mantenimiento:', error)
-      throw error
+      // No re-lanzamos el error aquí para que la UI no rompa, pero mantenemos el loading false al final
+    } finally {
+      setIsSaving(false)
     }
-  }
-
-  const handleAuthAccept = async (dni: string, pin: string) => {
-    if (!validateSiEsAdmin) {
-      setAuthError('Error de validación')
-      return
-    }
-
-    try {
-      const esAdmin = await validateSiEsAdmin(dni, pin)
-
-      if (esAdmin) {
-        // Si es admin, proceder con el registro del mantenimiento
-        setShowAuthModal(false)
-        setAuthError('')
-        await performSubmit()
-      } else {
-        setAuthError('Acceso denegado. Solo administradores y desarrolladores pueden registrar mantenimientos.')
-      }
-    } catch (error) {
-      console.error('Error al validar administrador:', error)
-      setAuthError('Error al validar credenciales. Intente nuevamente.')
-    }
-  }
-
-  const handleCloseAuthModal = () => {
-    setShowAuthModal(false)
-    setAuthError('')
   }
 
   if (!isOpen) return null
 
   return (
-    <div className={styles.modalOverlay} onClick={onClose}>
-      <div className={`${styles.modalContent} ${styles.modalContentLarge}`} onClick={(e) => e.stopPropagation()}>
-        <div className={styles.modalHeader}>
-          <h3 className={styles.modalTitle}>
-            <FaTools size={20} style={{ marginRight: '0.5rem', verticalAlign: 'middle' }} />
+    <div className={styles.overlay} onClick={onClose}>
+      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+
+        {/* Loading Overlay */}
+        {isSaving && (
+          <div className={styles.loadingOverlay}>
+            <FaSpinner className={styles.spinner} />
+            <span className={styles.loadingText}>Guardando mantenimiento...</span>
+          </div>
+        )}
+
+        {/* Header */}
+        <div className={styles.header}>
+          <h3 className={styles.title}>
+            <FaTools size={20} style={{ marginRight: '0.5rem' }} />
             Registrar Mantenimiento
           </h3>
           <button
             type="button"
             onClick={onClose}
-            className={styles.modalCloseButton}
+            className={styles.closeButton}
             aria-label="Cerrar modal"
           >
             <FaTimes size={20} />
           </button>
         </div>
-        <div className={styles.modalBody}>
-          <form onSubmit={handleSubmit}>
+
+        {/* Scrollable Body */}
+        <div className={styles.body}>
+          <form id="mantenimiento-form" onSubmit={handleSubmit}>
             <div className={styles.formGrid}>
+
+              {/* Tipo */}
               <div className={styles.formField}>
                 <label className={styles.label}>Tipo de Mantenimiento *</label>
                 <select
@@ -251,7 +227,6 @@ export const MantenimientoModal: React.FC<MantenimientoModalProps> = ({
                   required
                 >
                   {tipoDeMantenimiento.map((tipo) => {
-                    // Mapear el nombre a el valor que se usa en el código
                     const valueMap: Record<string, string> = {
                       'Preventivo': 'preventivo',
                       'Correctivo': 'correctivo',
@@ -268,6 +243,7 @@ export const MantenimientoModal: React.FC<MantenimientoModalProps> = ({
                 </select>
               </div>
 
+              {/* Estado */}
               <div className={styles.formField}>
                 <label className={styles.label}>Estado *</label>
                 <select
@@ -277,7 +253,6 @@ export const MantenimientoModal: React.FC<MantenimientoModalProps> = ({
                   required
                 >
                   {estadoDeMantenimiento.map((estado) => {
-                    // Mapear el nombre a el valor que se usa en el código
                     const valueMap: Record<string, string> = {
                       'Pendiente': 'pendiente',
                       'En Proceso': 'en_proceso',
@@ -293,6 +268,7 @@ export const MantenimientoModal: React.FC<MantenimientoModalProps> = ({
                 </select>
               </div>
 
+              {/* Prioridad */}
               <div className={styles.formField}>
                 <label className={styles.label}>Prioridad *</label>
                 <select
@@ -302,7 +278,6 @@ export const MantenimientoModal: React.FC<MantenimientoModalProps> = ({
                   required
                 >
                   {prioridadDeMantenimiento.map((prioridad) => {
-                    // Mapear el nombre a el valor que se usa en el código
                     const valueMap: Record<string, string> = {
                       'Baja': 'baja',
                       'Media': 'media',
@@ -318,6 +293,7 @@ export const MantenimientoModal: React.FC<MantenimientoModalProps> = ({
                 </select>
               </div>
 
+              {/* Fecha */}
               <div className={styles.formField}>
                 <label className={styles.label}>
                   <FaCalendarAlt size={14} style={{ marginRight: '0.5rem' }} />
@@ -327,7 +303,6 @@ export const MantenimientoModal: React.FC<MantenimientoModalProps> = ({
                   type="date"
                   value={formatDateToString(mantenimientoForm.fechaProgramada)}
                   onChange={(e) => {
-                    // Parsear la fecha manualmente para evitar problemas de zona horaria
                     const [year, month, day] = e.target.value.split('-').map(Number)
                     const fecha = new Date(year, month - 1, day)
                     setMantenimientoForm(prev => ({ ...prev, fechaProgramada: fecha }))
@@ -336,13 +311,14 @@ export const MantenimientoModal: React.FC<MantenimientoModalProps> = ({
                 />
               </div>
 
-              <div className={styles.formField} style={{ gridColumn: '1 / -1' }}>
-                <label className={styles.label} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              {/* Recurrente */}
+              <div className={`${styles.formField} ${styles.formFieldFull}`}>
+                <label className={styles.checkboxLabel}>
                   <input
+                    className={styles.checkboxInput}
                     type="checkbox"
                     checked={mantenimientoForm.mantenimientoRecurrente}
                     onChange={(e) => setMantenimientoForm(prev => ({ ...prev, mantenimientoRecurrente: e.target.checked }))}
-                    style={{ width: 'auto', margin: 0 }}
                   />
                   <span>Programar mantenimiento recurrente</span>
                 </label>
@@ -363,6 +339,7 @@ export const MantenimientoModal: React.FC<MantenimientoModalProps> = ({
                 </div>
               )}
 
+              {/* Responsable */}
               <div className={styles.formField}>
                 <label className={styles.label}>
                   <FaUser size={14} style={{ marginRight: '0.5rem' }} />
@@ -395,6 +372,7 @@ export const MantenimientoModal: React.FC<MantenimientoModalProps> = ({
               </div>
             </div>
 
+            {/* Descripción */}
             <div className={styles.formField}>
               <label className={styles.label}>Descripción *</label>
               <textarea
@@ -407,153 +385,125 @@ export const MantenimientoModal: React.FC<MantenimientoModalProps> = ({
               />
             </div>
 
-            {/* Checklist de Tareas */}
+            {/* Checklist de Tareas - Completely Refactored CSS */}
             <div className={styles.formField}>
               <label className={styles.label}>
                 <FaCheckSquare size={14} style={{ marginRight: '0.5rem' }} />
                 Tareas (Checklist)
               </label>
-              <div style={{
-                padding: '0.75rem',
-                backgroundColor: '#f9fafb',
-                borderRadius: '0.375rem',
-                border: '1px solid #e5e7eb'
-              }}>
-                <div style={{ marginBottom: '1rem', borderBottom: '1px solid #e5e7eb', paddingBottom: '1rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                    <label className={styles.label} style={{ fontSize: '0.8rem', color: '#6b7280', marginBottom: 0 }}>
-                      Tareas Frecuentes
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => setIsManagingTasks(!isManagingTasks)}
-                      className={styles.button}
-                      style={{
-                        padding: '0.25rem 0.5rem',
-                        fontSize: '0.8rem',
-                        backgroundColor: isManagingTasks ? '#e5e7eb' : 'transparent',
-                        color: '#4b5563',
-                        border: '1px solid #d1d5db'
-                      }}
-                      title={isManagingTasks ? "Cerrar gestión" : "Gestionar tareas frecuentes"}
-                    >
-                      <FaCog size={14} />
-                    </button>
-                  </div>
 
-                  {isManagingTasks ? (
-                    <div style={{
-                      maxHeight: '200px',
-                      overflowY: 'auto',
-                      border: '1px solid #e5e7eb',
-                      borderRadius: '0.375rem',
-                      backgroundColor: '#f9fafb',
-                      padding: '0.5rem'
-                    }}>
-                      {reusableTasks.length === 0 ? (
-                        <p style={{ fontSize: '0.8rem', color: '#6b7280', textAlign: 'center', padding: '1rem' }}>
-                          No hay tareas frecuentes guardadas.
-                        </p>
-                      ) : (
-                        <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                          {reusableTasks.map((task) => (
-                            <li key={task.id} style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '0.5rem',
-                              padding: '0.5rem 0',
-                              borderBottom: '1px solid #f3f4f6'
-                            }}>
-                              {editingTaskId === task.id ? (
-                                <>
-                                  <input
-                                    type="text"
-                                    value={editingTaskText}
-                                    onChange={(e) => setEditingTaskText(e.target.value)}
-                                    className={styles.input}
-                                    style={{ fontSize: '0.85rem', padding: '0.25rem 0.5rem', height: 'auto' }}
-                                    autoFocus
-                                  />
-                                  <button
-                                    type="button"
-                                    onClick={async () => {
-                                      if (editingTaskText.trim() && task.id) {
-                                        await updateReusableTask(task.id, editingTaskText.trim())
-                                        setEditingTaskId(null)
-                                      }
-                                    }}
-                                    className={styles.button}
-                                    style={{ padding: '0.25rem', color: '#10b981', background: 'none' }}
-                                  >
-                                    <FaCheck size={14} />
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => setEditingTaskId(null)}
-                                    className={styles.button}
-                                    style={{ padding: '0.25rem', color: '#6b7280', background: 'none' }}
-                                  >
-                                    <FaTimes size={14} />
-                                  </button>
-                                </>
-                              ) : (
-                                <>
-                                  <span style={{ flex: 1, fontSize: '0.9rem' }}>{task.descripcion}</span>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setEditingTaskId(task.id || null)
-                                      setEditingTaskText(task.descripcion)
-                                    }}
-                                    className={styles.button}
-                                    style={{ padding: '0.25rem', color: '#3b82f6', background: 'none' }}
-                                    title="Editar"
-                                  >
-                                    <FaEdit size={14} />
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={async () => {
-                                      if (window.confirm('¿Estás seguro de eliminar esta tarea frecuente?')) {
-                                        if (task.id) await deleteReusableTask(task.id)
-                                      }
-                                    }}
-                                    className={styles.button}
-                                    style={{ padding: '0.25rem', color: '#ef4444', background: 'none' }}
-                                    title="Eliminar"
-                                  >
-                                    <FaTrash size={14} />
-                                  </button>
-                                </>
-                              )}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-                  ) : (
+              <div className={styles.taskContainer}>
+
+                {/* Header with Manage Button */}
+                <div className={styles.taskHeader}>
+                  <span className={styles.taskLabel}>Tareas Frecuentes</span>
+                  <button
+                    type="button"
+                    onClick={() => setIsManagingTasks(!isManagingTasks)}
+                    className={`${styles.iconButton} ${isManagingTasks ? styles.iconButtonActive : ''}`}
+                    title={isManagingTasks ? "Cerrar gestión" : "Gestionar tareas frecuentes"}
+                  >
+                    <FaCog size={14} />
+                    <span>Gestionar</span>
+                  </button>
+                </div>
+
+                {/* Manage Panel */}
+                {isManagingTasks ? (
+                  <div className={styles.manageTasksPanel}>
+                    {reusableTasks.length === 0 ? (
+                      <p className={styles.emptyState}>No hay tareas frecuentes guardadas.</p>
+                    ) : (
+                      <ul className={styles.reusableTaskList}>
+                        {reusableTasks.map((task) => (
+                          <li key={task.id} className={styles.reusableTaskItem}>
+                            {editingTaskId === task.id ? (
+                              <>
+                                <input
+                                  type="text"
+                                  value={editingTaskText}
+                                  onChange={(e) => setEditingTaskText(e.target.value)}
+                                  className={styles.input}
+                                  style={{ padding: '0.25rem 0.5rem' }}
+                                  autoFocus
+                                />
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    if (editingTaskText.trim() && task.id) {
+                                      await updateReusableTask(task.id, editingTaskText.trim())
+                                      setEditingTaskId(null)
+                                    }
+                                  }}
+                                  className={`${styles.actionButton} ${styles.btnCheck}`}
+                                >
+                                  <FaCheck size={14} />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingTaskId(null)}
+                                  className={`${styles.actionButton} ${styles.btnTimes}`}
+                                >
+                                  <FaTimes size={14} />
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                <span style={{ flex: 1, fontSize: '0.9rem' }}>{task.descripcion}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setEditingTaskId(task.id || null)
+                                    setEditingTaskText(task.descripcion)
+                                  }}
+                                  className={`${styles.actionButton} ${styles.btnEdit}`}
+                                  title="Editar"
+                                >
+                                  <FaEdit size={14} />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    if (window.confirm('¿Estás seguro de eliminar esta tarea frecuente?')) {
+                                      if (task.id) await deleteReusableTask(task.id)
+                                    }
+                                  }}
+                                  className={`${styles.actionButton} ${styles.btnDelete}`}
+                                  title="Eliminar"
+                                >
+                                  <FaTrash size={14} />
+                                </button>
+                              </>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                ) : (
+                  <div style={{ marginBottom: '1rem' }}>
                     <select
                       className={styles.select}
                       onChange={(e) => {
                         if (e.target.value) {
                           handleAddFromReusable(e.target.value)
-                          e.target.value = '' // Reset select
+                          e.target.value = ''
                         }
                       }}
-                      style={{ fontSize: '0.9rem' }}
                     >
-                      <option value="">Seleccionar tarea frecuente...</option>
+                      <option value="">+ Seleccionar tarea frecuente...</option>
                       {reusableTasks.map((task) => (
                         <option key={task.id} value={task.descripcion}>
                           {task.descripcion}
                         </option>
                       ))}
                     </select>
-                  )}
-                </div>
+                  </div>
+                )}
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '0.75rem' }}>
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                {/* Add New Task Input */}
+                <div className={styles.addTaskRow}>
+                  <div className={styles.taskInputGroup}>
                     <input
                       type="text"
                       value={nuevaTarea}
@@ -566,86 +516,60 @@ export const MantenimientoModal: React.FC<MantenimientoModalProps> = ({
                       }}
                       className={styles.input}
                       placeholder="Escribir nueva tarea..."
-                      style={{ flex: 1 }}
                     />
                     <button
                       type="button"
                       onClick={handleAddTarea}
-                      className={`${styles.button} ${styles.buttonSecondary}`}
-                      style={{ whiteSpace: 'nowrap' }}
+                      className={styles.addButton}
                     >
                       <FaPlus size={14} />
                       Agregar
                     </button>
                   </div>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: '#4b5563', cursor: 'pointer' }}>
+                  <label className={`${styles.saveReusableCheckbox} ${!nuevaTarea.trim() ? styles.saveReusableCheckboxDisabled : ''}`}>
                     <input
                       type="checkbox"
                       checked={saveAsReusable}
                       onChange={(e) => setSaveAsReusable(e.target.checked)}
-                      style={{ width: 'auto', margin: 0 }}
                       disabled={!nuevaTarea.trim()}
+                      className={styles.checkboxInput}
                     />
                     Guardar como tarea frecuente
                   </label>
                 </div>
-                {mantenimientoForm.tareas.length > 0 && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+
+                {/* Task List Visualization */}
+                {mantenimientoForm.tareas.length > 0 ? (
+                  <div className={styles.taskList}>
                     {mantenimientoForm.tareas.map((tarea, index) => (
-                      <div
-                        key={index}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.75rem',
-                          padding: '0.5rem',
-                          backgroundColor: '#fff',
-                          borderRadius: '0.25rem',
-                          border: '1px solid #e5e7eb'
-                        }}
-                      >
+                      <div key={index} className={styles.taskItem}>
                         <input
                           type="checkbox"
                           checked={tarea.completada}
                           onChange={() => handleToggleTarea(index)}
-                          style={{ width: 'auto', margin: 0, cursor: 'pointer' }}
+                          className={styles.checkboxInput}
                         />
-                        <span
-                          style={{
-                            flex: 1,
-                            textDecoration: tarea.completada ? 'line-through' : 'none',
-                            color: tarea.completada ? '#6b7280' : '#111827',
-                            fontSize: '0.875rem'
-                          }}
-                        >
+                        <span className={`${styles.taskText} ${tarea.completada ? styles.taskCompleted : ''}`}>
                           {tarea.descripcion}
                         </span>
                         <button
                           type="button"
                           onClick={() => handleRemoveTarea(index)}
-                          className={styles.removeButton}
-                          style={{ padding: '0.25rem 0.5rem' }}
+                          className={`${styles.actionButton} ${styles.btnTimes}`}
+                          title="Quitar"
                         >
                           <FaTimes size={12} />
                         </button>
                       </div>
                     ))}
                   </div>
-                )}
-                {mantenimientoForm.tareas.length === 0 && (
-                  <p style={{
-                    color: '#6b7280',
-                    fontSize: '0.875rem',
-                    fontStyle: 'italic',
-                    textAlign: 'center',
-                    padding: '1rem 0'
-                  }}>
-                    No hay tareas agregadas. Agrega una tarea para comenzar.
-                  </p>
+                ) : (
+                  <p className={styles.emptyState}>No hay tareas agregadas. Agrega una tarea para comenzar.</p>
                 )}
               </div>
             </div>
 
+            {/* Notas */}
             <div className={styles.formField}>
               <label className={styles.label}>Notas Adicionales</label>
               <textarea
@@ -656,33 +580,28 @@ export const MantenimientoModal: React.FC<MantenimientoModalProps> = ({
                 placeholder="Notas adicionales sobre el mantenimiento..."
               />
             </div>
-
-            <div className={styles.modalButtonGroup}>
-              <button
-                type="button"
-                onClick={onClose}
-                className={`${styles.button} ${styles.buttonSecondary} ${styles.modalButton}`}
-              >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                className={`${styles.button} ${styles.buttonSubmit} ${styles.modalButton}`}
-              >
-                Registrar Mantenimiento
-              </button>
-            </div>
           </form>
         </div>
-      </div>
 
-      {/* Modal de Autenticación */}
-      <AuthModal
-        isOpen={showAuthModal}
-        onClose={handleCloseAuthModal}
-        onAccept={handleAuthAccept}
-        error={authError}
-      />
+        {/* Sticky Footer */}
+        <div className={styles.footer}>
+          <button
+            type="button"
+            onClick={onClose}
+            className={`${styles.btnFooter} ${styles.btnCancel}`}
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            form="mantenimiento-form" /* Binds to the form in the body */
+            className={`${styles.btnFooter} ${styles.btnSubmit}`}
+          >
+            Registrar Mantenimiento
+          </button>
+        </div>
+
+      </div>
     </div>
   )
 }

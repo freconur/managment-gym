@@ -17,7 +17,7 @@ import {
 } from 'firebase/firestore'
 import { app } from '@/firebase/firebase.config'
 import { FaSearch, FaCheckCircle, FaHistory, FaUserClock, FaArrowLeft, FaBarcode, FaSpinner } from 'react-icons/fa'
-import { Html5QrcodeScanner, Html5QrcodeSupportedFormats } from 'html5-qrcode'
+// import { Html5Qrcode } from 'html5-qrcode' // Dynamic import used instead
 import styles from './Access.module.css'
 
 const db = getFirestore(app)
@@ -63,59 +63,58 @@ const AccessPage: NextPage = () => {
     }, [])
 
     useEffect(() => {
-        if (showScanner) {
-            const scanner = new Html5QrcodeScanner(
-                "reader",
-                {
-                    fps: 10,
-                    qrbox: { width: 250, height: 150 }, // Rectangular for barcodes
-                    aspectRatio: 1.0,
-                    formatsToSupport: [
-                        Html5QrcodeSupportedFormats.CODE_128,
-                        Html5QrcodeSupportedFormats.CODE_39,
-                        Html5QrcodeSupportedFormats.EAN_8,
-                        Html5QrcodeSupportedFormats.UPC_A,
-                        Html5QrcodeSupportedFormats.UPC_E,
-                        Html5QrcodeSupportedFormats.CODABAR
-                    ]
-                },
-                /* verbose= */ false
-            );
+        let scanner: any = null;
 
-            scanner.render(onScanSuccess, onScanFailure);
+        const startScanner = async () => {
+            if (showScanner) {
+                try {
+                    const { Html5Qrcode } = await import('html5-qrcode');
+                    scanner = new Html5Qrcode("reader");
 
-            function onScanSuccess(decodedText: string, decodedResult: any) {
-                // Assuming the barcode contains the DNI (8 digits)
-                // Filter non-numeric just in case, or take just the digits
-                const numericCode = decodedText.replace(/[^0-9]/g, '');
+                    const config = {
+                        fps: 10,
+                        qrbox: { width: 250, height: 150 },
+                        aspectRatio: 1.0
+                    };
 
-                // If it's a DNI (8 digits), update state and search
-                // User mentioned 8 digits specifically.
-                if (numericCode.length >= 8) {
-                    // Sometimes scanners read extra chars, but let's assume the code IS the DNI or contains it.
-                    // The user said "barcodes of 8 digits".
-                    setDni(numericCode);
-                    scanner.clear().then(() => {
-                        setShowScanner(false);
-                        // Trigger search immediately
-                        // We need to call handleSearch but it uses 'dni' state which might not be updated yet in closure
-                        // So we'll use an effect or just manually call logic.
-                        // For simplicity, we just set DNI and let user click or we can use a separate effect.
-                        // Better: execute search logic directly with the value.
-                        searchByDni(numericCode);
-                    }).catch(err => console.error("Failed to clear scanner", err));
+                    await scanner.start(
+                        { facingMode: "environment" },
+                        config,
+                        onScanSuccess,
+                        onScanFailure
+                    );
+                } catch (err) {
+                    console.error("Error starting scanner", err);
                 }
             }
+        };
 
-            function onScanFailure(error: any) {
-                // handle scan failure, usually better to ignore and keep scanning.
-                // console.warn(`Code scan error = ${error}`);
-            }
+        startScanner();
 
-            return () => {
-                scanner.clear().catch(error => {
-                    console.error("Failed to clear html5-qrcode scanner. ", error);
+        function onScanSuccess(decodedText: string, decodedResult: any) {
+            const numericCode = decodedText.replace(/[^0-9]/g, '');
+            if (numericCode.length >= 8) {
+                setDni(numericCode);
+                // Use optional chaining just in case scanner is somehow null or busy
+                scanner?.stop().then(() => {
+                    scanner?.clear();
+                    setShowScanner(false);
+                    searchByDni(numericCode);
+                }).catch((err: any) => {
+                    console.error("Failed to stop scanner", err);
+                    setShowScanner(false);
+                    searchByDni(numericCode);
                 });
+            }
+        }
+
+        function onScanFailure(error: any) {
+            // console.warn(`Code scan error = ${error}`);
+        }
+
+        return () => {
+            if (scanner && scanner.isScanning) {
+                scanner.stop().then(() => scanner?.clear()).catch(console.error);
             }
         }
     }, [showScanner])
@@ -390,11 +389,11 @@ const AccessPage: NextPage = () => {
                                                     <p className={styles.activityName}>{record.memberName}</p>
                                                     <p className={styles.activityDetails}>{record.company}</p>
                                                 </div>
-                                                <div style={{ textAlign: 'right' }}>
+                                                <div className={styles.activityTimeContainer}>
                                                     <p className={styles.activityTime}>
                                                         {record.timestamp?.toDate ? record.timestamp.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '...'}
                                                     </p>
-                                                    <p style={{ fontSize: '0.65rem', color: '#9ca3af', margin: 0 }}>
+                                                    <p className={styles.activityDate}>
                                                         {record.timestamp?.toDate ? record.timestamp.toDate().toLocaleDateString() : ''}
                                                     </p>
                                                 </div>

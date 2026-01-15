@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useManagment } from '@/features/hooks/useManagment';
 import { Usuario } from '@/features/types/types';
 import styles from '@/styles/usuarios.module.css';
-import { FaCog, FaUser } from 'react-icons/fa';
+import { FaCog, FaUser, FaSpinner } from 'react-icons/fa';
 import { UsuarioActionsModal } from './UsuarioActionsModal';
 
 interface UsuariosTableProps {
@@ -11,7 +11,7 @@ interface UsuariosTableProps {
 }
 
 export const UsuariosTable: React.FC<UsuariosTableProps> = ({ onEdit, onDelete }) => {
-  const { getUsuarios, usuarios } = useManagment();
+  const { getUsuarios, usuarios, loadingUsuarios } = useManagment();
   const [selectedUsuario, setSelectedUsuario] = useState<Usuario | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -82,7 +82,11 @@ export const UsuariosTable: React.FC<UsuariosTableProps> = ({ onEdit, onDelete }
         </h2>
       </div>
 
-      {usuarios.length === 0 ? (
+      {loadingUsuarios ? (
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem' }}>
+          <FaSpinner className={styles.spinner} style={{ fontSize: '2rem', color: '#3b82f6' }} />
+        </div>
+      ) : usuarios.length === 0 ? (
         <div className={styles.emptyState}>
           <div className={styles.emptyStateIcon}>
             <FaUser size={48} />

@@ -438,6 +438,32 @@
         width: 100%;
         padding: 1rem;
         margin-bottom: 1rem;
-        /* Space between scan and input group if wrapped, or just nice spacing */
+    }
+
+    /* Stack activity item content on small screens */
+    .activityItem {
+        flex-wrap: wrap;
+    }
+
+    .activityInfo {
+        flex: 1 1 100%;
+        /* Force full width or at least grow to push time down if needed */
+        margin-bottom: 0.5rem;
+    }
+
+    .activityTimeContainer {
+        width: 100%;
+        text-align: left;
+        display: flex;
+        gap: 0.75rem;
+        align-items: baseline;
+        padding-left: 3.5rem;
+        /* Indent to align with text (2.5rem avatar + 1rem gap) */
+    }
+
+    /* Adjust avatar alignment if wrapping */
+    .activityAvatar,
+    .activityAvatarPlaceholder {
+        align-self: flex-start;
     }
 }

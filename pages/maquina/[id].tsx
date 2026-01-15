@@ -255,24 +255,38 @@ const MaquinaPAge = () => {
   }
 
   const handleAuthAccept = async (dni: string, pin: string) => {
-    // Validar DNI y PIN contra los usuarios
-    // validateUsuario retorna true si existe el usuario, false si no existe
+    // Si es mantenimiento, requerimos permisos de administrador
+    if (pendingAction === 'mantenimiento') {
+      try {
+        const esAdmin = await validateSiEsAdmin(dni, pin);
+        if (esAdmin) {
+          setShowAuthModal(false);
+          setAuthError('');
+          setShowMantenimientoModal(true);
+        } else {
+          setAuthError('Acceso denegado. Solo administradores y desarrolladores pueden registrar mantenimientos.');
+        }
+      } catch (error) {
+        console.error('Error al validar administrador:', error);
+        setAuthError('Error al validar credenciales.');
+      }
+      setPendingAction(null);
+      return;
+    }
+
+    // Para incidencias u otras acciones, validación estándar de usuario
     const usuarioValidado = await validateUsuario(dni, pin)
 
     if (!usuarioValidado) {
-      // Si no existe el usuario, mostrar error y no continuar
       setAuthError('DNI o PIN incorrecto')
       return
     }
 
-    // Si el usuario existe (retorna true), cerrar el modal de auth y abrir el modal correspondiente
     setShowAuthModal(false)
     setAuthError('')
 
     if (pendingAction === 'incidencia') {
       setShowIncidenciaModal(true)
-    } else if (pendingAction === 'mantenimiento') {
-      setShowMantenimientoModal(true)
     }
 
     setPendingAction(null)
@@ -553,7 +567,6 @@ const MaquinaPAge = () => {
           isOpen={showMantenimientoModal}
           onClose={handleCloseMantenimientoModal}
           usuarios={usuarios}
-          validateSiEsAdmin={validateSiEsAdmin}
           onSubmit={handleSubmitMantenimiento}
         />
 

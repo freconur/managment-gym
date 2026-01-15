@@ -16,7 +16,8 @@ import { MantenimientoModal } from "@/components/MantenimientoModal";
 import { MantenimientoDetailModal } from "@/components/MantenimientoDetailModal";
 import { QRReader } from "@/components/QRReader";
 import { EquiposTable } from "@/components/EquiposTable";
-import { FaUserPlus, FaTools, FaTimes, FaQrcode } from "react-icons/fa";
+import { AuthModal } from "@/components/AuthModal";
+import { FaUserPlus, FaTools, FaTimes, FaQrcode, FaDumbbell, FaPlus } from "react-icons/fa";
 import { Machine, Usuario, Incidencia, Tarea } from "@/features/types/types";
 
 const Equipment: NextPage = () => {
@@ -55,6 +56,8 @@ const Equipment: NextPage = () => {
     useState(false);
   const [showMantenimientoModal, setShowMantenimientoModal] = useState(false);
   const [isQRReaderOpen, setIsQRReaderOpen] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authError, setAuthError] = useState('');
 
   const hasFetched = useRef(false);
   const selectedIncidenciaIdRef = useRef<string | null>(null);
@@ -213,8 +216,30 @@ const Equipment: NextPage = () => {
   const handleOpenMantenimientoModal = () => {
     // Verificar si hay una incidencia seleccionada para obtener la máquina
     if (selectedIncidencia?.machineId) {
-      setShowMantenimientoModal(true);
+      setShowAuthModal(true);
+      setAuthError('');
     }
+  };
+
+  const handleAuthAccept = async (dni: string, pin: string) => {
+    try {
+      const esAdmin = await validateSiEsAdmin(dni, pin);
+      if (esAdmin) {
+        setShowAuthModal(false);
+        setAuthError('');
+        setShowMantenimientoModal(true);
+      } else {
+        setAuthError('Acceso denegado. Solo administradores y desarrolladores pueden registrar mantenimientos.');
+      }
+    } catch (error) {
+      console.error('Error al validar administrador:', error);
+      setAuthError('Error al validar credenciales. Intente nuevamente.');
+    }
+  };
+
+  const handleCloseAuthModal = () => {
+    setShowAuthModal(false);
+    setAuthError('');
   };
 
   const handleCloseMantenimientoModal = () => {
@@ -343,7 +368,10 @@ const Equipment: NextPage = () => {
                 title="Agregar Nuevo Equipo"
                 aria-label="Agregar Nuevo Equipo"
               >
-                <FaTools size={16} />
+                <div style={{ position: 'relative', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <FaDumbbell size={18} style={{ transform: 'rotate(-45deg)' }} />
+                  <FaPlus size={9} style={{ position: 'absolute', top: 0, right: 0 }} />
+                </div>
               </button>
             </div>
           </div>
@@ -449,7 +477,7 @@ const Equipment: NextPage = () => {
           onOpenModal={handleOpenModal}
           from="equipment"
         />
-      </main>
+      </main >
       <MachineDetailsModal
         isOpen={isModalOpen}
         machine={selectedMachine}
@@ -467,133 +495,146 @@ const Equipment: NextPage = () => {
       />
 
       {/* Modal de Formulario de Equipo */}
-      {isEquipmentFormModalOpen && (
-        <div
-          className={styles.modalOverlay}
-          onClick={handleCloseEquipmentFormModal}
-        >
+      {
+        isEquipmentFormModalOpen && (
           <div
-            className={`${styles.modalContent} ${styles.modalContentLarge}`}
-            onClick={(e) => e.stopPropagation()}
+            className={styles.modalOverlay}
+            onClick={handleCloseEquipmentFormModal}
           >
-            <div className={styles.modalHeader}>
-              <h2 className={styles.modalTitle}>Nuevo Equipo</h2>
-              <button
-                type="button"
-                onClick={handleCloseEquipmentFormModal}
-                className={styles.modalCloseButton}
-                aria-label="Cerrar modal"
-              >
-                <FaTimes size={18} />
-              </button>
-            </div>
-            <div className={styles.modalBody}>
-              <EquipmentForm
-                formData={formData}
-                handleChange={handleChange}
-                handleSubmit={handleSubmit}
-                marcas={marcas}
-                ubicaciones={ubicaciones}
-                validateSiEsAdmin={validateSiEsAdmin}
-              />
+            <div
+              className={`${styles.modalContent} ${styles.modalContentLarge}`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className={styles.modalHeader}>
+                <h2 className={styles.modalTitle}>Nuevo Equipo</h2>
+                <button
+                  type="button"
+                  onClick={handleCloseEquipmentFormModal}
+                  className={styles.modalCloseButton}
+                  aria-label="Cerrar modal"
+                >
+                  <FaTimes size={18} />
+                </button>
+              </div>
+              <div className={styles.modalBody}>
+                <EquipmentForm
+                  formData={formData}
+                  handleChange={handleChange}
+                  handleSubmit={handleSubmit}
+                  marcas={marcas}
+                  ubicaciones={ubicaciones}
+                  validateSiEsAdmin={validateSiEsAdmin}
+                />
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
       {/* Modal de Mantenimiento */}
       <MantenimientoModal
         isOpen={showMantenimientoModal}
         onClose={handleCloseMantenimientoModal}
         usuarios={usuarios}
-        validateSiEsAdmin={validateSiEsAdmin}
         onSubmit={handleSubmitMantenimiento}
       />
 
       {/* Modal de Detalles del Mantenimiento */}
-      {selectedIncidencia?.tipo === "mantenimiento" && (
-        <MantenimientoDetailModal
-          isOpen={showEventoDetailModal}
-          onClose={handleCloseEventoDetailModal}
-          mantenimiento={selectedIncidencia}
-          usuarios={usuarios}
-          onUpdateTareas={async (tareas, estado) => {
-            if (selectedIncidencia?.id && selectedIncidencia?.machineId) {
-              const updateData: any = { tareas };
-              if (estado) {
-                updateData.estado = estado;
+      {
+        selectedIncidencia?.tipo === "mantenimiento" && (
+          <MantenimientoDetailModal
+            isOpen={showEventoDetailModal}
+            onClose={handleCloseEventoDetailModal}
+            mantenimiento={selectedIncidencia}
+            usuarios={usuarios}
+            onUpdateTareas={async (tareas, estado) => {
+              if (selectedIncidencia?.id && selectedIncidencia?.machineId) {
+                const updateData: any = { tareas };
+                if (estado) {
+                  updateData.estado = estado;
+                }
+                await updateIncidencia(
+                  selectedIncidencia.machineId,
+                  selectedIncidencia.id,
+                  updateData
+                );
               }
-              await updateIncidencia(
-                selectedIncidencia.machineId,
-                selectedIncidencia.id,
-                updateData
-              );
-            }
-          }}
-          onUpdateNotas={async (notas) => {
-            if (selectedIncidencia?.id && selectedIncidencia?.machineId) {
-              await updateIncidencia(
-                selectedIncidencia.machineId,
-                selectedIncidencia.id,
-                { notas }
-              );
-            }
-          }}
-          onUpdate={async (data) => {
-            if (selectedIncidencia?.id && selectedIncidencia?.machineId) {
-              const updateData: any = {};
-              if (data.tecnicoAsignado !== undefined) {
-                updateData.tecnicoAsignado =
-                  Object.keys(data.tecnicoAsignado).length > 0
-                    ? data.tecnicoAsignado
-                    : null;
+            }}
+            onUpdateNotas={async (notas) => {
+              if (selectedIncidencia?.id && selectedIncidencia?.machineId) {
+                await updateIncidencia(
+                  selectedIncidencia.machineId,
+                  selectedIncidencia.id,
+                  { notas }
+                );
               }
-              if (data.descripcion !== undefined) {
-                updateData.descripcion = data.descripcion;
+            }}
+            onUpdate={async (data) => {
+              if (selectedIncidencia?.id && selectedIncidencia?.machineId) {
+                const updateData: any = {};
+                if (data.tecnicoAsignado !== undefined) {
+                  updateData.tecnicoAsignado =
+                    Object.keys(data.tecnicoAsignado).length > 0
+                      ? data.tecnicoAsignado
+                      : null;
+                }
+                if (data.descripcion !== undefined) {
+                  updateData.descripcion = data.descripcion;
+                }
+                if (data.tareas !== undefined) {
+                  updateData.tareas = data.tareas;
+                }
+                await updateIncidencia(
+                  selectedIncidencia.machineId,
+                  selectedIncidencia.id,
+                  updateData
+                );
               }
-              if (data.tareas !== undefined) {
-                updateData.tareas = data.tareas;
+            }}
+            validateSiEsAdmin={validateSiEsAdmin}
+            onDelete={async (id) => {
+              if (selectedIncidencia?.id && selectedIncidencia?.machineId) {
+                await deleteIncidencia(selectedIncidencia.machineId, id);
+                handleCloseEventoDetailModal();
               }
-              await updateIncidencia(
-                selectedIncidencia.machineId,
-                selectedIncidencia.id,
-                updateData
-              );
-            }
-          }}
-          validateSiEsAdmin={validateSiEsAdmin}
-          onDelete={async (id) => {
-            if (selectedIncidencia?.id && selectedIncidencia?.machineId) {
-              await deleteIncidencia(selectedIncidencia.machineId, id);
-              handleCloseEventoDetailModal();
-            }
-          }}
-          onUpdateMachineStatus={async (status) => {
-            if (selectedIncidencia?.machineId) {
-              await updateMaquinas(selectedIncidencia.machineId, { status: status as any });
-            }
-          }}
-        />
-      )}
+            }}
+            onUpdateMachineStatus={async (status) => {
+              if (selectedIncidencia?.machineId) {
+                await updateMaquinas(selectedIncidencia.machineId, { status: status as any });
+              }
+            }}
+          />
+        )
+      }
 
       {/* Modal de Detalles de la Incidencia */}
-      {selectedIncidencia?.tipo === "incidencia" && (
-        <IncidenciaDetailModal
-          isOpen={showEventoDetailModal}
-          onClose={handleCloseEventoDetailModal}
-          incidencia={selectedIncidencia}
-          onDelete={async (id) => {
-            if (selectedIncidencia?.id && selectedIncidencia?.machineId) {
-              await deleteIncidencia(selectedIncidencia.machineId, id);
-              handleCloseEventoDetailModal();
-            }
-          }}
-          onCreateMaintenance={() => {
-            setShowEventoDetailModal(false);
-            handleOpenMantenimientoModal();
-          }}
-        />
-      )}
+      {
+        selectedIncidencia?.tipo === "incidencia" && (
+          <IncidenciaDetailModal
+            isOpen={showEventoDetailModal}
+            onClose={handleCloseEventoDetailModal}
+            incidencia={selectedIncidencia}
+            onDelete={async (id) => {
+              if (selectedIncidencia?.id && selectedIncidencia?.machineId) {
+                await deleteIncidencia(selectedIncidencia.machineId, id);
+                handleCloseEventoDetailModal();
+              }
+            }}
+            onCreateMaintenance={() => {
+              setShowEventoDetailModal(false);
+              handleOpenMantenimientoModal();
+            }}
+          />
+        )
+      }
+
+      {/* Modal de Autenticación */}
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={handleCloseAuthModal}
+        onAccept={handleAuthAccept}
+        error={authError}
+      />
     </>
   );
 };
