@@ -12,6 +12,7 @@ import {
 } from 'firebase/firestore'
 import { app } from '@/firebase/firebase.config'
 import { FaChartBar, FaArrowLeft, FaFilter } from 'react-icons/fa'
+import { SubEnvironment } from '@/features/types/types'
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -46,6 +47,7 @@ interface AccessRecord {
     id: string;
     company: string;
     sexo?: string;
+    subEnvironments?: string[];
     timestamp: any;
 }
 
@@ -58,6 +60,8 @@ const ReportsPage: NextPage = () => {
     const [selectedCompany, setSelectedCompany] = useState<string>('all')
 
     const [selectedSex, setSelectedSex] = useState<string>('all')
+    const [subEnvironmentsList, setSubEnvironmentsList] = useState<SubEnvironment[]>([])
+    const [selectedSubEnv, setSelectedSubEnv] = useState<string>('all')
 
     useEffect(() => {
         const fetchData = async () => {
@@ -79,6 +83,18 @@ const ReportsPage: NextPage = () => {
             }
         }
         fetchData()
+
+        // Fetch SubEnvironments
+        const fetchSubEnvs = async () => {
+            const q = query(collection(db, 'sub_environments'), orderBy('createdAt', 'desc'))
+            const snapshot = await getDocs(q)
+            const data = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            })) as SubEnvironment[]
+            setSubEnvironmentsList(data)
+        }
+        fetchSubEnvs()
     }, [])
 
     const filteredData = useMemo(() => {
@@ -121,8 +137,15 @@ const ReportsPage: NextPage = () => {
             filtered = filtered.filter(item => item.sexo === selectedSex)
         }
 
+        // SubEnvironment Filter
+        if (selectedSubEnv !== 'all') {
+            filtered = filtered.filter(item =>
+                item.subEnvironments && item.subEnvironments.includes(selectedSubEnv)
+            )
+        }
+
         return filtered
-    }, [accessData, dateRange, selectedCompany, selectedSex, customStart, customEnd])
+    }, [accessData, dateRange, selectedCompany, selectedSex, customStart, customEnd, selectedSubEnv])
 
     // Get unique companies for filter
     const companies = useMemo(() => {
@@ -312,6 +335,17 @@ const ReportsPage: NextPage = () => {
                                 <option value="all">Todos los Sexos</option>
                                 <option value="Hombre">Hombre</option>
                                 <option value="Mujer">Mujer</option>
+                            </select>
+
+                            <select
+                                value={selectedSubEnv}
+                                onChange={(e) => setSelectedSubEnv(e.target.value)}
+                                className={styles.select}
+                            >
+                                <option value="all">Todos los Sub-ambientes</option>
+                                {subEnvironmentsList.map(env => (
+                                    <option key={env.id} value={env.nombre}>{env.nombre}</option>
+                                ))}
                             </select>
                         </div>
                     </div>

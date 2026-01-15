@@ -20,28 +20,20 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { app, storage } from '@/firebase/firebase.config'
 import { FaEdit, FaTrash, FaUserPlus, FaSave, FaTimes, FaCamera, FaSpinner, FaUserClock, FaChartBar } from 'react-icons/fa'
 import CompanyModal from '@/components/CompanyModal'
+import AreaModal from '@/components/AreaModal'
+import CargoModal from '@/components/CargoModal'
 import styles from './Members.module.css'
+import { MembersTable } from '@/components/MembersTable'
+import { MembersForm } from '@/components/MembersForm'
+import { Member, Company, Area, Cargo } from '@/features/types/types'
 
 
 const db = getFirestore(app)
 
 
-interface Member {
-    id?: string;
-    nombre: string;
-    dni: string;
-    apellidos: string;
-    empresa: string;
-    sexo: string;
-    fotoUrl?: string;
-    createdAt?: any;
-}
 
-interface Company {
-    id: string;
-    nombre: string;
-    createdAt?: any;
-}
+
+
 
 
 const MembersPage: NextPage = () => {
@@ -51,6 +43,8 @@ const MembersPage: NextPage = () => {
         dni: '',
         apellidos: '',
         empresa: '',
+        area: '',
+        cargo: '',
         sexo: ''
     })
     const [isEditing, setIsEditing] = useState(false)
@@ -60,9 +54,16 @@ const MembersPage: NextPage = () => {
     const [selectedImage, setSelectedImage] = useState<File | null>(null)
     const [previewUrl, setPreviewUrl] = useState<string | null>(null)
 
-    // Company Management State
+    // Company/Area/Cargo Management State
     const [empresas, setEmpresas] = useState<Company[]>([])
+    const [areas, setAreas] = useState<Area[]>([])
+    const [cargos, setCargos] = useState<Cargo[]>([])
+
     const [isCompanyModalOpen, setIsCompanyModalOpen] = useState(false)
+    const [isAreaModalOpen, setIsAreaModalOpen] = useState(false)
+    const [isCargoModalOpen, setIsCargoModalOpen] = useState(false)
+
+    const [isModalOpen, setIsModalOpen] = useState(false)
 
 
     useEffect(() => {
@@ -86,6 +87,30 @@ const MembersPage: NextPage = () => {
                 ...doc.data()
             })) as Company[]
             setEmpresas(companiesData)
+        })
+        return () => unsubscribe()
+    }, [])
+
+    useEffect(() => {
+        const q = query(collection(db, 'areas'), orderBy('createdAt', 'desc'))
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const areasData = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            })) as Area[]
+            setAreas(areasData)
+        })
+        return () => unsubscribe()
+    }, [])
+
+    useEffect(() => {
+        const q = query(collection(db, 'cargos'), orderBy('createdAt', 'desc'))
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const cargosData = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            })) as Cargo[]
+            setCargos(cargosData)
         })
         return () => unsubscribe()
     }, [])
@@ -217,11 +242,14 @@ const MembersPage: NextPage = () => {
                 dni: '',
                 apellidos: '',
                 empresa: '',
+                area: '',
+                cargo: '',
                 sexo: '',
                 fotoUrl: ''
             })
             setSelectedImage(null)
             setPreviewUrl(null)
+            setIsModalOpen(false) // Close modal on success
         } catch (error) {
             console.error("Error saving member:", error)
             alert("Error al guardar el usuario")
@@ -237,12 +265,15 @@ const MembersPage: NextPage = () => {
             dni: member.dni,
             apellidos: member.apellidos,
             empresa: member.empresa,
+            area: member.area || '',
+            cargo: member.cargo || '',
             sexo: member.sexo || '',
             fotoUrl: member.fotoUrl
         })
         setPreviewUrl(member.fotoUrl || null)
         setIsEditing(true)
         setEditingId(member.id)
+        setIsModalOpen(true) // Open modal for editing
     }
 
     const handleDelete = async (id: string) => {
@@ -264,11 +295,19 @@ const MembersPage: NextPage = () => {
             dni: '',
             apellidos: '',
             empresa: '',
+            area: '',
+            cargo: '',
             sexo: '',
             fotoUrl: ''
         })
         setSelectedImage(null)
         setPreviewUrl(null)
+        setIsModalOpen(false) // Close modal on cancel
+    }
+
+    const openNewMemberModal = () => {
+        handleCancel(); // Ensure form is reset
+        setIsModalOpen(true);
     }
 
     return (
@@ -288,238 +327,71 @@ const MembersPage: NextPage = () => {
                 <div className={styles.responsiveHeader}>
                     <p className={styles.headerSubtitle}>Gestión de miembros del gimnasio</p>
                     <div className={styles.responsiveHeaderActions}>
-                        <Link href="/members/access" className={`${styles.actionButton} ${styles.btnGreen}`}>
+                        <button onClick={openNewMemberModal} className={`${styles.actionButton} ${styles.btnPremium} ${styles.mobileHidden}`}>
+                            <FaUserPlus /> Nuevo Miembro
+                        </button>
+                        <Link href="/members/access" className={`${styles.actionButton} ${styles.btnPremiumGreen}`}>
                             <FaUserClock /> Registrar Ingreso
                         </Link>
-                        <Link href="/members/reports" className={`${styles.actionButton} ${styles.btnIndigo}`}>
+                        <Link href="/members/reports" className={`${styles.actionButton} ${styles.btnPremiumIndigo}`}>
                             <FaChartBar /> Ver Reportes
                         </Link>
                     </div>
                 </div>
 
-                <div className={styles.responsiveGrid}>
-                    {/* Formulario */}
-                    <div className={styles.formContainer}>
-                        <h2 className={styles.formTitle}>
-                            {isEditing ? 'Editar Usuario' : 'Nuevo Usuario'}
-                        </h2>
-                        <form onSubmit={handleSubmit} className={styles.form}>
-                            <div>
-                                <label htmlFor="dni" className={styles.label}>DNI</label>
-                                <input
-                                    type="text"
-                                    id="dni"
-                                    name="dni"
-                                    value={formData.dni}
-                                    onChange={handleInputChange}
-                                    required
-                                    className={styles.input}
-                                />
-                            </div>
+                {/* Floating Action Button for Mobile */}
+                {/* <button
+                    onClick={openNewMemberModal}
+                    className={styles.fab}
+                    title="Nuevo Miembro"
+                >
+                    <FaUserPlus size={24} />
+                </button> */}
 
-                            <div>
-                                <label className={styles.label}>Foto</label>
-                                <div className={styles.photoUploadContainer}>
-                                    {previewUrl && (
-                                        <NextImage
-                                            src={previewUrl}
-                                            alt="Vista previa"
-                                            width={48}
-                                            height={48}
-                                            className={styles.previewImage}
-                                            loading="lazy"
-                                        />
-                                    )}
-                                    <label className={styles.uploadLabel}>
-                                        <FaCamera />
-                                        <span>Seleccionar o tomar foto</span>
-                                        <input
-                                            type="file"
-                                            accept="image/*"
-                                            capture="environment"
-                                            onChange={handleImageChange}
-                                            style={{ display: 'none' }}
-                                        />
-                                    </label>
-                                </div>
-                                <p className={styles.uploadHelpText}>Máximo 100kb</p>
-                            </div>
-
-                            <div>
-                                <label htmlFor="nombre" className={styles.label}>Nombre</label>
-                                <input
-                                    type="text"
-                                    id="nombre"
-                                    name="nombre"
-                                    value={formData.nombre}
-                                    onChange={handleInputChange}
-                                    required
-                                    className={styles.input}
-                                />
-                            </div>
-                            <div>
-                                <label htmlFor="apellidos" className={styles.label}>Apellidos</label>
-                                <input
-                                    type="text"
-                                    id="apellidos"
-                                    name="apellidos"
-                                    value={formData.apellidos}
-                                    onChange={handleInputChange}
-                                    required
-                                    className={styles.input}
-                                />
-                            </div>
-                            <div>
-                                <label htmlFor="empresa" className={styles.label}>Empresa</label>
-                                <div className={styles.companySelectGroup}>
-                                    <select
-                                        id="empresa"
-                                        name="empresa"
-                                        value={formData.empresa}
-                                        onChange={handleInputChange}
-                                        required
-                                        className={`${styles.input} ${styles.companyInput}`}
-                                    >
-                                        <option value="">Seleccionar...</option>
-                                        {empresas.map((emp) => (
-                                            <option key={emp.id} value={emp.nombre}>{emp.nombre}</option>
-                                        ))}
-                                    </select>
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsCompanyModalOpen(true)}
-                                        className={styles.manageCompanyBtn}
-                                        title="Gestionar Empresas"
-                                    >
-                                        <FaEdit />
-                                    </button>
-                                </div>
-                            </div>
-                            <div>
-                                <label htmlFor="sexo" className={styles.label}>Sexo</label>
-                                <select
-                                    id="sexo"
-                                    name="sexo"
-                                    value={formData.sexo}
-                                    onChange={handleInputChange}
-                                    required
-                                    className={styles.input}
-                                >
-                                    <option value="">Seleccionar...</option>
-                                    <option value="Hombre">Hombre</option>
-                                    <option value="Mujer">Mujer</option>
-                                </select>
-                            </div>
-
-                            <div className={styles.formActions}>
-                                <button
-                                    type="submit"
-                                    className={`${styles.submitButton} ${isEditing ? styles.submitBtnAmber : styles.submitBtnBlue} ${isSubmitting ? styles.submitBtnDisabled : ''}`}
-                                    disabled={isSubmitting}
-                                >
-                                    {isSubmitting ? (
-                                        <>
-                                            <FaSpinner className={styles.spinAnimation} />
-                                            {isEditing ? 'Actualizando...' : 'Guardando...'}
-                                        </>
-                                    ) : (
-                                        <>
-                                            {isEditing ? <FaSave /> : <FaUserPlus />}
-                                            {isEditing ? 'Actualizar' : 'Agregar'}
-                                        </>
-                                    )}
-                                </button>
-                                {isEditing && (
-                                    <button
-                                        type="button"
-                                        onClick={handleCancel}
-                                        className={styles.cancelButton}
-                                        title="Cancelar"
-                                    >
-                                        <FaTimes />
-                                    </button>
-                                )}
-                            </div>
-                        </form>
-                    </div>
-
-                    {/* Lista de Usuarios */}
-                    <div className={styles.tableContainer}>
-                        <div className={styles.tableWrapper}>
-                            <table className={styles.table}>
-                                <thead className={styles.thead}>
-                                    <tr>
-                                        <th className={styles.th}>Foto</th>
-                                        <th className={styles.th}>DNI</th>
-                                        <th className={styles.th}>Nombre Completo</th>
-                                        <th className={styles.th}>Sexo</th>
-                                        <th className={styles.th}>Empresa</th>
-                                        <th className={`${styles.th} ${styles.tdActions}`}>Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {isLoading ? (
-                                        <tr>
-                                            <td colSpan={6} className={styles.emptyState}>Cargando usuarios...</td>
-                                        </tr>
-                                    ) : members.length === 0 ? (
-                                        <tr>
-                                            <td colSpan={6} className={styles.emptyState}>No hay usuarios registrados.</td>
-                                        </tr>
-                                    ) : (
-                                        members.map((member) => (
-                                            <tr key={member.id} className={styles.tr}>
-                                                <td className={styles.td}>
-                                                    {member.fotoUrl ? (
-                                                        <NextImage
-                                                            src={member.fotoUrl}
-                                                            alt={member.nombre}
-                                                            width={40}
-                                                            height={40}
-                                                            className={styles.previewImage}
-                                                            loading="lazy"
-                                                        />
-                                                    ) : (
-                                                        <div className={styles.avatarPlaceholder}>
-                                                            N/A
-                                                        </div>
-                                                    )}
-                                                </td>
-                                                <td className={`${styles.td} ${styles.tdDni}`}>{member.dni}</td>
-                                                <td className={`${styles.td} ${styles.tdName}`}>{member.nombre} {member.apellidos}</td>
-                                                <td className={`${styles.td} ${styles.tdSex}`}>{member.sexo}</td>
-                                                <td className={`${styles.td} ${styles.tdCompany}`}>{member.empresa}</td>
-                                                <td className={`${styles.td} ${styles.tdActions}`}>
-                                                    <div className={styles.actionButtonsContainer}>
-                                                        <button
-                                                            onClick={() => handleEdit(member)}
-                                                            className={styles.editButton}
-                                                            title="Editar"
-                                                        >
-                                                            <FaEdit size={14} />
-                                                        </button>
-                                                        <button
-                                                            onClick={() => member.id && handleDelete(member.id)}
-                                                            className={styles.deleteButton}
-                                                            title="Eliminar"
-                                                        >
-                                                            <FaTrash size={14} />
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
+                {/* Lista de Usuarios */}
+                <MembersTable
+                    members={members}
+                    empresas={empresas}
+                    isLoading={isLoading}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                />
             </main>
+
+            <MembersForm
+                isOpen={isModalOpen}
+                onClose={handleCancel}
+                formData={formData}
+                isEditing={isEditing}
+                isSubmitting={isSubmitting}
+                previewUrl={previewUrl}
+                empresas={empresas}
+                areas={areas}
+                cargos={cargos}
+                onInputChange={handleInputChange}
+                onImageChange={handleImageChange}
+                onSubmit={handleSubmit}
+                onCancel={handleCancel}
+                onOpenCompanyModal={() => setIsCompanyModalOpen(true)}
+                onOpenAreaModal={() => setIsAreaModalOpen(true)}
+                onOpenCargoModal={() => setIsCargoModalOpen(true)}
+            />
 
             <CompanyModal
                 isOpen={isCompanyModalOpen}
                 onClose={() => setIsCompanyModalOpen(false)}
+                db={db}
+            />
+
+            <AreaModal
+                isOpen={isAreaModalOpen}
+                onClose={() => setIsAreaModalOpen(false)}
+                db={db}
+            />
+
+            <CargoModal
+                isOpen={isCargoModalOpen}
+                onClose={() => setIsCargoModalOpen(false)}
                 db={db}
             />
         </>

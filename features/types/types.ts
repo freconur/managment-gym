@@ -84,3 +84,46 @@ export type Usuario = {
   createdAt?: any; // Timestamp de Firebase
   updatedAt?: any; // Timestamp de Firebase
 }
+
+export interface Member {
+  id?: string;
+  nombre: string;
+  dni: string;
+  apellidos: string;
+  empresa: string;
+  area?: string;
+  cargo?: string;
+  sexo: string;
+  fotoUrl?: string;
+  createdAt?: any;
+}
+
+export interface Company {
+  id: string;
+  nombre: string;
+  createdAt?: any;
+}
+
+export interface Area {
+  id: string;
+  nombre: string;
+  createdAt?: any;
+}
+
+export interface Cargo {
+  id: string;
+  nombre: string;
+  createdAt?: any;
+}
+
+export interface SubEnvironment {
+  id: string;
+  nombre: string;
+  createdAt?: any;
+}
+
+export interface Amenity {
+  id: string;
+  nombre: string;
+  createdAt?: any;
+}

@@ -1,0 +1,536 @@
+/* Overlay */
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.75);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 50;
+    padding: 1rem;
+    backdrop-filter: blur(4px);
+    transition: all 0.3s ease;
+}
+
+/* Modal */
+.modal {
+    background-color: white;
+    border-radius: 1.25rem;
+    width: 100%;
+    max-width: 550px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    overflow: hidden;
+    animation: modalSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(40px) scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Header */
+.modalHeader {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid #f1f5f9;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #ffffff;
+    flex-shrink: 0;
+    /* Prevent header shrinking */
+}
+
+.title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.closeButton {
+    border: none;
+    background: #f1f5f9;
+    cursor: pointer;
+    color: #64748b;
+    padding: 0.5rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.closeButton:hover {
+    background-color: #e2e8f0;
+    color: #ef4444;
+}
+
+/* Body */
+.modalBody {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    overflow-y: auto;
+    /* Custom Scrollbar */
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
+}
+
+.modalBody::-webkit-scrollbar {
+    width: 6px;
+}
+
+.modalBody::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.modalBody::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1;
+    border-radius: 20px;
+}
+
+/* Search Input Group */
+.inputGroup {
+    display: flex;
+    gap: 0.75rem;
+    width: 100%;
+}
+
+.input {
+    flex: 1;
+    padding: 1rem 1.25rem;
+    font-size: 1.125rem;
+    border-radius: 0.75rem;
+    border: 2px solid #e2e8f0;
+    background-color: #f8fafc;
+    outline: none;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    color: #334155;
+    /* Prevent zoom on mobile inputs */
+    touch-action: manipulation;
+}
+
+.input:focus {
+    border-color: #3b82f6;
+    background-color: white;
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+    transform: translateY(-1px);
+}
+
+.searchButton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 1.25rem;
+    background-color: #3b82f6;
+    color: white;
+    border-radius: 0.75rem;
+    border: none;
+    cursor: pointer;
+    font-size: 1.25rem;
+    transition: all 0.2s;
+    box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.2);
+}
+
+.searchButton:hover {
+    background-color: #2563eb;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 10px -2px rgba(59, 130, 246, 0.3);
+}
+
+.searchButtonDisabled {
+    background-color: #cbd5e1;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.searchButtonDisabled:hover {
+    transform: none;
+    background-color: #cbd5e1;
+}
+
+/* Scanner Button */
+.scanButton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    background-color: #eff6ff;
+    color: #2563eb;
+    border-radius: 0.75rem;
+    border: 2px dashed #bfdbfe;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 600;
+    transition: all 0.2s;
+    width: 100%;
+    margin-bottom: 0.5rem;
+}
+
+.scanButton:hover {
+    background-color: #dbeafe;
+    border-color: #3b82f6;
+    transform: scale(1.02);
+}
+
+/* Status Messages */
+.statusMessage {
+    padding: 1rem;
+    border-radius: 0.75rem;
+    font-weight: 600;
+    text-align: center;
+    animation: fadeIn 0.4s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.errorMessage {
+    background-color: #fef2f2;
+    color: #b91c1c;
+    border: 1px solid #fecaca;
+}
+
+.successMessage {
+    background-color: #f0fdf4;
+    color: #15803d;
+    border: 1px solid #86efac;
+}
+
+/* User Card */
+.userCard {
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px) scale(0.98);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.avatar {
+    border-radius: 9999px;
+    object-fit: cover;
+    border: 4px solid white;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    margin-bottom: 1rem;
+    transition: transform 0.3s ease;
+}
+
+.avatar:hover {
+    transform: scale(1.05);
+}
+
+.avatarPlaceholder {
+    width: 9rem;
+    height: 9rem;
+    border-radius: 9999px;
+    background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #64748b;
+    font-size: 3rem;
+    font-weight: 700;
+    border: 4px solid white;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.userName {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0 0 0.25rem 0;
+    line-height: 1.2;
+}
+
+.userDni {
+    color: #64748b;
+    font-size: 0.95rem;
+    margin: 0 0 1.25rem 0;
+    font-weight: 500;
+    padding: 0.25rem 0.75rem;
+    background: #f1f5f9;
+    border-radius: 2rem;
+}
+
+.userDetailsGrid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+    width: 100%;
+}
+
+.userBadge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    background-color: white;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    white-space: nowrap;
+}
+
+.userBadge strong {
+    color: #3b82f6;
+    margin-right: 0.4rem;
+}
+
+/* Sub-Environments & Amenities Section */
+.subEnvironmentsSection {
+    width: 100%;
+    background-color: white;
+    padding: 1.25rem;
+    border-radius: 1rem;
+    margin-bottom: 1rem;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+}
+
+.subEnvHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid #f1f5f9;
+    padding-bottom: 0.75rem;
+}
+
+.subEnvHeader h4 {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 1rem;
+    color: #334155;
+    font-weight: 700;
+}
+
+.manageSubEnvBtn {
+    background: #eff6ff;
+    border: 1px solid #dbeafe;
+    color: #3b82f6;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.8rem;
+    border-radius: 0.5rem;
+    transition: all 0.2s;
+}
+
+.manageSubEnvBtn:hover {
+    background-color: #dbeafe;
+    transform: translateY(-1px);
+}
+
+.subEnvGrid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+}
+
+/* Mobile: Single column for subenv/amenities */
+@media (max-width: 480px) {
+    .subEnvGrid {
+        grid-template-columns: 1fr;
+    }
+
+    .inputGroup {
+        flex-direction: column;
+    }
+
+    .searchButton {
+        width: 100%;
+        padding: 1rem;
+    }
+
+    .userName {
+        font-size: 1.25rem;
+    }
+
+    .modal {
+        border-radius: 1.25rem 1.25rem 0 0;
+        /* Sheet-like on very small? No, keep it rounded */
+        max-height: 95vh;
+        margin: 1rem;
+        width: calc(100% - 2rem);
+    }
+}
+
+.checkboxLabel {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    background-color: #f8fafc;
+    border: 1px solid transparent;
+    border-radius: 0.75rem;
+    cursor: pointer;
+    font-size: 0.95rem;
+    color: #475569;
+    user-select: none;
+    transition: all 0.2s;
+}
+
+.checkboxLabel:hover {
+    background-color: #f1f5f9;
+    border-color: #e2e8f0;
+}
+
+/* Active State for Checked Labels */
+.checkboxLabel:has(input:checked) {
+    background-color: #eff6ff;
+    border-color: #bfdbfe;
+    color: #1e40af;
+    font-weight: 600;
+}
+
+.checkboxLabel input[type="checkbox"] {
+    width: 1.25rem;
+    height: 1.25rem;
+    accent-color: #3b82f6;
+    cursor: pointer;
+}
+
+.noDataText {
+    color: #94a3b8;
+    font-size: 0.9rem;
+    grid-column: 1 / -1;
+    text-align: center;
+    font-style: italic;
+    padding: 1rem;
+    background: #f8fafc;
+    border-radius: 0.75rem;
+}
+
+.confirmButton {
+    width: 100%;
+    padding: 1.125rem;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    font-size: 1.125rem;
+    font-weight: 800;
+    border-radius: 0.875rem;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.3);
+    transition: all 0.2s;
+    margin-top: 1rem;
+}
+
+.confirmButton:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.4);
+    filter: brightness(1.1);
+}
+
+.confirmButton:disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+    filter: none;
+}
+
+.spinAnimation {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Scanner Overlay */
+.scannerOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.95);
+    z-index: 60;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(5px);
+}
+
+.scannerContainer {
+    width: 100%;
+    max-width: 500px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.closeScannerButton {
+    width: 100%;
+    padding: 1rem;
+    background-color: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 0.75rem;
+    font-size: 1.125rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 6px rgba(239, 68, 68, 0.3);
+    transition: transform 0.2s;
+}
+
+.closeScannerButton:hover {
+    transform: scale(1.02);
+}

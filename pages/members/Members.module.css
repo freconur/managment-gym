@@ -65,6 +65,61 @@
     color: white;
 }
 
+.btnPremium {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    color: white;
+    border: none;
+    box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.5), 0 2px 4px -1px rgba(59, 130, 246, 0.3);
+    transition: all 0.2s ease;
+    padding: 0.6rem 1.2rem;
+    font-size: 0.95rem;
+    cursor: pointer;
+}
+
+.btnPremium:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 8px -1px rgba(59, 130, 246, 0.6), 0 4px 6px -1px rgba(59, 130, 246, 0.4);
+    filter: brightness(1.1);
+}
+
+.btnPremium:active {
+    transform: translateY(0);
+}
+
+.btnPremiumGreen {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    border: none;
+    box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.5), 0 2px 4px -1px rgba(16, 185, 129, 0.3);
+    transition: all 0.2s ease;
+    padding: 0.6rem 1.2rem;
+    font-size: 0.95rem;
+    cursor: pointer;
+}
+
+.btnPremiumGreen:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 8px -1px rgba(16, 185, 129, 0.6), 0 4px 6px -1px rgba(16, 185, 129, 0.4);
+    filter: brightness(1.1);
+}
+
+.btnPremiumIndigo {
+    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+    color: white;
+    border: none;
+    box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.5), 0 2px 4px -1px rgba(99, 102, 241, 0.3);
+    transition: all 0.2s ease;
+    padding: 0.6rem 1.2rem;
+    font-size: 0.95rem;
+    cursor: pointer;
+}
+
+.btnPremiumIndigo:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 8px -1px rgba(99, 102, 241, 0.6), 0 4px 6px -1px rgba(99, 102, 241, 0.4);
+    filter: brightness(1.1);
+}
+
 /* Responsive Grid Layout */
 .responsiveGrid {
     display: grid;
