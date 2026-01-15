@@ -14,9 +14,9 @@ const Home: NextPage = () => {
       <main style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto' }}>
         <h1>Bienvenido a Management Gym</h1>
         <p style={{ marginBottom: '2rem', color: '#6b7280' }}>Sistema de gestión para gimnasio</p>
-        
+
         <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-          <Link 
+          <Link
             href="/equipment"
             style={{
               display: 'inline-block',
@@ -32,6 +32,23 @@ const Home: NextPage = () => {
             onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#3b82f6'}
           >
             🏋️ Gestión de Equipos
+          </Link>
+          <Link
+            href="/members"
+            style={{
+              display: 'inline-block',
+              padding: '1rem 2rem',
+              backgroundColor: '#3b82f6',
+              color: 'white',
+              textDecoration: 'none',
+              borderRadius: '0.5rem',
+              fontWeight: '600',
+              transition: 'background-color 0.2s'
+            }}
+            onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#2563eb'}
+            onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#3b82f6'}
+          >
+            👥 Registro de Usuarios
           </Link>
         </div>
       </main>
