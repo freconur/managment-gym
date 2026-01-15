@@ -3,6 +3,7 @@ import NextImage from 'next/image';
 import { FaCamera, FaEdit, FaSave, FaSpinner, FaTimes, FaUserPlus } from 'react-icons/fa';
 import styles from './MembersForm.module.css';
 import { Member, Company, Area, Cargo } from '@/features/types/types';
+import { SmartSelect } from './SmartSelect';
 
 interface MembersFormProps {
     isOpen: boolean;
@@ -137,19 +138,18 @@ export const MembersForm: React.FC<MembersFormProps> = ({
                     <div>
                         <label htmlFor="empresa" className={styles.label}>Empresa</label>
                         <div className={styles.companySelectGroup}>
-                            <select
-                                id="empresa"
-                                name="empresa"
+                            <SmartSelect
+                                options={empresas}
                                 value={formData.empresa}
-                                onChange={onInputChange}
-                                required
+                                onChange={(val) => {
+                                    // Simulate generic event for compatibility
+                                    onInputChange({ target: { name: 'empresa', value: val } } as any);
+                                }}
+                                name="empresa"
+                                placeholder="Buscar empresa..."
                                 className={`${styles.input} ${styles.companyInput}`}
-                            >
-                                <option value="">Seleccionar...</option>
-                                {empresas.map((emp) => (
-                                    <option key={emp.id} value={emp.nombre}>{emp.nombre}</option>
-                                ))}
-                            </select>
+                                required
+                            />
                             <button
                                 type="button"
                                 onClick={onOpenCompanyModal}
@@ -163,18 +163,16 @@ export const MembersForm: React.FC<MembersFormProps> = ({
                     <div>
                         <label htmlFor="area" className={styles.label}>Área</label>
                         <div className={styles.companySelectGroup}>
-                            <select
-                                id="area"
-                                name="area"
+                            <SmartSelect
+                                options={areas}
                                 value={formData.area || ''}
-                                onChange={onInputChange}
+                                onChange={(val) => {
+                                    onInputChange({ target: { name: 'area', value: val } } as any);
+                                }}
+                                name="area"
+                                placeholder="Buscar área..."
                                 className={`${styles.input} ${styles.companyInput}`}
-                            >
-                                <option value="">Seleccionar...</option>
-                                {areas.map((a) => (
-                                    <option key={a.id} value={a.nombre}>{a.nombre}</option>
-                                ))}
-                            </select>
+                            />
                             <button
                                 type="button"
                                 onClick={onOpenAreaModal}
@@ -188,18 +186,16 @@ export const MembersForm: React.FC<MembersFormProps> = ({
                     <div>
                         <label htmlFor="cargo" className={styles.label}>Cargo</label>
                         <div className={styles.companySelectGroup}>
-                            <select
-                                id="cargo"
-                                name="cargo"
+                            <SmartSelect
+                                options={cargos}
                                 value={formData.cargo || ''}
-                                onChange={onInputChange}
+                                onChange={(val) => {
+                                    onInputChange({ target: { name: 'cargo', value: val } } as any);
+                                }}
+                                name="cargo"
+                                placeholder="Buscar cargo..."
                                 className={`${styles.input} ${styles.companyInput}`}
-                            >
-                                <option value="">Seleccionar...</option>
-                                {cargos.map((c) => (
-                                    <option key={c.id} value={c.nombre}>{c.nombre}</option>
-                                ))}
-                            </select>
+                            />
                             <button
                                 type="button"
                                 onClick={onOpenCargoModal}

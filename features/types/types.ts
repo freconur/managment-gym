@@ -95,6 +95,7 @@ export interface Member {
   cargo?: string;
   sexo: string;
   fotoUrl?: string;
+  lastAccess?: any;
   createdAt?: any;
 }
 

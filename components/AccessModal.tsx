@@ -10,6 +10,8 @@ import {
     onSnapshot,
     getDocs,
     addDoc,
+    updateDoc,
+    doc,
     serverTimestamp
 } from 'firebase/firestore';
 import { app } from '@/firebase/firebase.config';
@@ -205,6 +207,12 @@ export const AccessModal: React.FC<AccessModalProps> = ({ isOpen, onClose }) => 
                 fotoUrl: member.fotoUrl || null,
                 timestamp: serverTimestamp()
             });
+
+            // Update lastAccess for the member
+            await updateDoc(doc(db, 'members', member.id), {
+                lastAccess: serverTimestamp()
+            });
+
             setSuccessMsg(`¡Ingreso registrado para ${member.nombre}!`);
             setDni('');
             setMember(null);
@@ -365,7 +373,7 @@ export const AccessModal: React.FC<AccessModalProps> = ({ isOpen, onClose }) => 
                                 </div>
                             </div>
 
-                            <div className={styles.subEnvironmentsSection} style={{ marginTop: '1rem' }}>
+                            {/*  <div className={styles.subEnvironmentsSection} style={{ marginTop: '1rem' }}>
                                 <div className={styles.subEnvHeader}>
                                     <h4><FaConciergeBell /> Amenidades (Servicios)</h4>
                                     <button
@@ -392,7 +400,7 @@ export const AccessModal: React.FC<AccessModalProps> = ({ isOpen, onClose }) => 
                                         ))
                                     )}
                                 </div>
-                            </div>
+                            </div> */}
 
                             <button
                                 onClick={handleRegister}

@@ -19,6 +19,35 @@
     gap: 0.5rem;
 }
 
+.filterSection {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
+
+.dateInput,
+.companySelect {
+    padding: 0.5rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    color: #334155;
+    outline: none;
+    background-color: white;
+}
+
+.dateInput:focus,
+.companySelect:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.companySelect {
+    flex: 1;
+    min-width: 150px;
+}
+
 .activityList {
     display: flex;
     flex-direction: column;
@@ -103,13 +132,41 @@
     text-overflow: ellipsis;
 }
 
-.activityDetails {
-    font-size: 0.875rem;
-    color: #64748b;
-    margin: 0;
+.metaTags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+    margin-top: 0.25rem;
+}
+
+.tagCompany,
+.tagArea,
+.tagCargo {
+    font-size: 0.7rem;
+    padding: 0.1rem 0.5rem;
+    border-radius: 9999px;
+    font-weight: 600;
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    display: inline-flex;
+    align-items: center;
+}
+
+.tagCompany {
+    background-color: #e0f2fe;
+    color: #0284c7;
+    border: 1px solid #bae6fd;
+}
+
+.tagArea {
+    background-color: #f3e8ff;
+    color: #9333ea;
+    border: 1px solid #e9d5ff;
+}
+
+.tagCargo {
+    background-color: #dcfce7;
+    color: #16a34a;
+    border: 1px solid #bbf7d0;
 }
 
 .activityTimeContainer {
@@ -194,4 +251,108 @@
     color: #94a3b8;
     padding: 2rem;
     font-style: italic;
+}
+
+/* Towel Section */
+.towelSection {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0 1rem;
+    padding: 0.25rem 0.5rem;
+    background-color: #f1f5f9;
+    border-radius: 0.5rem;
+    border: 1px solid #e2e8f0;
+}
+
+.towelCheckboxLabel {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    cursor: pointer;
+    font-size: 0.875rem;
+    color: #475569;
+    font-weight: 500;
+    user-select: none;
+}
+
+.towelCheckbox {
+    width: 1rem;
+    height: 1rem;
+    accent-color: #3b82f6;
+    cursor: pointer;
+}
+
+.towelText {
+    white-space: nowrap;
+}
+
+.towelInput {
+    width: 3rem;
+    padding: 0.25rem 0.5rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 0.25rem;
+    font-size: 0.875rem;
+    text-align: center;
+    outline: none;
+}
+
+.towelInput:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+/* Chrome, Safari, Edge, Opera */
+.towelInput::-webkit-outer-spin-button,
+.towelInput::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    appearance: none;
+    margin: 0;
+}
+
+/* Firefox */
+.towelInput[type=number] {
+    -moz-appearance: textfield;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+    .towelSection {
+        flex-direction: row;
+        margin: 0.5rem 0 0 0;
+        width: 100%;
+        justify-content: center;
+    }
+
+    .activityItem {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .activityInfo {
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+
+    .activityAvatar {
+        margin-bottom: 0.5rem;
+    }
+
+    .activityTimeContainer {
+        width: 100%;
+        text-align: left;
+        margin-left: 0;
+        margin-top: 0.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .deleteButton {
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
+        opacity: 1;
+        /* Always visible on mobile */
+    }
 }

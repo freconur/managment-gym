@@ -4,6 +4,7 @@ import { FaEdit, FaTrash, FaSearch } from 'react-icons/fa';
 import styles from '@/pages/members/Members.module.css';
 
 import { Member, Company } from '@/features/types/types';
+import PinModal from './PinModal';
 
 interface MembersTableProps {
     members: Member[];
@@ -22,6 +23,29 @@ export const MembersTable: React.FC<MembersTableProps> = ({
 }) => {
     const [filterEmpresa, setFilterEmpresa] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
+
+    // PIN Security State
+    const [isPinModalOpen, setIsPinModalOpen] = useState(false);
+    const [pendingAction, setPendingAction] = useState<{ type: 'EDIT' | 'DELETE', payload: any } | null>(null);
+
+    const handleActionRequest = (type: 'EDIT' | 'DELETE', payload: any) => {
+        setPendingAction({ type, payload });
+        setIsPinModalOpen(true);
+    };
+
+    const handlePinSuccess = () => {
+        if (!pendingAction) return;
+
+        if (pendingAction.type === 'EDIT') {
+            onEdit(pendingAction.payload);
+        } else if (pendingAction.type === 'DELETE') {
+            onDelete(pendingAction.payload);
+        }
+
+        setPendingAction(null);
+        // Modal closes automatically via its own props usually, or we close it here if needed? 
+        // PinModal calls onClose after success, so just ensuring logic holds.
+    };
 
     const filteredMembers = members.filter(member => {
         const matchesEmpresa = filterEmpresa ? member.empresa === filterEmpresa : true;
@@ -127,16 +151,16 @@ export const MembersTable: React.FC<MembersTableProps> = ({
                                     <td className={`${styles.td} ${styles.tdActions}`}>
                                         <div className={styles.actionButtonsContainer}>
                                             <button
-                                                onClick={() => onEdit(member)}
+                                                onClick={() => handleActionRequest('EDIT', member)}
                                                 className={styles.editButton}
-                                                title="Editar"
+                                                title="Editar (Requiere PIN)"
                                             >
                                                 <FaEdit size={14} />
                                             </button>
                                             <button
-                                                onClick={() => member.id && onDelete(member.id)}
+                                                onClick={() => member.id && handleActionRequest('DELETE', member.id)}
                                                 className={styles.deleteButton}
-                                                title="Eliminar"
+                                                title="Eliminar (Requiere PIN)"
                                             >
                                                 <FaTrash size={14} />
                                             </button>
@@ -148,6 +172,16 @@ export const MembersTable: React.FC<MembersTableProps> = ({
                     </tbody>
                 </table>
             </div>
+
+            <PinModal
+                isOpen={isPinModalOpen}
+                onClose={() => {
+                    setIsPinModalOpen(false);
+                    setPendingAction(null);
+                }}
+                onSuccess={handlePinSuccess}
+                title={pendingAction?.type === 'DELETE' ? 'PIN para Eliminar' : 'PIN para Editar'}
+            />
         </div>
     );
 };

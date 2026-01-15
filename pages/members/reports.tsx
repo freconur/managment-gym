@@ -27,6 +27,7 @@ import {
 } from 'chart.js'
 import { Bar, Doughnut, Line } from 'react-chartjs-2'
 import styles from './Reports.module.css'
+import { InactiveMembersFilter } from '@/components/InactiveMembersFilter'
 
 
 ChartJS.register(
@@ -436,6 +437,11 @@ const ReportsPage: NextPage = () => {
                                         <p className={styles.summaryValue}>{companyChartData.labels?.length || 0}</p>
                                     </div>
                                 </div>
+                            </div>
+
+                            {/* Inactive Members Section */}
+                            <div className={`${styles.card} ${styles.cardFullWidth}`}>
+                                <InactiveMembersFilter />
                             </div>
                         </div>
 
