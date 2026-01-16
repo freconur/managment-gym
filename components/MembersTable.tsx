@@ -144,10 +144,20 @@ export const MembersTable: React.FC<MembersTableProps> = ({
                                     </td>
                                     <td className={`${styles.td} ${styles.tdDni}`}>{member.dni}</td>
                                     <td className={`${styles.td} ${styles.tdName}`}>{member.nombre} {member.apellidos}</td>
-                                    <td className={styles.td}>{member.area || '-'}</td>
-                                    <td className={styles.td}>{member.cargo || '-'}</td>
+                                    <td className={styles.td}>
+                                        {member.area ? (
+                                            <span className={`${styles.badge} ${styles.badgeArea}`}>{member.area}</span>
+                                        ) : '-'}
+                                    </td>
+                                    <td className={styles.td}>
+                                        {member.cargo ? (
+                                            <span className={`${styles.badge} ${styles.badgeCargo}`}>{member.cargo}</span>
+                                        ) : '-'}
+                                    </td>
                                     <td className={`${styles.td} ${styles.tdSex}`}>{member.sexo}</td>
-                                    <td className={`${styles.td} ${styles.tdCompany}`}>{member.empresa}</td>
+                                    <td className={styles.td}>
+                                        <span className={`${styles.badge} ${styles.badgeCompany}`}>{member.empresa}</span>
+                                    </td>
                                     <td className={`${styles.td} ${styles.tdActions}`}>
                                         <div className={styles.actionButtonsContainer}>
                                             <button

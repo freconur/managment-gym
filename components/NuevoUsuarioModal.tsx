@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { FaTimes, FaExclamationTriangle } from 'react-icons/fa'
+import { FaTimes, FaExclamationTriangle, FaUserPlus } from 'react-icons/fa'
 import styles from '@/styles/equipment.module.css'
 import { roles } from '@/utils/data'
 interface NuevoUsuarioModalProps {
@@ -13,6 +13,8 @@ interface NuevoUsuarioModalProps {
     pin: number
   }) => void
 }
+
+import { useEscapeKey } from '@/features/hooks/useEscapeKey'
 
 export const NuevoUsuarioModal: React.FC<NuevoUsuarioModalProps> = ({
   isOpen,
@@ -41,6 +43,14 @@ export const NuevoUsuarioModal: React.FC<NuevoUsuarioModalProps> = ({
     confirmPin: ''
   })
 
+  useEscapeKey(() => {
+    if (isPinModalOpen) {
+      handleClosePinModal()
+      return
+    }
+    onClose()
+  }, isOpen)
+
   if (!isOpen) return null
 
   const validateDNI = (dni: string): string => {
@@ -66,7 +76,7 @@ export const NuevoUsuarioModal: React.FC<NuevoUsuarioModalProps> = ({
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
-    
+
     if (name === 'dni') {
       // Solo permitir números y máximo 8 dígitos
       const numericValue = value.replace(/\D/g, '').slice(0, 8)
@@ -96,7 +106,7 @@ export const NuevoUsuarioModal: React.FC<NuevoUsuarioModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     // Validar todos los campos
     const dniError = validateDNI(formData.dni)
     const nombresError = validateNombre(formData.nombres, 'Nombres')
@@ -124,17 +134,17 @@ export const NuevoUsuarioModal: React.FC<NuevoUsuarioModalProps> = ({
     // Solo permitir números y máximo 4 dígitos
     // Si el valor está vacío, permitirlo (para poder borrar)
     let numericValue = value.replace(/\D/g, '').slice(0, 4)
-    
+
     // Si el valor es una cadena vacía, mantenerla como cadena vacía
     if (value === '') {
       numericValue = ''
     }
-    
+
     const updatedPinData = {
       ...pinData,
       [name]: numericValue
     }
-    
+
     setPinData(updatedPinData)
 
     // Validar en tiempo real si los PINs coinciden cuando ambos tienen 4 dígitos
@@ -161,20 +171,20 @@ export const NuevoUsuarioModal: React.FC<NuevoUsuarioModalProps> = ({
 
   const handlePinSubmit = () => {
     // Validar PIN
-    const pinError = !pinData.pin 
-      ? 'El PIN es requerido' 
-      : pinData.pin.length !== 4 
-      ? 'El PIN debe tener exactamente 4 dígitos' 
-      : ''
-    
+    const pinError = !pinData.pin
+      ? 'El PIN es requerido'
+      : pinData.pin.length !== 4
+        ? 'El PIN debe tener exactamente 4 dígitos'
+        : ''
+
     // Validar confirmación de PIN
     const confirmPinError = !pinData.confirmPin
       ? 'La confirmación de PIN es requerida'
       : pinData.confirmPin.length !== 4
-      ? 'La confirmación de PIN debe tener exactamente 4 dígitos'
-      : pinData.pin !== pinData.confirmPin
-      ? 'Los PINs no coinciden'
-      : ''
+        ? 'La confirmación de PIN debe tener exactamente 4 dígitos'
+        : pinData.pin !== pinData.confirmPin
+          ? 'Los PINs no coinciden'
+          : ''
 
     setPinErrors({
       pin: pinError,
@@ -196,7 +206,7 @@ export const NuevoUsuarioModal: React.FC<NuevoUsuarioModalProps> = ({
     }
 
     onSubmit(usuarioData)
-    
+
     // Limpiar formularios
     setFormData({
       dni: '',
@@ -277,9 +287,12 @@ export const NuevoUsuarioModal: React.FC<NuevoUsuarioModalProps> = ({
   return (
     <>
       <div className={styles.modalOverlay} onClick={handleClose}>
-        <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-          <div className={styles.modalHeader}>
-            <h3 className={styles.modalTitle}>Nuevo Usuario</h3>
+        <div className={styles.userModalContent} onClick={(e) => e.stopPropagation()}>
+          <div className={styles.userModalHeader}>
+            <h3 className={styles.userModalTitle}>
+              <FaUserPlus size={24} style={{ color: '#3b82f6' }} />
+              Nuevo Usuario
+            </h3>
             <button
               type="button"
               onClick={handleClose}
@@ -289,11 +302,11 @@ export const NuevoUsuarioModal: React.FC<NuevoUsuarioModalProps> = ({
               <FaTimes size={20} />
             </button>
           </div>
-          <div className={styles.modalBody}>
+          <div className={styles.userModalBody}>
             <form onSubmit={handleSubmit}>
-              <div className={styles.modalSection}>
-                <div className={styles.formField}>
-                  <label className={styles.label} htmlFor="dni">
+              <div className={styles.userFormGrid}>
+                <div className={styles.userInputGroup}>
+                  <label className={styles.userInputLabel} htmlFor="dni">
                     DNI
                   </label>
                   <input
@@ -302,59 +315,20 @@ export const NuevoUsuarioModal: React.FC<NuevoUsuarioModalProps> = ({
                     name="dni"
                     value={formData.dni}
                     onChange={handleChange}
-                    placeholder="Ingrese el DNI (8 dígitos)"
-                    className={styles.input}
+                    placeholder="8 dígitos"
+                    className={`${styles.userInput} ${errors.dni ? styles.userInputError : ''}`}
                     required
                     maxLength={8}
+                    autoComplete="off"
                   />
                   {errors.dni && (
-                    <span style={{ color: 'red', fontSize: '0.875rem', marginTop: '0.25rem', display: 'block' }}>
+                    <span className={styles.userErrorText}>
                       {errors.dni}
                     </span>
                   )}
                 </div>
-                <div className={styles.formField}>
-                  <label className={styles.label} htmlFor="nombres">
-                    Nombres
-                  </label>
-                  <input
-                    type="text"
-                    id="nombres"
-                    name="nombres"
-                    value={formData.nombres}
-                    onChange={handleChange}
-                    placeholder="Ingrese los nombres"
-                    className={styles.input}
-                    required
-                  />
-                  {errors.nombres && (
-                    <span style={{ color: 'red', fontSize: '0.875rem', marginTop: '0.25rem', display: 'block' }}>
-                      {errors.nombres}
-                    </span>
-                  )}
-                </div>
-                <div className={styles.formField}>
-                  <label className={styles.label} htmlFor="apellidos">
-                    Apellidos
-                  </label>
-                  <input
-                    type="text"
-                    id="apellidos"
-                    name="apellidos"
-                    value={formData.apellidos}
-                    onChange={handleChange}
-                    placeholder="Ingrese los apellidos"
-                    className={styles.input}
-                    required
-                  />
-                  {errors.apellidos && (
-                    <span style={{ color: 'red', fontSize: '0.875rem', marginTop: '0.25rem', display: 'block' }}>
-                      {errors.apellidos}
-                    </span>
-                  )}
-                </div>
-                <div className={styles.formField}>
-                  <label className={styles.label} htmlFor="rol">
+                <div className={styles.userInputGroup}>
+                  <label className={styles.userInputLabel} htmlFor="rol">
                     Rol
                   </label>
                   <select
@@ -362,8 +336,9 @@ export const NuevoUsuarioModal: React.FC<NuevoUsuarioModalProps> = ({
                     name="rol"
                     value={formData.rol}
                     onChange={handleChange}
-                    className={styles.select}
+                    className={`${styles.userInput} ${errors.rol ? styles.userInputError : ''}`}
                     required
+                    style={{ appearance: 'none' }}
                   >
                     <option value="">Seleccione un rol</option>
                     {roles.map((rol) => (
@@ -373,17 +348,61 @@ export const NuevoUsuarioModal: React.FC<NuevoUsuarioModalProps> = ({
                     ))}
                   </select>
                   {errors.rol && (
-                    <span style={{ color: 'red', fontSize: '0.875rem', marginTop: '0.25rem', display: 'block' }}>
+                    <span className={styles.userErrorText}>
                       {errors.rol}
                     </span>
                   )}
                 </div>
+                <div className={styles.userInputGroup}>
+                  <label className={styles.userInputLabel} htmlFor="nombres">
+                    Nombres
+                  </label>
+                  <input
+                    type="text"
+                    id="nombres"
+                    name="nombres"
+                    value={formData.nombres}
+                    onChange={handleChange}
+                    placeholder="Ingrese los nombres"
+                    className={`${styles.userInput} ${errors.nombres ? styles.userInputError : ''}`}
+                    required
+                    autoComplete="off"
+                  />
+                  {errors.nombres && (
+                    <span className={styles.userErrorText}>
+                      {errors.nombres}
+                    </span>
+                  )}
+                </div>
+                <div className={styles.userInputGroup}>
+                  <label className={styles.userInputLabel} htmlFor="apellidos">
+                    Apellidos
+                  </label>
+                  <input
+                    type="text"
+                    id="apellidos"
+                    name="apellidos"
+                    value={formData.apellidos}
+                    onChange={handleChange}
+                    placeholder="Ingrese los apellidos"
+                    className={`${styles.userInput} ${errors.apellidos ? styles.userInputError : ''}`}
+                    required
+                    autoComplete="off"
+                  />
+                  {errors.apellidos && (
+                    <span className={styles.userErrorText}>
+                      {errors.apellidos}
+                    </span>
+                  )}
+                </div>
               </div>
-              <div className={styles.modalButtonGroup} style={{ marginTop: '1.5rem', justifyContent: 'flex-end' }}>
+
+              <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
                 <button
                   type="button"
                   onClick={handleClose}
                   className={`${styles.button} ${styles.buttonSecondary}`}
+                  style={{ minWidth: '100px' }}
                 >
                   Cancelar
                 </button>
@@ -391,8 +410,9 @@ export const NuevoUsuarioModal: React.FC<NuevoUsuarioModalProps> = ({
                   type="submit"
                   className={`${styles.button} ${styles.buttonPrimary}`}
                   disabled={!isFormValid()}
+                  style={{ minWidth: '120px' }}
                 >
-                  Guardar
+                  Continuar
                 </button>
               </div>
             </form>
@@ -470,9 +490,9 @@ export const NuevoUsuarioModal: React.FC<NuevoUsuarioModalProps> = ({
                     }}
                   />
                   {pinErrors.confirmPin && (
-                    <div style={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
                       gap: '0.5rem',
                       marginTop: '0.5rem',
                       padding: '0.75rem',

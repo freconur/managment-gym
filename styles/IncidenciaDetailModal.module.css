@@ -1,0 +1,462 @@
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Modal Core */
+.modalOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 1rem;
+    animation: fadeIn 0.2s ease-out;
+    backdrop-filter: blur(2px);
+}
+
+.modalContent {
+    background-color: white;
+    border-radius: 0.75rem;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    width: 100%;
+    max-width: 500px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: slideUp 0.3s ease-out;
+    transform-origin: center;
+}
+
+.modalContentLarge {
+    max-width: 600px;
+}
+
+.modalHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    border-bottom: 1px solid #e5e7eb;
+    flex-shrink: 0;
+    gap: 0.5rem;
+}
+
+.modalTitleGroup {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.modalTitle {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #111827;
+}
+
+.modalActions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.modalCloseButton,
+.actionButton {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.375rem;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.375rem;
+    transition: all 0.2s;
+    color: #6b7280;
+}
+
+.modalCloseButton:hover {
+    background-color: #f3f4f6;
+    color: #374151;
+}
+
+.actionButtonPrimary {
+    background-color: #3b82f6;
+    color: #fff;
+}
+
+.actionButtonPrimary:hover {
+    background-color: #2563eb;
+}
+
+.actionButtonDanger {
+    background-color: #ef4444;
+    color: #fff;
+}
+
+.actionButtonDanger:hover {
+    background-color: #dc2626;
+}
+
+.modalBody {
+    padding: 1.5rem;
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    gap: 1.5rem;
+}
+
+/* Info Cards */
+.infoCard {
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.infoCardHeader {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.75rem;
+    color: #475569;
+    font-size: 0.8125rem;
+    font-weight: 600;
+}
+
+.headerIconBlue {
+    margin-right: 0.5rem;
+    color: #3b82f6;
+}
+
+/* User Info Styles */
+.userInfoGrid {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    flex-wrap: wrap;
+}
+
+.userInfoItem {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #475569;
+    font-size: 0.8125rem;
+    font-weight: 600;
+}
+
+.userName {
+    color: #64748b;
+    font-size: 0.8125rem;
+}
+
+.userDniContainer {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+}
+
+.userDni {
+    color: #475569;
+    font-size: 0.8125rem;
+    font-weight: 500;
+}
+
+.userRole {
+    color: #64748b;
+    font-size: 0.75rem;
+    background-color: #e2e8f0;
+    padding: 0.125rem 0.5rem;
+    border-radius: 0.25rem;
+    font-weight: 500;
+}
+
+.separator {
+    width: 1px;
+    height: 16px;
+    background-color: #cbd5e1;
+}
+
+/* Machine Info Styles */
+.machineInfoGrid {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.infoRow {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8125rem;
+}
+
+.infoLabel {
+    color: #64748b;
+    font-weight: 500;
+    min-width: 80px;
+}
+
+.infoValue {
+    color: #475569;
+    font-weight: 500;
+}
+
+.infoValueBold {
+    font-weight: 600;
+    color: #475569;
+}
+
+.machineIdBadge {
+    color: #475569;
+    font-weight: 500;
+    font-family: monospace;
+    font-size: 0.75rem;
+    background-color: #e2e8f0;
+    padding: 0.125rem 0.5rem;
+    border-radius: 0.25rem;
+}
+
+/* Badges */
+.statusBadge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.375rem;
+    font-weight: 500;
+}
+
+.statusPending {
+    background-color: #f59e0b;
+    color: white;
+}
+
+.statusInProcess {
+    background-color: #3b82f6;
+    color: white;
+}
+
+.statusCompleted {
+    background-color: #10b981;
+    color: white;
+}
+
+.statusCancelled {
+    background-color: #ef4444;
+    color: white;
+}
+
+.statusActive {
+    background-color: #10b981;
+    color: white;
+}
+
+.statusMaintenance {
+    background-color: #f59e0b;
+    color: white;
+}
+
+.statusInactive {
+    background-color: #ef4444;
+    color: white;
+}
+
+.priorityLow {
+    background-color: #10b981;
+    color: white;
+}
+
+.priorityMedium {
+    background-color: #f59e0b;
+    color: white;
+}
+
+.priorityHigh {
+    background-color: #f97316;
+    color: white;
+}
+
+.priorityUrgent {
+    background-color: #ef4444;
+    color: white;
+}
+
+/* Description Styles */
+.descriptionList {
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+}
+
+.questionRow {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8125rem;
+}
+
+.questionText {
+    color: #64748b;
+    font-weight: 500;
+}
+
+.answerBadge {
+    color: #475569;
+    font-weight: 600;
+    background-color: #e2e8f0;
+    padding: 0.125rem 0.5rem;
+    border-radius: 0.25rem;
+}
+
+.additionalInfoContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    font-size: 0.8125rem;
+}
+
+.additionalInfoBox {
+    padding: 0.625rem;
+    background-color: #ffffff;
+    border-radius: 0.375rem;
+    border: 1px solid #e2e8f0;
+    color: #475569;
+    line-height: 1.5;
+    white-space: pre-wrap;
+}
+
+/* Evidence Styles */
+.evidenceImageContainer {
+    display: flex;
+    justify-content: center;
+    background-color: #ffffff;
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    border: 1px solid #e2e8f0;
+}
+
+.evidenceImage {
+    max-width: 100%;
+    max-height: 300px;
+    border-radius: 0.375rem;
+    object-fit: contain;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .modalContentLarge {
+        max-height: 90vh;
+        height: auto;
+    }
+
+    .modalHeader {
+        padding: 1rem;
+    }
+
+    .modalBody {
+        padding: 1rem;
+    }
+}
+
+/* Form Styles */
+.formField {
+    margin-bottom: 1rem;
+}
+
+.label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: #374151;
+    font-size: 0.875rem;
+}
+
+.input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    font-size: 1rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.modalButtonGroup {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+}
+
+.button {
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    font-size: 0.875rem;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.buttonSecondary {
+    background-color: #f3f4f6;
+    color: #4b5563;
+}
+
+.buttonSecondary:hover {
+    background-color: #e5e7eb;
+}
+
+.buttonSubmit {
+    background-color: #3b82f6;
+    color: white;
+}
+
+.buttonSubmit:hover {
+    background-color: #2563eb;
+}
+
+.dangerMessage {
+    margin: 0.5rem 0 0 0;
+    font-size: 0.875rem;
+    color: #ef4444;
+    font-weight: 500;
+}
+
+.modalButton {
+    flex: 1;
+}

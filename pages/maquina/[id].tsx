@@ -48,6 +48,9 @@ const MaquinaPAge = () => {
   const [error, setError] = useState<string | null>(null)
   const [pendingAction, setPendingAction] = useState<'incidencia' | 'mantenimiento' | null>(null)
 
+  // const [pendingIncidenciaToAttend, setPendingIncidenciaToAttend] = useState<string | null>(null)
+  const pendingIncidenciaToAttend = useRef<string | null>(null)
+
   useEffect(() => {
     // Verificar que router esté listo y que id esté disponible
     if (!router.isReady) {
@@ -156,6 +159,7 @@ const MaquinaPAge = () => {
 
   const handleCloseMantenimientoModal = () => {
     setShowMantenimientoModal(false)
+    pendingIncidenciaToAttend.current = null
   }
 
   const handleSubmitMantenimiento = async (data: {
@@ -230,6 +234,12 @@ const MaquinaPAge = () => {
         }
 
         await createMantenimiento(mantenimientoData, maquina)
+      }
+
+      // Si hay una incidencia pendiente por atender, marcarla como atendida
+      if (pendingIncidenciaToAttend.current) {
+        await updateIncidencia(maquina.id, pendingIncidenciaToAttend.current, { atendida: true })
+        pendingIncidenciaToAttend.current = null
       }
 
       handleCloseMantenimientoModal()
@@ -329,7 +339,8 @@ const MaquinaPAge = () => {
         descripcion: descripcionCompleta,
         prioridad: data.prioridad,
         maquinaDejoFuncionar: data.maquinaDejoFuncionar,
-        fotoUrl: data.fotoUrl
+        fotoUrl: data.fotoUrl,
+        atendida: false
       }
 
       await createIncidencia(incidenciaData, maquina)
@@ -658,6 +669,10 @@ const MaquinaPAge = () => {
               }
             }}
             onCreateMaintenance={() => {
+              if (selectedIncidencia?.id) {
+                pendingIncidenciaToAttend.current = selectedIncidencia.id
+                setSelectedIncidencia(null) // Clear selection explicitly
+              }
               setShowEventoDetailModal(false)
               handleOpenMantenimientoModal()
             }}

@@ -292,35 +292,82 @@
 }
 
 .th {
-    padding: 0.75rem 1.5rem;
+    padding: 0.5rem 1rem;
     font-size: 0.75rem;
     font-weight: 600;
-    text-transform: uppercase;
+    text-transform: capitalize;
     color: #6b7280;
     letter-spacing: 0.05em;
 }
 
 .tr {
-    border-top: 1px solid #e5e7eb;
+    border-bottom: 1px solid #e5e7eb;
     transition: background-color 0.15s;
 }
 
-.td {
-    padding: 1rem 1.5rem;
-    white-space: nowrap;
+.tr:hover {
+    background-color: #f8fafc;
 }
 
-.tdDni,
+.tr:last-child {
+    border-bottom: none;
+}
+
+.td {
+    padding: 0.5rem 1rem;
+    vertical-align: middle;
+    text-transform: capitalize;
+}
+
+.tdDni {
+    font-family: 'Courier New', Courier, monospace;
+    color: #4b5563;
+    font-size: 0.8125rem;
+    font-weight: 500;
+}
+
 .tdName {
     color: #111827;
     font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: capitalize;
 }
 
-.tdSex,
-.tdCompany {
-    color: #4b5563;
-    font-size: 0.875rem;
+/* Badges */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.125rem 0.5rem;
+    border-radius: 9999px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    line-height: 1;
+    text-transform: capitalize;
 }
+
+.badgeCompany {
+    background-color: #e0f2fe;
+    color: #0369a1;
+    border: 1px solid #bae6fd;
+    text-transform: capitalize;
+}
+
+.badgeArea {
+    background-color: #f3f4f6;
+    color: #374151;
+    border: 1px solid #e5e7eb;
+}
+
+.badgeCargo {
+    background-color: #fdf2f8;
+    color: #db2777;
+    border: 1px solid #fce7f3;
+}
+
+.tdSex {
+    font-weight: 500;
+}
+
 
 .tdActions {
     text-align: center;

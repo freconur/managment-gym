@@ -34,6 +34,7 @@ interface AccessRecord {
     fotoUrl?: string;
     hasTowel?: boolean;
     towelNumber?: string;
+    subEnvironments?: string[];
 }
 
 interface Company {
@@ -129,13 +130,11 @@ export const RecentAccessFeed: React.FC = () => {
     };
 
     const handleTowelClick = (record: AccessRecord) => {
-        if (!record.hasTowel) {
-            setPinAction({ type: 'TOGGLE_TOWEL', payload: record.id });
-            setIsPinModalOpen(true);
-        } else {
-            // To disable, just update directly (can add PIN here if desired for strict security)
-            updateDoc(doc(db, 'asistencias', record.id), { hasTowel: false, towelNumber: null });
-        }
+        setPinAction({
+            type: 'TOGGLE_TOWEL',
+            payload: { id: record.id, enable: !record.hasTowel }
+        });
+        setIsPinModalOpen(true);
     };
 
     const handleTowelInputClick = (id: string) => {
@@ -167,10 +166,15 @@ export const RecentAccessFeed: React.FC = () => {
             if (pinAction.type === 'DELETE') {
                 await deleteDoc(doc(db, 'asistencias', pinAction.payload));
             } else if (pinAction.type === 'TOGGLE_TOWEL') {
-                const id = pinAction.payload;
-                await updateDoc(doc(db, 'asistencias', id), { hasTowel: true });
-                // Automatically unlock the newly enabled towel for input
-                setUnlockedTowelIds(prev => [...prev, id]);
+                const { id, enable } = pinAction.payload;
+                if (enable) {
+                    await updateDoc(doc(db, 'asistencias', id), { hasTowel: true });
+                    // Automatically unlock the newly enabled towel for input
+                    setUnlockedTowelIds(prev => [...prev, id]);
+                } else {
+                    await updateDoc(doc(db, 'asistencias', id), { hasTowel: false, towelNumber: null });
+                    setUnlockedTowelIds(prev => prev.filter(uid => uid !== id));
+                }
             } else if (pinAction.type === 'UNLOCK_TOWEL') {
                 setUnlockedTowelIds(prev => [...prev, pinAction.payload]);
             }
@@ -184,7 +188,7 @@ export const RecentAccessFeed: React.FC = () => {
     const getModalTitle = () => {
         switch (pinAction?.type) {
             case 'DELETE': return "PIN eliminar";
-            case 'TOGGLE_TOWEL': return "PIN activar toalla";
+            case 'TOGGLE_TOWEL': return pinAction.payload.enable ? "PIN activar toalla" : "PIN devolver toalla";
             case 'UNLOCK_TOWEL': return "PIN editar número";
             default: return "PIN de seguridad";
         }
@@ -251,6 +255,9 @@ export const RecentAccessFeed: React.FC = () => {
                                     <span className={styles.tagCompany}>{record.company}</span>
                                     {record.area && <span className={styles.tagArea}>{record.area}</span>}
                                     {record.cargo && <span className={styles.tagCargo}>{record.cargo}</span>}
+                                    {record.subEnvironments && record.subEnvironments.map((sub, idx) => (
+                                        <span key={`${record.id}-sub-${idx}`} className={styles.tagSubEnvironment}>{sub}</span>
+                                    ))}
                                 </div>
                             </div>
 

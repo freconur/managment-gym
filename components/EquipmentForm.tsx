@@ -321,12 +321,13 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
   }
 
   return (
-    <div className={styles.formContainer}>
+    <div className={styles.equipmentFormContainer}>
       <form onSubmit={handleSubmit}>
-        <div className={styles.formGrid}>
-          <div className={styles.formField}>
-            <label className={styles.label}>
-              Nombre del Equipo *
+        <div className={styles.equipmentFormGrid}>
+          {/* Nombre - Fila Completa */}
+          <div className={`${styles.equipmentInputGroup} ${styles.equipmentFullRow}`}>
+            <label className={styles.equipmentLabel}>
+              Nombre del Equipo <span style={{ color: '#ef4444' }}>*</span>
             </label>
             <input
               type="text"
@@ -334,16 +335,54 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
               value={formData.name}
               onChange={handleChange}
               required
-              className={styles.input}
+              placeholder="Ej. Cinta de Correr Pro 2000"
+              className={styles.equipmentInput}
+              autoComplete="off"
             />
           </div>
 
-          <div className={styles.formField}>
-            <label className={styles.label}>
-              Imagen del Equipo *
+          {/* Imagen - Fila Completa */}
+          <div className={`${styles.equipmentInputGroup} ${styles.equipmentFullRow}`}>
+            <label className={styles.equipmentLabel}>
+              Imagen del Equipo <span style={{ color: '#ef4444' }}>*</span>
             </label>
-            <div className={styles.imageUploadContainer}>
-              {/* Input para seleccionar archivo (escritorio/móvil) */}
+            <div className={styles.equipmentUploadContainer}>
+              {formData.image ? (
+                <div className={styles.imagePreview}>
+                  <img src={formData.image} alt="Vista previa" className={styles.previewImg} style={{ maxHeight: '200px', width: 'auto' }} />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
+                    <span className={styles.imageSuccess}>✓ Imagen cargada</span>
+                    <button
+                      type="button"
+                      onClick={() => handleChange({ target: { name: 'image', value: '' } } as any)}
+                      style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.875rem', textDecoration: 'underline' }}
+                    >
+                      Cambiar
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div style={{ color: '#9ca3af', marginBottom: '0.5rem' }}>
+                    <FaCloudUploadAlt size={48} />
+                  </div>
+                  <div className={styles.uploadButtonsContainer} style={{ justifyContent: 'center' }}>
+                    <label htmlFor="image-upload" className={`${styles.button} ${styles.uploadButton}`}>
+                      {uploadingImage ? <FaSpinner className={styles.spinner} /> : <FaCloudUploadAlt />}
+                      {uploadingImage ? ' Subiendo...' : ' Subir Imagen'}
+                    </label>
+
+                    <label htmlFor="camera-upload" className={`${styles.button} ${styles.cameraButton}`}>
+                      {uploadingImage ? <FaSpinner className={styles.spinner} /> : <FaCamera />}
+                      {uploadingImage ? ' Tomando...' : ' Tomar Foto'}
+                    </label>
+                  </div>
+                  <p style={{ color: '#6b7280', fontSize: '0.875rem', marginTop: '0.5rem' }}>
+                    Formatos: JPG, PNG, WEBP (Máx 5MB)
+                  </p>
+                </>
+              )}
+
               <input
                 type="file"
                 accept="image/*"
@@ -352,8 +391,6 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
                 id="image-upload"
                 disabled={uploadingImage}
               />
-
-              {/* Input específico para cámara (móvil) */}
               <input
                 type="file"
                 accept="image/*"
@@ -363,44 +400,27 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
                 id="camera-upload"
                 disabled={uploadingImage}
               />
-
-              <div className={styles.uploadButtonsContainer}>
-                <label htmlFor="image-upload" className={`${styles.button} ${styles.uploadButton}`}>
-                  {uploadingImage ? <FaSpinner className={styles.spinner} /> : <FaCloudUploadAlt />}
-                  {uploadingImage ? ' Subiendo...' : ' Subir Imagen'}
-                </label>
-
-                <label htmlFor="camera-upload" className={`${styles.button} ${styles.cameraButton}`}>
-                  {uploadingImage ? <FaSpinner className={styles.spinner} /> : <FaCamera />}
-                  {uploadingImage ? ' Tomando...' : ' Tomar Foto'}
-                </label>
-              </div>
               <input
                 type="hidden"
                 name="image"
                 value={formData.image || ''}
                 required
               />
-              {formData.image && (
-                <div className={styles.imagePreview}>
-                  <img src={formData.image} alt="Vista previa" className={styles.previewImg} />
-                  <span className={styles.imageSuccess}>✓ Imagen cargada correctamente</span>
-                </div>
-              )}
             </div>
           </div>
-          <div className={styles.formField}>
-            <div className={styles.labelContainer}>
-              <label className={styles.label}>
-                Marca *
-              </label>
+
+          {/* Marca */}
+          <div className={styles.equipmentInputGroup}>
+            <div className={styles.equipmentLabel}>
+              <span>Marca <span style={{ color: '#ef4444' }}>*</span></span>
               <button
                 type="button"
                 onClick={() => setIsModalOpen(true)}
-                className={styles.optionsButton}
-                aria-label="Opciones de marca"
+                className={styles.equipmentConfigButton}
+                aria-label="Gestionar marcas"
+                title="Gestionar marcas"
               >
-                <FaCog size={20} />
+                <FaCog size={16} />
               </button>
             </div>
             <select
@@ -408,7 +428,7 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
               value={formData.brand}
               onChange={handleChange}
               required
-              className={styles.select}
+              className={styles.equipmentSelect}
             >
               <option value="">Seleccione una marca</option>
               {marcas.map((marca) => (
@@ -418,8 +438,10 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
               ))}
             </select>
           </div>
-          <div className={styles.formField}>
-            <label className={styles.label}>
+
+          {/* Modelo */}
+          <div className={styles.equipmentInputGroup}>
+            <label className={styles.equipmentLabel}>
               Modelo
             </label>
             <input
@@ -427,53 +449,24 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
               name="model"
               value={formData.model}
               onChange={handleChange}
-              className={styles.input}
+              placeholder="Ej. XT-4500"
+              className={styles.equipmentInput}
+              autoComplete="off"
             />
           </div>
-          <div className={styles.formField}>
-            <label className={styles.label}>
-              Fecha de Registro *
-            </label>
-            <input
-              type="date"
-              name="purchaseDate"
-              value={formData.purchaseDate}
-              onChange={handleChange}
-              required
-              className={styles.input}
-            />
-          </div>
-          <div className={styles.formField}>
-            <label className={styles.label}>
-              Estado *
-            </label>
-            <select
-              name="status"
-              value={formData.status}
-              onChange={handleChange}
-              required
-              className={styles.select}
-            >
-              <option value="">Seleccione un estado</option>
-              {estadoDeMaquina.map((estado) => (
-                <option key={estado.id} value={estado.name}>
-                  {estado.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className={styles.formField}>
-            <div className={styles.labelContainer}>
-              <label className={styles.label}>
-                Ubicación *
-              </label>
+
+          {/* Ubicación */}
+          <div className={styles.equipmentInputGroup}>
+            <div className={styles.equipmentLabel}>
+              <span>Ubicación <span style={{ color: '#ef4444' }}>*</span></span>
               <button
                 type="button"
                 onClick={() => setIsUbicacionModalOpen(true)}
-                className={styles.optionsButton}
-                aria-label="Opciones de ubicación"
+                className={styles.equipmentConfigButton}
+                aria-label="Gestionar ubicaciones"
+                title="Gestionar ubicaciones"
               >
-                <FaCog size={20} />
+                <FaCog size={16} />
               </button>
             </div>
             <select
@@ -481,7 +474,7 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
               value={formData.location}
               onChange={handleChange}
               required
-              className={styles.select}
+              className={styles.equipmentSelect}
             >
               <option value="">Seleccione una ubicación</option>
               {ubicaciones.map((ubicacion) => (
@@ -491,22 +484,63 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
               ))}
             </select>
           </div>
+
+          {/* Estado */}
+          <div className={styles.equipmentInputGroup}>
+            <label className={styles.equipmentLabel}>
+              Estado <span style={{ color: '#ef4444' }}>*</span>
+            </label>
+            <select
+              name="status"
+              value={formData.status}
+              onChange={handleChange}
+              required
+              className={styles.equipmentSelect}
+            >
+              <option value="">Seleccione un estado</option>
+              {estadoDeMaquina.map((estado) => (
+                <option key={estado.id} value={estado.name}>
+                  {estado.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Fecha de Compra */}
+          <div className={styles.equipmentInputGroup}>
+            <label className={styles.equipmentLabel}>
+              Fecha de Registro <span style={{ color: '#ef4444' }}>*</span>
+            </label>
+            <input
+              type="date"
+              name="purchaseDate"
+              value={formData.purchaseDate}
+              onChange={handleChange}
+              required
+              className={styles.equipmentInput}
+            />
+          </div>
+
+          {/* Notas - Fila Completa */}
+          <div className={`${styles.equipmentInputGroup} ${styles.equipmentFullRow}`}>
+            <label className={styles.equipmentLabel}>
+              Notas Adicionales
+            </label>
+            <textarea
+              name="notes"
+              value={formData.notes}
+              onChange={handleChange}
+              rows={3}
+              placeholder="Detalles adicionales sobre el estado o características del equipo..."
+              className={styles.equipmentTextarea}
+            />
+          </div>
         </div>
-        <div className={styles.formField}>
-          <label className={styles.label}>
-            Notas
-          </label>
-          <textarea
-            name="notes"
-            value={formData.notes}
-            onChange={handleChange}
-            rows={3}
-            className={styles.textarea}
-          />
-        </div>
+
         <button
           type="submit"
           className={`${styles.button} ${styles.buttonSubmit}`}
+          style={{ width: '100%', padding: '1rem', fontSize: '1.125rem' }}
         >
           Guardar Equipo
         </button>

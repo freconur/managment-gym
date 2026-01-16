@@ -52,7 +52,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       }
       return tipoLabels[incidencia.subTipo] || `Mantenimiento ${incidencia.subTipo}`
     }
-    
+
     // Para otros tipos, usar el tipo directamente
     const tipoLabels: Record<string, string> = {
       incidencia: 'Incidencia',
@@ -64,22 +64,22 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   // Función helper para convertir diferentes tipos de fechas a Date
   const convertToDate = (fecha: any): Date | null => {
     if (!fecha) return null
-    
+
     // Si es un Timestamp de Firebase (tiene método toDate)
     if (fecha && typeof fecha === 'object' && 'toDate' in fecha && typeof fecha.toDate === 'function') {
       return fecha.toDate()
     }
-    
+
     // Si ya es un Date
     if (fecha instanceof Date) {
       return new Date(fecha)
     }
-    
+
     // Si es un objeto Timestamp con seconds (formato antiguo de Firebase)
     if (typeof fecha === 'object' && fecha.seconds) {
       return new Date(fecha.seconds * 1000)
     }
-    
+
     // Si es un string
     if (typeof fecha === 'string') {
       // Si tiene formato ISO con hora
@@ -94,7 +94,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       // Intentar parsear como fecha normal
       return new Date(fecha)
     }
-    
+
     // Intentar convertir directamente
     try {
       return new Date(fecha)
@@ -111,18 +111,22 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         if (filtroUbicacion && incidencia.maquina?.location !== filtroUbicacion) {
           return false
         }
-        
+
         // Mostrar eventos que tengan fecha de reporte, fecha programada o createdAt (para incidencias)
-        return incidencia.fechaReporte || incidencia.fechaProgramada || (incidencia.tipo === 'incidencia' && incidencia.createdAt)
+        // Y que no hayan sido atendidas (si es una incidencia)
+        const fechaValida = incidencia.fechaReporte || incidencia.fechaProgramada || (incidencia.tipo === 'incidencia' && incidencia.createdAt)
+        const noAtendida = !incidencia.atendida
+
+        return fechaValida && noAtendida
       })
       .map(incidencia => {
         let startDate: Date
         let endDate: Date
-        
+
         // Priorizar fechaProgramada o fechaReporte sobre createdAt para que el evento aparezca en la fecha correcta
         // Usar fecha programada si existe, sino fecha de reporte
         const fechaValue = incidencia.fechaProgramada || incidencia.fechaReporte
-        
+
         // Si no hay fechaProgramada ni fechaReporte, usar createdAt como fallback
         if (!fechaValue && incidencia.tipo === 'incidencia' && incidencia.createdAt) {
           const fechaConvertida = convertToDate(incidencia.createdAt)
@@ -131,7 +135,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
             return null
           }
           startDate = fechaConvertida
-          
+
           // Para el final, usar la misma hora más 1 hora para que tenga duración visible
           endDate = new Date(startDate)
           endDate.setHours(endDate.getHours() + 1)
@@ -142,16 +146,16 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
             console.error('❌ Fecha inválida:', fechaValue)
             return null
           }
-          
+
           // Configurar la hora al inicio del día para la fecha de inicio
           startDate = new Date(fecha)
           startDate.setHours(0, 0, 0, 0)
-          
+
           // Si tiene fecha de resolución, crear un rango
           // Si no, usar el mismo día pero al final del día (para que solo ocupe un día)
           if (incidencia.fechaResolucion) {
             const fechaResolucion = convertToDate(incidencia.fechaResolucion)
-            
+
             if (fechaResolucion && !isNaN(fechaResolucion.getTime())) {
               endDate = new Date(fechaResolucion)
               endDate.setHours(23, 59, 59, 999)
@@ -171,7 +175,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         }
 
         const title = getEventTitle(incidencia)
-        
+
         // Para el resource, incluir tipo y estado
         const estado = incidencia.estado || 'pendiente'
 
@@ -193,11 +197,11 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   // Función para obtener el estilo del evento según tipo, estado y prioridad
   const eventStyleGetter = (event: CalendarEvent) => {
     const { tipo, estado, prioridad } = event.resource
-    
+
     let backgroundColor = '#9ca3af' // Gris por defecto
     let borderColor = '#9ca3af'
     let borderWidth = '1px'
-    
+
     // Si es incidencia, usar color rojo medio anaranjado
     if (tipo === 'incidencia') {
       backgroundColor = '#f97316' // Rojo medio anaranjado para incidencias
@@ -218,7 +222,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         borderColor = '#6b7280'
       }
     }
-    
+
     // Ajustar borde según prioridad
     if (prioridad === 'urgente') {
       borderColor = '#dc2626' // Rojo oscuro
@@ -226,7 +230,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     } else if (prioridad === 'alta') {
       borderWidth = '2px'
     }
-    
+
     return {
       style: {
         backgroundColor,
@@ -359,27 +363,27 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
             </select>
           </div>
           <div className={styles.calendarLegend}>
-          <div className={styles.legendItem}>
-            <span className={styles.legendColor} style={{ backgroundColor: '#f97316' }}></span>
-            <span>Incidencia</span>
+            <div className={styles.legendItem}>
+              <span className={styles.legendColor} style={{ backgroundColor: '#f97316' }}></span>
+              <span>Incidencia</span>
+            </div>
+            <div className={styles.legendItem}>
+              <span className={styles.legendColor} style={{ backgroundColor: '#f59e0b' }}></span>
+              <span>Pendiente</span>
+            </div>
+            <div className={styles.legendItem}>
+              <span className={styles.legendColor} style={{ backgroundColor: '#3b82f6' }}></span>
+              <span>En Proceso</span>
+            </div>
+            <div className={styles.legendItem}>
+              <span className={styles.legendColor} style={{ backgroundColor: '#10b981' }}></span>
+              <span>Completado</span>
+            </div>
+            <div className={styles.legendItem}>
+              <span className={styles.legendColor} style={{ backgroundColor: '#6b7280' }}></span>
+              <span>Cancelado</span>
+            </div>
           </div>
-          <div className={styles.legendItem}>
-            <span className={styles.legendColor} style={{ backgroundColor: '#f59e0b' }}></span>
-            <span>Pendiente</span>
-          </div>
-          <div className={styles.legendItem}>
-            <span className={styles.legendColor} style={{ backgroundColor: '#3b82f6' }}></span>
-            <span>En Proceso</span>
-          </div>
-          <div className={styles.legendItem}>
-            <span className={styles.legendColor} style={{ backgroundColor: '#10b981' }}></span>
-            <span>Completado</span>
-          </div>
-          <div className={styles.legendItem}>
-            <span className={styles.legendColor} style={{ backgroundColor: '#6b7280' }}></span>
-            <span>Cancelado</span>
-          </div>
-        </div>
         </div>
       </div>
       <div className={styles.calendarWrapper}>

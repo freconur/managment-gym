@@ -23,12 +23,15 @@ interface MantenimientoModalProps {
   }) => Promise<void>
 }
 
+import { useEscapeKey } from '@/features/hooks/useEscapeKey'
+
 export const MantenimientoModal: React.FC<MantenimientoModalProps> = ({
   isOpen,
   onClose,
   usuarios = [],
   onSubmit
 }) => {
+  useEscapeKey(onClose, isOpen);
   // Función helper para obtener el valor del primer elemento del array
   const getInitialValue = (array: Array<{ id: number; name: string }>): string => {
     const valueMap: Record<string, string> = {
@@ -374,13 +377,12 @@ export const MantenimientoModal: React.FC<MantenimientoModalProps> = ({
 
             {/* Descripción */}
             <div className={styles.formField}>
-              <label className={styles.label}>Descripción *</label>
+              <label className={styles.label}>Descripción</label>
               <textarea
                 value={mantenimientoForm.descripcion}
                 onChange={(e) => setMantenimientoForm(prev => ({ ...prev, descripcion: e.target.value }))}
                 className={styles.textarea}
                 rows={3}
-                required
                 placeholder="Describe el mantenimiento a realizar..."
               />
             </div>

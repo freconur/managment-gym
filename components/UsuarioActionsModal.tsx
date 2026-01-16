@@ -4,6 +4,8 @@ import { Usuario } from '@/features/types/types';
 import styles from '@/styles/equipment.module.css';
 import { roles } from '@/utils/data';
 
+import { useEscapeKey } from '@/features/hooks/useEscapeKey'
+
 interface UsuarioActionsModalProps {
   isOpen: boolean;
   usuario: Usuario | null;
@@ -47,6 +49,22 @@ export const UsuarioActionsModal: React.FC<UsuarioActionsModalProps> = ({
   });
   const [deletePinError, setDeletePinError] = useState('');
 
+  useEscapeKey(() => {
+    if (isPinModalOpen) {
+      handleClosePinModal();
+      return;
+    }
+    if (isDeletePinModalOpen) {
+      handleCloseDeletePinModal();
+      return;
+    }
+    if (isEditing) {
+      handleCancelEdit();
+      return;
+    }
+    onClose();
+  }, isOpen);
+
   useEffect(() => {
     if (usuario && isEditing) {
       setFormData({
@@ -83,7 +101,7 @@ export const UsuarioActionsModal: React.FC<UsuarioActionsModalProps> = ({
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    
+
     if (name === 'dni') {
       const numericValue = value.replace(/\D/g, '').slice(0, 8);
       setFormData(prev => ({
@@ -139,7 +157,7 @@ export const UsuarioActionsModal: React.FC<UsuarioActionsModalProps> = ({
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // No validar DNI en edición ya que está deshabilitado
     const nombresError = validateNombre(formData.nombres, 'Nombres');
     const apellidosError = validateNombre(formData.apellidos, 'Apellidos');
@@ -169,7 +187,7 @@ export const UsuarioActionsModal: React.FC<UsuarioActionsModalProps> = ({
     if (onEdit) {
       onEdit(updatedUsuario);
     }
-    
+
     handleCancelEdit();
     onClose();
   };
@@ -177,16 +195,16 @@ export const UsuarioActionsModal: React.FC<UsuarioActionsModalProps> = ({
   const handlePinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     let numericValue = value.replace(/\D/g, '').slice(0, 4);
-    
+
     if (value === '') {
       numericValue = '';
     }
-    
+
     const updatedPinData = {
       ...pinData,
       [name]: numericValue
     };
-    
+
     setPinData(updatedPinData);
 
     if (updatedPinData.pin.length === 4 && updatedPinData.confirmPin.length === 4) {
@@ -210,19 +228,19 @@ export const UsuarioActionsModal: React.FC<UsuarioActionsModalProps> = ({
   };
 
   const handlePinSubmit = () => {
-    const pinError = !pinData.pin 
-      ? 'El PIN es requerido' 
-      : pinData.pin.length !== 4 
-      ? 'El PIN debe tener exactamente 4 dígitos' 
-      : '';
-    
+    const pinError = !pinData.pin
+      ? 'El PIN es requerido'
+      : pinData.pin.length !== 4
+        ? 'El PIN debe tener exactamente 4 dígitos'
+        : '';
+
     const confirmPinError = !pinData.confirmPin
       ? 'La confirmación de PIN es requerida'
       : pinData.confirmPin.length !== 4
-      ? 'La confirmación de PIN debe tener exactamente 4 dígitos'
-      : pinData.pin !== pinData.confirmPin
-      ? 'Los PINs no coinciden'
-      : '';
+        ? 'La confirmación de PIN debe tener exactamente 4 dígitos'
+        : pinData.pin !== pinData.confirmPin
+          ? 'Los PINs no coinciden'
+          : '';
 
     setPinErrors({
       pin: pinError,
@@ -245,7 +263,7 @@ export const UsuarioActionsModal: React.FC<UsuarioActionsModalProps> = ({
     if (onEdit) {
       onEdit(updatedUsuario);
     }
-    
+
     handleCancelEdit();
     onClose();
   };
@@ -344,20 +362,20 @@ export const UsuarioActionsModal: React.FC<UsuarioActionsModalProps> = ({
           </div>
           <div className={styles.modalBody}>
             <div style={{ marginBottom: '1.5rem' }}>
-              <p style={{ 
-                color: '#dc2626', 
-                fontSize: '0.875rem', 
+              <p style={{
+                color: '#dc2626',
+                fontSize: '0.875rem',
                 marginBottom: '1rem',
                 fontWeight: 500
               }}>
                 ⚠️ Esta acción no se puede deshacer
               </p>
-              <p style={{ 
-                color: '#374151', 
+              <p style={{
+                color: '#374151',
                 fontSize: '0.875rem',
                 marginBottom: '0.5rem'
               }}>
-                Para eliminar al usuario <strong>{usuario.nombres} {usuario.apellidos}</strong>, 
+                Para eliminar al usuario <strong>{usuario.nombres} {usuario.apellidos}</strong>,
                 ingrese el PIN del usuario:
               </p>
             </div>
@@ -489,9 +507,9 @@ export const UsuarioActionsModal: React.FC<UsuarioActionsModalProps> = ({
                   }}
                 />
                 {pinErrors.confirmPin && (
-                  <div style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
                     gap: '0.5rem',
                     marginTop: '0.5rem',
                     padding: '0.75rem',
@@ -572,11 +590,11 @@ export const UsuarioActionsModal: React.FC<UsuarioActionsModalProps> = ({
                         opacity: 0.7
                       }}
                     />
-                    <span style={{ 
-                      fontSize: '0.75rem', 
-                      color: '#6b7280', 
-                      marginTop: '0.25rem', 
-                      display: 'block' 
+                    <span style={{
+                      fontSize: '0.75rem',
+                      color: '#6b7280',
+                      marginTop: '0.25rem',
+                      display: 'block'
                     }}>
                       El DNI no se puede modificar
                     </span>
@@ -683,7 +701,7 @@ export const UsuarioActionsModal: React.FC<UsuarioActionsModalProps> = ({
                   }}>
                     Información del Usuario
                   </h4>
-                  
+
                   <div style={{
                     display: 'grid',
                     gridTemplateColumns: 'repeat(2, 1fr)',
@@ -738,20 +756,20 @@ export const UsuarioActionsModal: React.FC<UsuarioActionsModalProps> = ({
                         borderRadius: '0.5rem',
                         display: 'inline-block',
                         width: 'fit-content',
-                        backgroundColor: usuario.rol?.toLowerCase() === 'administrador' || usuario.rol?.toLowerCase() === 'admin' 
-                          ? '#fee2e2' 
+                        backgroundColor: usuario.rol?.toLowerCase() === 'administrador' || usuario.rol?.toLowerCase() === 'admin'
+                          ? '#fee2e2'
                           : usuario.rol?.toLowerCase() === 'tecnico' || usuario.rol?.toLowerCase() === 'empleado'
-                          ? '#dbeafe'
-                          : usuario.rol?.toLowerCase() === 'desarrollador'
-                          ? '#d1fae5'
-                          : '#f3f4f6',
+                            ? '#dbeafe'
+                            : usuario.rol?.toLowerCase() === 'desarrollador'
+                              ? '#d1fae5'
+                              : '#f3f4f6',
                         color: usuario.rol?.toLowerCase() === 'administrador' || usuario.rol?.toLowerCase() === 'admin'
                           ? '#991b1b'
                           : usuario.rol?.toLowerCase() === 'tecnico' || usuario.rol?.toLowerCase() === 'empleado'
-                          ? '#1e40af'
-                          : usuario.rol?.toLowerCase() === 'desarrollador'
-                          ? '#065f46'
-                          : '#374151'
+                            ? '#1e40af'
+                            : usuario.rol?.toLowerCase() === 'desarrollador'
+                              ? '#065f46'
+                              : '#374151'
                       }}>
                         {usuario.rol || 'Sin rol'}
                       </div>

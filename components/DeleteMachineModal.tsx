@@ -9,12 +9,15 @@ interface DeleteMachineModalProps {
   onCancel: () => void
 }
 
+import { useEscapeKey } from '@/features/hooks/useEscapeKey'
+
 export const DeleteMachineModal: React.FC<DeleteMachineModalProps> = ({
   isOpen,
   machineName,
   onConfirm,
   onCancel
 }) => {
+  useEscapeKey(onCancel, isOpen);
   if (!isOpen) return null
 
   return (

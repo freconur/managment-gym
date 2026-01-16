@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react'
-import { FaTimes, FaIdCard, FaLock } from 'react-icons/fa'
+import { FaTimes, FaIdCard, FaLock, FaSpinner } from 'react-icons/fa'
 import styles from '@/styles/equipment.module.css'
+import { useEscapeKey } from '@/features/hooks/useEscapeKey'
 
 interface AuthModalProps {
   isOpen: boolean
   onClose: () => void
-  onAccept: (dni: string, pin: string) => void
+  onAccept: (dni: string, pin: string) => Promise<void> | void
   error?: string
 }
+
 
 export const AuthModal: React.FC<AuthModalProps> = ({
   isOpen,
@@ -15,38 +17,74 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   onAccept,
   error
 }) => {
+  useEscapeKey(onClose, isOpen); // Add this line
   const [dni, setDni] = useState('')
   const [pin, setPin] = useState('')
   const [localError, setLocalError] = useState('')
 
-  // Limpiar campos cuando el modal se cierra
+  const dniRef = useState<HTMLInputElement | null>(null)
+  // Fix: use useRef properly for focusing
+  const dniInputRef = React.useRef<HTMLInputElement>(null)
+  const [isValidating, setIsValidating] = useState(false)
+
+
+  const pinInputRef = React.useRef<HTMLInputElement>(null)
+
+  // Focus DNI input on open
+  useEffect(() => {
+    if (isOpen) {
+      setTimeout(() => {
+        dniInputRef.current?.focus()
+      }, 50)
+    }
+  }, [isOpen])
+
+  // Limpiar campos y error cuando el modal se cierra
   useEffect(() => {
     if (!isOpen) {
       setDni('')
       setPin('')
       setLocalError('')
+      setIsValidating(false)
     }
   }, [isOpen])
 
   const handleDniChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/\D/g, '').slice(0, 8)
     setDni(value)
-    if (localError) {
-      setLocalError('')
+    if (localError) setLocalError('')
+
+    // Auto-focus PIN if DNI is complete
+    if (value.length === 8) {
+      pinInputRef.current?.focus()
     }
   }
 
-  const handlePinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePinChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/\D/g, '').slice(0, 4)
     setPin(value)
-    if (localError) {
-      setLocalError('')
+    if (localError) setLocalError('')
+
+    // Auto-submit if PIN is complete
+    if (value.length === 4) {
+      // Validate DNI before submitting (though relying on previous flow)
+      if (dni.length === 8) {
+        setIsValidating(true)
+        setLocalError('')
+        try {
+          await onAccept(dni, value)
+        } catch (err) {
+          console.error(err)
+        } finally {
+          setIsValidating(false)
+        }
+      }
     }
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     // Validar DNI
     if (!dni || dni.length !== 8) {
       setLocalError('El DNI debe tener exactamente 8 dígitos')
@@ -59,17 +97,23 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       return
     }
 
-    // Si todo está bien, llamar a onAccept y limpiar campos
-    onAccept(dni, pin)
-    setDni('')
-    setPin('')
+    // Si todo está bien, llamar a onAccept
+    setIsValidating(true)
     setLocalError('')
+    try {
+      await onAccept(dni, pin)
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setIsValidating(false)
+    }
   }
 
   const handleClose = () => {
     setDni('')
     setPin('')
     setLocalError('')
+    setIsValidating(false)
     onClose()
   }
 
@@ -79,79 +123,91 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   return (
     <div className={styles.modalOverlay} onClick={handleClose}>
-      <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-        <div className={styles.modalHeader}>
-          <h3 className={styles.modalTitle}>
+      <div className={styles.authModalContent} onClick={(e) => e.stopPropagation()}>
+        <div className={styles.authHeader}>
+          <div className={styles.authIconWrapper}>
+            <FaLock />
+          </div>
+          <h3 className={styles.authTitle}>
             Autenticación
           </h3>
-          <button
-            type="button"
-            onClick={handleClose}
-            className={styles.modalCloseButton}
-            aria-label="Cerrar modal"
-          >
-            <FaTimes size={20} />
-          </button>
+          <p className={styles.authSubtitle}>
+            Ingrese sus credenciales de administrador para continuar
+          </p>
         </div>
-        <div className={styles.modalBody}>
+
+        <div className={styles.authBody}>
           <form onSubmit={handleSubmit}>
-            <div className={styles.formField}>
-              <label className={styles.label}>
-                <FaIdCard size={14} style={{ marginRight: '0.5rem' }} />
-                DNI *
+            <div className={styles.authInputGroup}>
+              <label className={styles.authLabel}>
+                DNI
               </label>
-              <input
-                type="number"
-                value={dni}
-                onChange={handleDniChange}
-                className={styles.input}
-                required
-                placeholder="Ingrese su DNI (8 dígitos)"
-                min="0"
-                max="99999999"
-                inputMode="numeric"
-                pattern="[0-9]*"
-              />
+              <div className={styles.authInputWrapper}>
+                <input
+                  ref={dniInputRef}
+                  type="number"
+                  value={dni}
+                  onChange={handleDniChange}
+                  className={styles.authInput}
+                  required
+                  placeholder="Ingrese el DNI"
+                  min="0"
+                  max="99999999"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  disabled={isValidating}
+                />
+                <FaIdCard className={styles.authInputIcon} />
+              </div>
             </div>
 
-            <div className={styles.formField}>
-              <label className={styles.label}>
-                <FaLock size={14} style={{ marginRight: '0.5rem' }} />
-                PIN *
+            <div className={styles.authInputGroup}>
+              <label className={styles.authLabel}>
+                PIN de Seguridad
               </label>
-              <input
-                type="number"
-                value={pin}
-                onChange={handlePinChange}
-                className={styles.input}
-                required
-                placeholder="Ingrese su PIN (4 dígitos)"
-                min="0"
-                max="9999"
-                inputMode="numeric"
-                pattern="[0-9]*"
-              />
+              <div className={styles.authInputWrapper}>
+                <input
+                  ref={pinInputRef}
+                  type="password"
+                  value={pin}
+                  onChange={handlePinChange}
+                  className={styles.authInput}
+                  required
+                  placeholder="Ingrese el PIN"
+                  min="0"
+                  max="9999"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  disabled={isValidating}
+                />
+                <FaLock className={styles.authInputIcon} />
+              </div>
             </div>
 
-            {displayError && (
-              <div className={styles.errorMessage} style={{ color: '#dc2626', marginBottom: '1rem' }}>
-                {displayError}
+            {isValidating && (
+              <div className={styles.authLoading}>
+                <div className={styles.loadingSpinner}>
+                  <FaSpinner className={styles.spinAnimation} size={24} />
+                </div>
+                <span>Verificando credenciales...</span>
               </div>
             )}
 
-            <div className={styles.modalButtonGroup}>
+            {displayError && !isValidating && (
+              <div className={styles.authError}>
+                <FaTimes style={{ flexShrink: 0 }} />
+                <span>{displayError === 'Error de autenticación' ? 'DNI o PIN incorrecto' : displayError}</span>
+              </div>
+            )}
+
+            <div className={styles.authFooter}>
               <button
                 type="button"
                 onClick={handleClose}
-                className={`${styles.button} ${styles.buttonSecondary} ${styles.modalButton}`}
+                className={styles.authCancelButton}
+                disabled={isValidating}
               >
                 Cancelar
-              </button>
-              <button
-                type="submit"
-                className={`${styles.button} ${styles.buttonSubmit} ${styles.modalButton}`}
-              >
-                Aceptar
               </button>
             </div>
           </form>

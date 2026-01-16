@@ -39,6 +39,8 @@ interface AccessModalProps {
     onClose: () => void;
 }
 
+import { useEscapeKey } from '@/features/hooks/useEscapeKey'
+
 export const AccessModal: React.FC<AccessModalProps> = ({ isOpen, onClose }) => {
     const [dni, setDni] = useState('');
     const [member, setMember] = useState<Member | null>(null);
@@ -57,6 +59,22 @@ export const AccessModal: React.FC<AccessModalProps> = ({ isOpen, onClose }) => 
     const [isAmenityModalOpen, setIsAmenityModalOpen] = useState(false);
 
     const inputRef = useRef<HTMLInputElement>(null);
+
+    useEscapeKey(() => {
+        if (showScanner) {
+            setShowScanner(false);
+            return;
+        }
+        if (isSubEnvModalOpen) {
+            setIsSubEnvModalOpen(false);
+            return;
+        }
+        if (isAmenityModalOpen) {
+            setIsAmenityModalOpen(false);
+            return;
+        }
+        onClose();
+    }, isOpen);
 
     // Focus input when modal opens
     useEffect(() => {

@@ -141,7 +141,8 @@
 
 .tagCompany,
 .tagArea,
-.tagCargo {
+.tagCargo,
+.tagSubEnvironment {
     font-size: 0.7rem;
     padding: 0.1rem 0.5rem;
     border-radius: 9999px;
@@ -167,6 +168,12 @@
     background-color: #dcfce7;
     color: #16a34a;
     border: 1px solid #bbf7d0;
+}
+
+.tagSubEnvironment {
+    background-color: #fff7ed;
+    color: #c2410c;
+    border: 1px solid #fed7aa;
 }
 
 .activityTimeContainer {

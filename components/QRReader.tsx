@@ -10,6 +10,8 @@ interface QRReaderProps {
   onScanError?: (errorMessage: string) => void
 }
 
+import { useEscapeKey } from '@/features/hooks/useEscapeKey'
+
 export const QRReader: React.FC<QRReaderProps> = ({
   isOpen,
   onClose,
@@ -21,6 +23,10 @@ export const QRReader: React.FC<QRReaderProps> = ({
   const [error, setError] = useState<string | null>(null)
   const qrCodeRef = useRef<Html5Qrcode | null>(null)
   const scannerId = 'qr-reader'
+
+  useEscapeKey(() => {
+    handleClose()
+  }, isOpen)
 
   useEffect(() => {
     if (isOpen && !qrCodeRef.current) {
@@ -43,7 +49,7 @@ export const QRReader: React.FC<QRReaderProps> = ({
     try {
       setError(null)
       setIsStarting(true)
-      
+
       await qrCodeRef.current.start(
         { facingMode: 'environment' },
         {
@@ -66,13 +72,13 @@ export const QRReader: React.FC<QRReaderProps> = ({
                   setIsScanning(false)
                 }
               }
-              
+
               // Limpiar la referencia del escáner
               qrCodeRef.current = null
-              
+
               // Cerrar el modal
               onClose()
-              
+
               // Llamar al callback de éxito después de detener la cámara
               onScanSuccess(decodedText)
             } catch (error) {
@@ -83,7 +89,7 @@ export const QRReader: React.FC<QRReaderProps> = ({
               onScanSuccess(decodedText)
             }
           }
-          
+
           // Ejecutar la función asíncrona
           handleScanSuccess()
         },
@@ -158,10 +164,10 @@ export const QRReader: React.FC<QRReaderProps> = ({
           </button>
         </div>
         <div className={styles.modalBody}>
-          <div style={{ 
-            display: 'flex', 
-            flexDirection: 'column', 
-            alignItems: 'center', 
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
             gap: '1.5rem',
             width: '100%'
           }}>
@@ -181,7 +187,7 @@ export const QRReader: React.FC<QRReaderProps> = ({
                   margin: '0 auto'
                 }}
               />
-              
+
               {/* Overlay cuando no está escaneando */}
               {!isScanning && (
                 <div className={styles.qrScannerOverlay}>
@@ -210,13 +216,13 @@ export const QRReader: React.FC<QRReaderProps> = ({
                 </div>
               )}
             </div>
-            
+
             {/* Error Message */}
             {error && (
-              <div style={{ 
-                padding: '0.875rem 1rem', 
-                backgroundColor: '#fee2e2', 
-                color: '#dc2626', 
+              <div style={{
+                padding: '0.875rem 1rem',
+                backgroundColor: '#fee2e2',
+                color: '#dc2626',
                 borderRadius: '0.5rem',
                 width: '100%',
                 maxWidth: '500px',
@@ -235,8 +241,8 @@ export const QRReader: React.FC<QRReaderProps> = ({
             )}
 
             {/* Button Container */}
-            <div style={{ 
-              display: 'flex', 
+            <div style={{
+              display: 'flex',
               gap: '0.75rem',
               width: '100%',
               maxWidth: '500px',
@@ -247,9 +253,9 @@ export const QRReader: React.FC<QRReaderProps> = ({
                   onClick={startScanning}
                   disabled={isStarting}
                   className={`${styles.button} ${styles.buttonPrimary}`}
-                  style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
                     gap: '0.5rem',
                     padding: '0.875rem 2rem',
                     fontSize: '1rem',
@@ -276,9 +282,9 @@ export const QRReader: React.FC<QRReaderProps> = ({
                 <button
                   onClick={stopScanning}
                   className={`${styles.button} ${styles.buttonDanger} ${styles.qrPulseButton}`}
-                  style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
                     gap: '0.5rem',
                     padding: '0.875rem 2rem',
                     fontSize: '1rem',
@@ -294,7 +300,7 @@ export const QRReader: React.FC<QRReaderProps> = ({
             </div>
 
             {/* Instructions */}
-            <div style={{ 
+            <div style={{
               width: '100%',
               maxWidth: '500px',
               padding: '1rem',
@@ -321,14 +327,14 @@ export const QRReader: React.FC<QRReaderProps> = ({
                   <FaQrcode size={12} color="#3b82f6" />
                 </div>
                 <div>
-                  <p style={{ 
-                    fontSize: '0.875rem', 
-                    color: '#475569', 
+                  <p style={{
+                    fontSize: '0.875rem',
+                    color: '#475569',
                     margin: 0,
                     lineHeight: '1.5',
                     fontWeight: 500
                   }}>
-                    {isScanning 
+                    {isScanning
                       ? 'Apunta la cámara hacia el código QR. El escaneo se realizará automáticamente.'
                       : 'Apunta la cámara hacia el código QR para escanearlo. Asegúrate de tener buena iluminación.'}
                   </p>

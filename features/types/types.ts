@@ -57,6 +57,7 @@ export type Incidencia = {
   fechaProgramada?: Date; // Fecha programada para el mantenimiento
   fechaResolucion?: Date; // Fecha cuando se resolvió
   estado?: string; // Estado del mantenimiento o incidencia
+  atendida?: boolean;
   descripcion: string;
   prioridad: string; // Prioridad del mantenimiento o incidencia
   tecnicoAsignado?: Usuario; // Técnico asignado

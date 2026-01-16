@@ -1,0 +1,1102 @@
+/* MantenimientoDetailModal.module.css */
+
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.spinAnimation {
+    animation: spin 1s linear infinite;
+}
+
+/* Modal Core Styles */
+.modalOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 1rem;
+    animation: fadeIn 0.2s ease-out;
+    backdrop-filter: blur(2px);
+}
+
+.modalContent {
+    background-color: white;
+    border-radius: 1rem;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    width: 100%;
+    max-width: 500px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: slideUp 0.3s ease-out;
+    max-height: 90vh;
+}
+
+.modalContentLarge {
+    max-width: 900px;
+    /* Wider for details */
+    border-radius: 1.5rem;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+.modalHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.modalTitle {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #111827;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.modalBody {
+    padding: 1.5rem;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.modalCloseButton {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.5rem;
+    color: #6b7280;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.375rem;
+    transition: all 0.2s;
+}
+
+.modalCloseButton:hover {
+    background-color: #f3f4f6;
+    color: #374151;
+}
+
+.modalButtonGroup {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+    justify-content: flex-end;
+}
+
+.modalButton {
+    padding: 0.625rem 1rem;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    font-size: 0.875rem;
+    cursor: pointer;
+    border: none;
+    transition: opacity 0.2s;
+}
+
+/* Form Styles */
+.formField {
+    margin-bottom: 1rem;
+}
+
+.label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 0.5rem;
+}
+
+.input,
+.select,
+.textarea {
+    width: 100%;
+    padding: 0.625rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    color: #111827;
+    background-color: #fff;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.input:focus,
+.select:focus,
+.textarea:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    font-weight: 500;
+    font-size: 0.875rem;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.buttonSecondary {
+    background-color: #fff;
+    border: 1px solid #d1d5db;
+    color: #374151;
+}
+
+.buttonSecondary:hover {
+    background-color: #f9fafb;
+}
+
+.buttonSubmit {
+    background-color: #3b82f6;
+    color: white;
+}
+
+.buttonSubmit:hover {
+    background-color: #2563eb;
+}
+
+/* Mantenimiento Specific Styles */
+.mantenimientoDetailHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid #f3f4f6;
+    background: linear-gradient(to right, #ffffff, #f9fafb);
+}
+
+.mantenimientoDetailHeaderGroup {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.mantenimientoDetailIconContainer {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background-color: #eff6ff;
+    color: #3b82f6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.mantenimientoDetailTitle {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #1f2937;
+    line-height: 1.3;
+}
+
+.mantenimientoDetailBadges {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+}
+
+.mantenimientoDetailCloseButton {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    background-color: #f3f4f6;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.mantenimientoDetailCloseButton:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.mantenimientoDetailCloseButton:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.mantenimientoDetailCloseButton:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.mantenimientoDetailBody {
+    padding: 1.5rem 2rem;
+    overflow-y: auto;
+    background-color: #fff;
+    flex: 1;
+}
+
+/* Info Grid */
+.mantenimientoDetailInfoGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.mantenimientoDetailInfoCard,
+.mantenimientoDetailInfoCardCost {
+    padding: 1rem;
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.75rem;
+}
+
+.mantenimientoDetailInfoCardCost {
+    background-color: #f0fdf4;
+    border-color: #dcfce7;
+}
+
+.mantenimientoDetailInfoLabel {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    margin-bottom: 0.375rem;
+}
+
+.mantenimientoDetailInfoLabelText {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.mantenimientoDetailInfoLabelTextCost {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #15803d;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.mantenimientoDetailInfoValue {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: #334155;
+    margin: 0;
+}
+
+.mantenimientoDetailInfoValueCost {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: #15803d;
+    margin: 0;
+}
+
+/* Sections */
+.mantenimientoDetailSection {
+    margin-bottom: 1.5rem;
+}
+
+.mantenimientoDetailSectionTitle {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #475569;
+    margin: 0 0 0.5rem 0;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.mantenimientoDetailSectionTitleWithIcon {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #475569;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.mantenimientoDetailDescription {
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    color: #334155;
+    background-color: #f8fafc;
+    border: 1px solid #f1f5f9;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    margin: 0;
+}
+
+/* Tareas */
+.mantenimientoDetailTareasHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.mantenimientoDetailTareasCount {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #64748b;
+    background-color: #f1f5f9;
+    padding: 0.125rem 0.5rem;
+    border-radius: 999px;
+}
+
+.mantenimientoDetailProgressBar {
+    height: 6px;
+    background-color: #e2e8f0;
+    border-radius: 3px;
+    margin-bottom: 1rem;
+    overflow: hidden;
+}
+
+.mantenimientoDetailProgressFill {
+    height: 100%;
+    transition: width 0.3s ease;
+    border-radius: 3px;
+}
+
+.mantenimientoDetailProgressFillComplete {
+    background-color: #10b981;
+}
+
+.mantenimientoDetailProgressFillIncomplete {
+    background-color: #3b82f6;
+}
+
+.mantenimientoDetailTareasList {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.mantenimientoDetailTareaItem {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    transition: all 0.2s;
+    user-select: none;
+}
+
+.mantenimientoDetailTareaItem:hover {
+    background-color: #f8fafc;
+}
+
+.mantenimientoDetailTareaItemCompleted {
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+}
+
+.mantenimientoDetailTareaItemPending {
+    background-color: #fff;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.mantenimientoDetailTareaItemDisabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.mantenimientoDetailTareaItemDisabled:hover {
+    background-color: inherit;
+}
+
+.mantenimientoDetailTareaCheckbox {
+    margin: 0;
+    width: 1.125rem;
+    height: 1.125rem;
+    cursor: pointer;
+    accent-color: #3b82f6;
+}
+
+.mantenimientoDetailTareaCheckboxDisabled {
+    cursor: not-allowed;
+}
+
+.mantenimientoDetailTareaText {
+    flex: 1;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    font-weight: 500;
+}
+
+.mantenimientoDetailTareaTextCompleted {
+    text-decoration: line-through;
+    color: #94a3b8;
+}
+
+.mantenimientoDetailTareaTextPending {
+    color: #334155;
+}
+
+/* Piezas */
+.mantenimientoDetailPiezasList {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.mantenimientoDetailPiezaItem {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.625rem 0.75rem;
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+}
+
+.mantenimientoDetailPiezaInfo {
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.mantenimientoDetailPiezaNombre {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #334155;
+    margin-right: 0.5rem;
+}
+
+.mantenimientoDetailPiezaCantidad {
+    font-size: 0.75rem;
+    color: #64748b;
+    background-color: #e2e8f0;
+    padding: 0.125rem 0.375rem;
+    border-radius: 4px;
+    font-weight: 600;
+}
+
+.mantenimientoDetailPiezaDescripcion {
+    font-size: 0.75rem;
+    color: #64748b;
+    margin-left: 0.5rem;
+    font-style: italic;
+}
+
+.mantenimientoDetailPiezaCosto {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #059669;
+    margin-left: auto;
+}
+
+/* Notas */
+.mantenimientoDetailNotasHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.mantenimientoDetailSaveButton {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.25rem 0.75rem;
+    background-color: #3b82f6;
+    color: #fff;
+    border: none;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.mantenimientoDetailSaveButton:hover {
+    background-color: #2563eb;
+}
+
+.mantenimientoDetailNotesTextarea {
+    width: 100%;
+    min-height: 120px;
+    padding: 0.75rem;
+    background-color: #fff;
+    border: 2px solid #e2e8f0;
+    /* Default border */
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    color: #334155;
+    line-height: 1.6;
+    font-family: inherit;
+    resize: vertical;
+    transition: all 0.2s;
+}
+
+.mantenimientoDetailNotesTextarea:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.mantenimientoDetailNotasContainer {
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+.mantenimientoDetailNotasParagraph {
+    margin: 0;
+    padding: 1rem;
+    white-space: pre-wrap;
+    line-height: 1.6;
+    font-size: 0.875rem;
+    min-height: 80px;
+    transition: background-color 0.2s;
+}
+
+.mantenimientoDetailNotasParagraphEmpty {
+    color: #94a3b8;
+    font-style: italic;
+}
+
+.mantenimientoDetailNotasParagraphFilled {
+    color: #334155;
+}
+
+.mantenimientoDetailNotasParagraphEditable:hover {
+    background-color: #f1f5f9;
+    cursor: pointer;
+}
+
+.mantenimientoDetailNotasParagraphNotEditable {
+    cursor: default;
+}
+
+.removeButton {
+    background: none;
+    border: none;
+    color: #ef4444;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.25rem;
+    transition: background-color 0.2s;
+}
+
+.removeButton:hover {
+    background-color: #fee2e2;
+}
+
+/* Badges */
+.statusBadge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.375rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: white;
+    display: inline-block;
+    text-transform: capitalize;
+}
+
+.priorityBadge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.375rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: white;
+    display: inline-block;
+    text-transform: capitalize;
+}
+
+/* Helper styles for specific status colors required by code */
+.statusPending {
+    background-color: #f59e0b;
+}
+
+.statusInProcess {
+    background-color: #3b82f6;
+}
+
+.statusCompleted {
+    background-color: #10b981;
+}
+
+.statusCancelled {
+    background-color: #ef4444;
+}
+
+.priorityLow {
+    background-color: #10b981;
+}
+
+.priorityMedium {
+    background-color: #f59e0b;
+}
+
+.priorityHigh {
+    background-color: #f97316;
+}
+
+.priorityUrgent {
+    background-color: #ef4444;
+}
+
+.statusActive {
+    background-color: #10b981;
+}
+
+.statusMaintenance {
+    background-color: #f59e0b;
+}
+
+.statusInactive {
+    background-color: #ef4444;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .modalContentLarge {
+        border-radius: 1rem;
+        max-height: calc(100vh - 2rem);
+        height: auto;
+        margin: 0rem;
+    }
+
+    .mantenimientoDetailHeader {
+        padding: 1.25rem;
+    }
+
+    .mantenimientoDetailBody {
+        padding: 1.25rem;
+    }
+
+    .mantenimientoDetailInfoGrid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+/* Sticky footer for modals on mobile */
+@media (max-width: 768px) {
+
+    .modalBody>.modalButtonGroup:last-child,
+    .modalBody>form>.modalButtonGroup:last-child {
+        position: sticky;
+        bottom: 0;
+        background-color: white;
+        z-index: 10;
+        margin-top: 1rem;
+        padding-top: 1rem;
+        padding-bottom: 0;
+        border-top: 1px solid #e5e7eb;
+        margin-left: -1.5rem;
+        margin-right: -1.5rem;
+        padding-left: 1.5rem;
+        padding-right: 1.5rem;
+        width: calc(100% + 3rem);
+    }
+}
+
+/* Refactored Inline Styles */
+
+/* Header Actions */
+.mantenimientoDetailHeaderActions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.mantenimientoDetailActionButtonEdit {
+    background-color: #eff6ff;
+    color: #3b82f6;
+    border: 1px solid #3b82f620;
+}
+
+.mantenimientoDetailActionButtonEdit:hover {
+    background-color: #dbeafe;
+    color: #2563eb;
+    border-color: #3b82f640;
+}
+
+.mantenimientoDetailActionButtonDelete {
+    background-color: #fef2f2;
+    color: #ef4444;
+    border: 1px solid #ef444420;
+}
+
+.mantenimientoDetailActionButtonDelete:hover {
+    background-color: #fee2e2;
+    color: #dc2626;
+    border-color: #ef444440;
+}
+
+.mantenimientoDetailActionButtonSave {
+    background-color: #f0fdf4;
+    color: #16a34a;
+    border: 1px solid #16a34a20;
+}
+
+.mantenimientoDetailActionButtonSave:hover {
+    background-color: #dcfce7;
+    color: #15803d;
+}
+
+.mantenimientoDetailActionButtonSaveSaving {
+    background-color: #f3f4f6;
+    color: #9ca3af;
+    cursor: default;
+}
+
+.mantenimientoDetailActionButtonCancel {
+    background-color: #f3f4f6;
+    color: #64748b;
+}
+
+.mantenimientoDetailActionButtonCancel:hover {
+    background-color: #e2e8f0;
+    color: #475569;
+}
+
+/* Machine Info Card */
+.mantenimientoDetailMachineInfoCard {
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    margin-bottom: 1.5rem;
+}
+
+.mantenimientoDetailMachineInfoHeader {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+    color: #475569;
+    font-size: 0.875rem;
+    font-weight: 600;
+    gap: 0.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.mantenimientoDetailMachineGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 0.75rem;
+}
+
+.mantenimientoDetailMachineInfoRow {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8125rem;
+    padding: 0.5rem;
+    background-color: #fff;
+    border: 1px solid #f1f5f9;
+    border-radius: 0.375rem;
+    flex-wrap: wrap;
+}
+
+.mantenimientoDetailMachineInfoLabel {
+    color: #64748b;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.mantenimientoDetailMachineInfoValue {
+    color: #334155;
+    font-weight: 600;
+}
+
+.mantenimientoDetailMachineInfoValueBold {
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.mantenimientoDetailMachineInfoIdBadge {
+    color: #475569;
+    font-weight: 500;
+    font-family: monospace;
+    font-size: 0.75rem;
+    background-color: #e2e8f0;
+    padding: 0.125rem 0.5rem;
+    border-radius: 0.25rem;
+}
+
+.mantenimientoDetailIconBlue {
+    color: #3b82f6;
+}
+
+.mantenimientoDetailIconGray {
+    color: #94a3b8;
+}
+
+.mantenimientoDetailIconGreen {
+    color: #10b981;
+}
+
+.mantenimientoDetailSeparator {
+    color: #cbd5e1;
+    margin: 0 0.25rem;
+}
+
+/* Select in Machine Info */
+.mantenimientoDetailStatusSelect {
+    font-size: 0.75rem;
+    padding: 0.125rem 0.25rem;
+    height: auto;
+    min-height: auto;
+    width: auto;
+}
+
+/* Info Grid Items */
+.mantenimientoDetailInfoCardFullWidth {
+    grid-column: 1 / -1;
+}
+
+.mantenimientoDetailSelectMargin {
+    margin-top: 0.5rem;
+}
+
+/* Task Section */
+.mantenimientoDetailNewTaskContainer {
+    padding: 0.75rem;
+    background-color: #f9fafb;
+    border-radius: 0.375rem;
+    border: 1px solid #e5e7eb;
+}
+
+.mantenimientoDetailNewTaskInputWrapper {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.mantenimientoDetailInputFlex {
+    flex: 1;
+}
+
+.mantenimientoDetailButtonNoWrap {
+    white-space: nowrap;
+}
+
+.mantenimientoDetailTaskListGap {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.mantenimientoDetailTaskItemEditable {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem;
+    background-color: #fff;
+    border-radius: 0.25rem;
+    border: 1px solid #e5e7eb;
+}
+
+.mantenimientoDetailCheckboxAuto {
+    width: auto;
+    margin: 0;
+    cursor: pointer;
+}
+
+.mantenimientoDetailInputNoMargin {
+    flex: 1;
+    margin: 0;
+}
+
+.mantenimientoDetailRemoveButton {
+    padding: 0.25rem 0.5rem;
+}
+
+.mantenimientoDetailEmptyState {
+    color: #6b7280;
+    font-size: 0.875rem;
+    font-style: italic;
+    text-align: center;
+    padding: 1rem 0;
+}
+
+/* Machine Status Section */
+.mantenimientoDetailStatusSectionContainer {
+    padding: 1rem;
+    background-color: #f8fafc;
+    border-radius: 0.5rem;
+    border: 1px solid #e2e8f0;
+}
+
+.mantenimientoDetailStatusSectionLabel {
+    font-size: 0.875rem;
+    color: #64748b;
+    margin-bottom: 0.75rem;
+}
+
+.mantenimientoDetailStatusButtonsContainer {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.mantenimientoDetailStatusButton {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1rem;
+    border-radius: 0.375rem;
+    border: 2px solid transparent;
+    background-color: #fff;
+    color: #64748b;
+    font-weight: 500;
+    font-size: 0.875rem;
+    cursor: pointer;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    transition: all 0.2s;
+    flex: 1 1 auto;
+    justify-content: center;
+}
+
+.mantenimientoDetailStatusButtonActive {
+    border-color: #10b981;
+    background-color: #ecfdf5;
+    color: #10b981;
+    font-weight: 600;
+}
+
+.mantenimientoDetailStatusButtonMaintenance {
+    border-color: #f59e0b;
+    background-color: #fffbeb;
+    color: #f59e0b;
+    font-weight: 600;
+}
+
+.mantenimientoDetailStatusButtonInactive {
+    border-color: #ef4444;
+    background-color: #fef2f2;
+    color: #ef4444;
+    font-weight: 600;
+}
+
+/* Start Button */
+.mantenimientoDetailStartButtonContainer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 1rem 0;
+    border-top: 1px solid #e5e7eb;
+    margin-top: 1rem;
+}
+
+.mantenimientoDetailStartButton {
+    background-color: #6366f1;
+    color: #fff;
+    padding: 0.5rem 1.5rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+/* Modals */
+.modalContentAuth {
+    max-width: 400px;
+}
+
+.modalTitleIcon {
+    margin-right: 0.5rem;
+    vertical-align: middle;
+}
+
+.modalTitleIconDanger {
+    margin-right: 0.5rem;
+    vertical-align: middle;
+    color: #ef4444;
+}
+
+.modalErrorMessage {
+    margin: 0.5rem 0 0 0;
+    font-size: 0.875rem;
+    color: #ef4444;
+    font-weight: 500;
+}
+
+.modalValidatingContainer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 1rem 0;
+    gap: 0.5rem;
+    color: #6b7280;
+    font-size: 0.875rem;
+}
+
+.buttonFullWidth {
+    width: 100%;
+}
+
+.modalConfirmText {
+    margin: 0 0 1.5rem 0;
+    font-size: 1rem;
+    color: #374151;
+    line-height: 1.5;
+}
+
+.buttonDanger {
+    background-color: #ef4444;
+    color: #fff;
+}
+
+.modalOverlay {
+    z-index: 2000;
+}

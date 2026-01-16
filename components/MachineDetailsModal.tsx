@@ -7,6 +7,7 @@ import { Ubicacion } from '@/features/hooks/useManagment'
 import { estadoDeMaquina } from '@/utils/data'
 import { DeleteMachineModal } from './DeleteMachineModal'
 import { AuthModal } from './AuthModal'
+import { useEscapeKey } from '@/features/hooks/useEscapeKey'
 
 interface MachineDetailsModalProps {
   isOpen: boolean
@@ -35,6 +36,15 @@ export const MachineDetailsModal: React.FC<MachineDetailsModalProps> = ({
   const [showAuthModal, setShowAuthModal] = useState(false)
   const [authError, setAuthError] = useState<string>('')
   const [authType, setAuthType] = useState<'save' | 'delete'>('save')
+
+  useEscapeKey(() => {
+    if (showAuthModal || isDeleteModalOpen) return;
+    if (isEditing) {
+      handleCancel(); // Use existing handleCancel to reset state properly
+      return;
+    }
+    onClose();
+  }, isOpen);
 
   useEffect(() => {
     if (machine) {
@@ -81,7 +91,7 @@ export const MachineDetailsModal: React.FC<MachineDetailsModalProps> = ({
 
   const handleSave = async () => {
     if (!machine?.id) return
-    
+
     // Si hay función de validación, mostrar modal de autenticación primero
     if (validateSiEsAdmin) {
       setAuthType('save')
@@ -89,14 +99,14 @@ export const MachineDetailsModal: React.FC<MachineDetailsModalProps> = ({
       setAuthError('')
       return
     }
-    
+
     // Si no hay validación, guardar directamente
     await performSave()
   }
 
   const performSave = async () => {
     if (!machine?.id) return
-    
+
     try {
       await onUpdate(machine.id, editedMachine)
       setIsEditing(false)
@@ -115,12 +125,12 @@ export const MachineDetailsModal: React.FC<MachineDetailsModalProps> = ({
 
     try {
       const esAdmin = await validateSiEsAdmin(dni, pin)
-      
+
       if (esAdmin) {
         // Si es admin, proceder con la acción
         setShowAuthModal(false)
         setAuthError('')
-        
+
         if (authType === 'save') {
           await performSave()
         } else if (authType === 'delete') {
@@ -148,7 +158,7 @@ export const MachineDetailsModal: React.FC<MachineDetailsModalProps> = ({
       setAuthError('')
       return
     }
-    
+
     // Si no hay validación, abrir modal de eliminación directamente
     setIsDeleteModalOpen(true)
   }
@@ -319,12 +329,12 @@ export const MachineDetailsModal: React.FC<MachineDetailsModalProps> = ({
                   />
                 ) : (
                   <p className={styles.cardValue}>
-                    {machine.purchaseDate 
+                    {machine.purchaseDate
                       ? new Date(machine.purchaseDate).toLocaleDateString('es-ES', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric'
-                        })
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })
                       : 'N/A'}
                   </p>
                 )}

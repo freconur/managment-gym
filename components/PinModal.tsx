@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { FaLock, FaTimes, FaCheck } from 'react-icons/fa';
 import { getFirestore, collection, getDocs, query, where } from 'firebase/firestore';
 import { app } from '@/firebase/firebase.config';
@@ -15,45 +15,90 @@ const db = getFirestore(app);
 const PinModal: React.FC<PinModalProps> = ({ isOpen, onClose, onSuccess, title = "Ingrese PIN de Seguridad" }) => {
     const [pin, setPin] = useState('');
     const [error, setError] = useState('');
-    const [loading, setLoading] = useState(false);
+    const [validPins, setValidPins] = useState<string[]>([]);
+    const [fetching, setFetching] = useState(true);
+    const inputRef = useRef<HTMLInputElement>(null);
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setLoading(true);
+    // Focus input on open
+    useEffect(() => {
+        if (isOpen && !fetching) {
+            // Small timeout to ensure render
+            const timer = setTimeout(() => {
+                inputRef.current?.focus();
+            }, 100);
+            return () => clearTimeout(timer);
+        }
+    }, [isOpen, fetching]);
+
+    // Handle Escape key
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (isOpen && e.key === 'Escape') {
+                onClose();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isOpen, onClose]);
+
+    // Fetch valid PINs on mount
+    React.useEffect(() => {
+        if (!isOpen) return;
+
+        const fetchPins = async () => {
+            setFetching(true);
+            try {
+                const pinCollection = collection(db, 'pin');
+                const snapshot = await getDocs(pinCollection);
+                const pins: string[] = [];
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    if (data.pin) pins.push(String(data.pin));
+                    if (data.code) pins.push(String(data.code));
+                    if (data.value) pins.push(String(data.value));
+                });
+
+                // Add fallback if list is empty, though based on previous code it was conditional
+                // strict check against DB is better.
+                if (pins.length === 0) {
+                    // Optional: debug log or fallback
+                    // console.log("No PINs found in DB");
+                }
+
+                setValidPins(pins);
+            } catch (err) {
+                console.error("Error fetching PINs:", err);
+                setError('Error al cargar sistema de seguridad');
+            } finally {
+                setFetching(false);
+            }
+        };
+
+        fetchPins();
+        setPin('');
+        setError('');
+    }, [isOpen]);
+
+    const handlePinChange = (value: string) => {
+        setPin(value);
         setError('');
 
-        try {
-            // Check against 'pin' library/collection
-            const pinCollection = collection(db, 'pin');
-            const snapshot = await getDocs(pinCollection);
+        if (fetching) return;
 
-            let isValid = false;
-            snapshot.forEach(doc => {
-                const data = doc.data();
-                // Check various possible field names or just if the doc contains the pin
-                if (String(data.pin) === pin || String(data.code) === pin || String(data.value) === pin) {
-                    isValid = true;
-                }
-            });
+        // Check exact match
+        if (validPins.includes(value)) {
+            onSuccess();
+            setPin('');
+            onClose();
+            return;
+        }
 
-            // Hardcode fallback for '2026' if DB is empty or fails, as requested by user initially
-            // But prefer DB.
-            if (!isValid && pin === '2026') {
-                // isValid = true; // Uncomment if we want hardcoded fallback
-            }
-
-            if (isValid) {
-                onSuccess();
-                setPin('');
-                onClose();
-            } else {
-                setError('PIN incorrecto');
-            }
-        } catch (err) {
-            console.error("Error verifying PIN:", err);
-            setError('Error al verificar PIN. Revise la consola.');
-        } finally {
-            setLoading(false);
+        // Check if it's a valid prefix or potential PIN
+        // If the value is NOT a prefix of any valid PIN, and length >= 4, show error
+        const isPotential = validPins.some(p => p.startsWith(value));
+        if (!isPotential && value.length >= 4) {
+            setError('PIN incorrecto');
         }
     };
 
@@ -84,11 +129,12 @@ const PinModal: React.FC<PinModalProps> = ({ isOpen, onClose, onSuccess, title =
                     <FaLock /> {title}
                 </h3>
 
-                <form onSubmit={handleSubmit}>
+                <div>
                     <input
+                        ref={inputRef}
                         type="password"
                         value={pin}
-                        onChange={(e) => setPin(e.target.value)}
+                        onChange={(e) => handlePinChange(e.target.value)}
                         placeholder="****"
                         maxLength={6}
                         style={{
@@ -98,14 +144,16 @@ const PinModal: React.FC<PinModalProps> = ({ isOpen, onClose, onSuccess, title =
                             letterSpacing: '0.5rem',
                             textAlign: 'center',
                             borderRadius: '0.5rem',
-                            border: '2px solid #e5e7eb',
+                            border: `2px solid ${error ? '#ef4444' : '#e5e7eb'}`,
                             marginBottom: '1rem',
-                            outline: 'none'
+                            outline: 'none',
+                            color: '#1f2937'
                         }}
                         autoFocus
+                        disabled={fetching}
                     />
 
-                    {error && <p style={{ color: '#ef4444', marginBottom: '1rem' }}>{error}</p>}
+                    {error && <p style={{ color: '#ef4444', marginBottom: '1rem', fontWeight: 'bold' }}>{error}</p>}
 
                     <div style={{ display: 'flex', gap: '1rem' }}>
                         <button
@@ -121,34 +169,14 @@ const PinModal: React.FC<PinModalProps> = ({ isOpen, onClose, onSuccess, title =
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                gap: '0.5rem'
+                                gap: '0.5rem',
+                                color: '#4b5563'
                             }}
                         >
                             <FaTimes /> Cancelar
                         </button>
-                        <button
-                            type="submit"
-                            disabled={loading || !pin}
-                            style={{
-                                flex: 1,
-                                padding: '0.75rem',
-                                borderRadius: '0.5rem',
-                                border: 'none',
-                                backgroundColor: '#3b82f6',
-                                color: 'white',
-                                cursor: 'pointer',
-                                fontWeight: 'bold',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                gap: '0.5rem',
-                                opacity: (loading || !pin) ? 0.7 : 1
-                            }}
-                        >
-                            {loading ? '...' : <><FaCheck /> Confirmar</>}
-                        </button>
                     </div>
-                </form>
+                </div>
             </div>
         </div>
     );

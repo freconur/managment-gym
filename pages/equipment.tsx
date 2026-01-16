@@ -17,8 +17,10 @@ import { MantenimientoDetailModal } from "@/components/MantenimientoDetailModal"
 import { QRReader } from "@/components/QRReader";
 import { EquiposTable } from "@/components/EquiposTable";
 import { AuthModal } from "@/components/AuthModal";
-import { FaUserPlus, FaTools, FaTimes, FaQrcode, FaDumbbell, FaPlus } from "react-icons/fa";
+import { FaUserPlus, FaTools, FaTimes, FaQrcode, FaDumbbell, FaPlus, FaHome } from "react-icons/fa";
 import { Machine, Usuario, Incidencia, Tarea } from "@/features/types/types";
+
+import { useEscapeKey } from "@/features/hooks/useEscapeKey"
 
 const Equipment: NextPage = () => {
   const router = useRouter();
@@ -59,8 +61,16 @@ const Equipment: NextPage = () => {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authError, setAuthError] = useState('');
 
+  // Handle escape for inline modal
+  useEscapeKey(() => {
+    setIsEquipmentFormModalOpen(false);
+    resetForm();
+  }, isEquipmentFormModalOpen);
+
   const hasFetched = useRef(false);
   const selectedIncidenciaIdRef = useRef<string | null>(null);
+
+  const pendingIncidenciaToAttend = useRef<string | null>(null);
 
   const handleOpenModal = (machine: Machine) => {
     setSelectedMachine(machine);
@@ -244,6 +254,7 @@ const Equipment: NextPage = () => {
 
   const handleCloseMantenimientoModal = () => {
     setShowMantenimientoModal(false);
+    pendingIncidenciaToAttend.current = null;
   };
 
   const handleSubmitMantenimiento = async (data: {
@@ -326,6 +337,12 @@ const Equipment: NextPage = () => {
         await createMantenimiento(mantenimientoData, maquina);
       }
 
+      // Si hay una incidencia pendiente por atender, marcarla como atendida
+      if (pendingIncidenciaToAttend.current) {
+        await updateIncidencia(maquina.id, pendingIncidenciaToAttend.current, { atendida: true })
+        pendingIncidenciaToAttend.current = null;
+      }
+
       handleCloseMantenimientoModal();
     } catch (error) {
       console.error("Error al guardar mantenimiento:", error);
@@ -345,6 +362,15 @@ const Equipment: NextPage = () => {
           <div className={styles.titleWithButtons}>
             <h1 className={styles.title}>Gestión de Equipos</h1>
             <div className={styles.headerButtons}>
+              <button
+                onClick={() => router.push('/')}
+                className={`${styles.button} ${styles.buttonIcon}`}
+                style={{ backgroundColor: "#3b82f6", color: "white" }}
+                title="Volver al Inicio"
+                aria-label="Volver al Inicio"
+              >
+                <FaHome size={16} />
+              </button>
               <button
                 onClick={() => setIsQRReaderOpen(true)}
                 className={`${styles.button} ${styles.buttonIcon}`}
@@ -502,21 +528,27 @@ const Equipment: NextPage = () => {
             onClick={handleCloseEquipmentFormModal}
           >
             <div
-              className={`${styles.modalContent} ${styles.modalContentLarge}`}
+              className={styles.equipmentModalContent}
               onClick={(e) => e.stopPropagation()}
             >
-              <div className={styles.modalHeader}>
-                <h2 className={styles.modalTitle}>Nuevo Equipo</h2>
+              <div className={styles.equipmentModalHeader}>
+                <h2 className={styles.equipmentModalTitle}>
+                  <div style={{ position: 'relative', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <FaDumbbell size={24} style={{ transform: 'rotate(-45deg)', color: '#3b82f6' }} />
+                    <FaPlus size={12} style={{ position: 'absolute', top: -2, right: -2, color: '#3b82f6', backgroundColor: '#fff', borderRadius: '50%' }} />
+                  </div>
+                  Nuevo Equipo
+                </h2>
                 <button
                   type="button"
                   onClick={handleCloseEquipmentFormModal}
                   className={styles.modalCloseButton}
                   aria-label="Cerrar modal"
                 >
-                  <FaTimes size={18} />
+                  <FaTimes size={20} />
                 </button>
               </div>
-              <div className={styles.modalBody}>
+              <div className={styles.equipmentModalBody}>
                 <EquipmentForm
                   formData={formData}
                   handleChange={handleChange}
@@ -621,6 +653,9 @@ const Equipment: NextPage = () => {
               }
             }}
             onCreateMaintenance={() => {
+              if (selectedIncidencia?.id) {
+                pendingIncidenciaToAttend.current = selectedIncidencia.id;
+              }
               setShowEventoDetailModal(false);
               handleOpenMantenimientoModal();
             }}
