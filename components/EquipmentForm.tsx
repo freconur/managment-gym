@@ -442,7 +442,7 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
           {/* Modelo */}
           <div className={styles.equipmentInputGroup}>
             <label className={styles.equipmentLabel}>
-              Modelo
+              Tipo (Especialidad)
             </label>
             <input
               type="text"

@@ -650,6 +650,12 @@ const MaquinaPAge = () => {
                 await updateMaquinas(maquina.id, { status: status as any })
               }
             }}
+            onUpdateFoto={async (fotoUrl) => {
+              if (selectedIncidencia?.id && maquina?.id) {
+                await updateIncidencia(maquina.id, selectedIncidencia.id, { fotoUrl })
+              }
+            }}
+            maquinaRealTime={maquina || undefined}
           />
         )}
 

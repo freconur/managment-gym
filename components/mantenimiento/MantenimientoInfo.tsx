@@ -1,6 +1,6 @@
 import React from 'react'
 import { FaClock, FaCheckCircle, FaUser, FaDollarSign, FaMapMarkerAlt, FaTag, FaCalendarAlt, FaCog } from 'react-icons/fa'
-import { Incidencia, Usuario } from '@/features/types/types'
+import { Incidencia, Usuario, Machine } from '@/features/types/types'
 import styles from '@/styles/MantenimientoDetailModal.module.css'
 
 interface MantenimientoInfoProps {
@@ -13,6 +13,7 @@ interface MantenimientoInfoProps {
     setDescripcionEditada: (s: string) => void
     statusEditado: string
     setStatusEditado: (s: string) => void
+    maquinaRealTime?: Machine
 }
 
 export default function MantenimientoInfo({
@@ -24,7 +25,8 @@ export default function MantenimientoInfo({
     descripcionEditada,
     setDescripcionEditada,
     statusEditado,
-    setStatusEditado
+    setStatusEditado,
+    maquinaRealTime
 }: MantenimientoInfoProps) {
 
     // Removed unused helpers getTipoLabel, getEstadoLabel, etc as they are duplicates of main modal logic
@@ -91,6 +93,8 @@ export default function MantenimientoInfo({
         }
     }
 
+    const infoMaquina = maquinaRealTime || mantenimiento.maquina
+
     return (
         <>
             <div className={styles.mantenimientoDetailMachineInfoCard}>
@@ -101,44 +105,44 @@ export default function MantenimientoInfo({
 
                 <div className={styles.mantenimientoDetailMachineGrid}>
                     {/* Nombre de la Máquina */}
-                    {mantenimiento.maquina?.name && (
+                    {infoMaquina?.name && (
                         <div className={styles.mantenimientoDetailMachineInfoRow}>
                             <FaCog size={12} className={styles.mantenimientoDetailIconGray} />
                             <span className={styles.mantenimientoDetailMachineInfoLabel}>
                                 Equipo:
                             </span>
                             <span className={styles.mantenimientoDetailMachineInfoValue} style={{ fontWeight: '600', color: '#111827' }}>
-                                {mantenimiento.maquina.name}
+                                {infoMaquina.name}
                             </span>
                         </div>
                     )}
 
                     {/* Marca y Modelo */}
-                    {(mantenimiento.maquina?.brand || mantenimiento.maquina?.model) && (
+                    {(infoMaquina?.brand || infoMaquina?.model) && (
                         <div className={styles.mantenimientoDetailMachineInfoRow}>
                             <FaTag size={12} className={styles.mantenimientoDetailIconGray} />
-                            {mantenimiento.maquina?.brand && (
+                            {infoMaquina?.brand && (
                                 <>
                                     <span className={styles.mantenimientoDetailMachineInfoLabel}>
                                         Marca:
                                     </span>
                                     <span className={styles.mantenimientoDetailMachineInfoValue}>
-                                        {mantenimiento.maquina.brand}
+                                        {infoMaquina.brand}
                                     </span>
                                 </>
                             )}
-                            {mantenimiento.maquina?.brand && mantenimiento.maquina?.model && (
+                            {infoMaquina?.brand && infoMaquina?.model && (
                                 <span className={styles.mantenimientoDetailSeparator}>
                                     •
                                 </span>
                             )}
-                            {mantenimiento.maquina?.model && (
+                            {infoMaquina?.model && (
                                 <>
                                     <span className={styles.mantenimientoDetailMachineInfoLabel}>
                                         Modelo:
                                     </span>
                                     <span className={styles.mantenimientoDetailMachineInfoValue}>
-                                        {mantenimiento.maquina.model}
+                                        {infoMaquina.model}
                                     </span>
                                 </>
                             )}
@@ -146,40 +150,40 @@ export default function MantenimientoInfo({
                     )}
 
                     {/* Ubicación */}
-                    {mantenimiento.maquina?.location && (
+                    {infoMaquina?.location && (
                         <div className={styles.mantenimientoDetailMachineInfoRow}>
                             <FaMapMarkerAlt size={12} className={styles.mantenimientoDetailIconGray} />
                             <span className={styles.mantenimientoDetailMachineInfoLabel}>
                                 Ubicación:
                             </span>
                             <span className={styles.mantenimientoDetailMachineInfoValue}>
-                                {mantenimiento.maquina.location}
+                                {infoMaquina.location}
                             </span>
                         </div>
                     )}
 
                     {/* Estado Maquina Display - Only if not editing (edited shown in header) */}
-                    {mantenimiento.maquina?.status && !isEditing && (
+                    {infoMaquina?.status && !isEditing && (
                         <div className={styles.mantenimientoDetailMachineInfoRow}>
                             <FaTag size={12} className={styles.mantenimientoDetailIconGray} />
                             <span className={styles.mantenimientoDetailMachineInfoLabel}>
                                 Estado de Máquina:
                             </span>
-                            <span className={`${styles.statusBadge} ${getStatusClass(mantenimiento.maquina.status)}`}>
-                                {getStatusLabel(mantenimiento.maquina.status)}
+                            <span className={`${styles.statusBadge} ${getStatusClass(infoMaquina.status)}`}>
+                                {getStatusLabel(infoMaquina.status)}
                             </span>
                         </div>
                     )}
 
                     {/* Fecha de Compra */}
-                    {mantenimiento.maquina?.purchaseDate && (
+                    {infoMaquina?.purchaseDate && (
                         <div className={styles.mantenimientoDetailMachineInfoRow}>
                             <FaCalendarAlt size={12} className={styles.mantenimientoDetailIconGray} />
                             <span className={styles.mantenimientoDetailMachineInfoLabel}>
                                 Compra:
                             </span>
                             <span className={styles.mantenimientoDetailMachineInfoValue}>
-                                {convertTimestampToDate(mantenimiento.maquina.purchaseDate)?.toLocaleDateString('es-ES', {
+                                {convertTimestampToDate(infoMaquina.purchaseDate)?.toLocaleDateString('es-ES', {
                                     year: 'numeric',
                                     month: 'long',
                                     day: 'numeric'
@@ -189,13 +193,13 @@ export default function MantenimientoInfo({
                     )}
 
                     {/* ID de la máquina */}
-                    {mantenimiento.maquina?.id && (
+                    {infoMaquina?.id && (
                         <div className={styles.mantenimientoDetailMachineInfoRow}>
                             <span className={styles.mantenimientoDetailMachineInfoLabel}>
                                 ID:
                             </span>
                             <span className={styles.mantenimientoDetailMachineInfoIdBadge}>
-                                {mantenimiento.maquina.id}
+                                {infoMaquina.id}
                             </span>
                         </div>
                     )}

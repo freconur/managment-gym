@@ -41,6 +41,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
 
   // Función para obtener el título del evento
   const getEventTitle = (incidencia: Incidencia): string => {
+    let baseTitle = ''
     // Si es mantenimiento, usar el subTipo
     if (incidencia.tipo === 'mantenimiento' && incidencia.subTipo) {
       const tipoLabels: Record<string, string> = {
@@ -50,15 +51,20 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         revision: 'Revisión',
         otro: 'Otro'
       }
-      return tipoLabels[incidencia.subTipo] || `Mantenimiento ${incidencia.subTipo}`
+      baseTitle = tipoLabels[incidencia.subTipo] || `Mantenimiento ${incidencia.subTipo}`
+    } else {
+      // Para otros tipos, usar el tipo directamente
+      const tipoLabels: Record<string, string> = {
+        incidencia: 'Incidencia',
+        mantenimiento: 'Mantenimiento'
+      }
+      baseTitle = tipoLabels[incidencia.tipo] || incidencia.tipo
     }
 
-    // Para otros tipos, usar el tipo directamente
-    const tipoLabels: Record<string, string> = {
-      incidencia: 'Incidencia',
-      mantenimiento: 'Mantenimiento'
-    }
-    return tipoLabels[incidencia.tipo] || incidencia.tipo
+    const machineName = incidencia.maquina?.name ? `${incidencia.maquina.name}` : 'Máquina'
+    const timeStr = incidencia.createdAt ? `[${moment(convertToDate(incidencia.createdAt)).format('HH:mm')}]` : ''
+
+    return `${timeStr} ${machineName} - ${baseTitle}`.trim()
   }
 
   // Función helper para convertir diferentes tipos de fechas a Date
@@ -105,7 +111,14 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
 
   // Convertir incidencias a eventos del calendario
   const events: CalendarEvent[] = useMemo(() => {
-    return incidencias
+    // Clonar y ordenar por fecha de registro (createdAt)
+    const sortedIncidencias = [...incidencias].sort((a, b) => {
+      const dateA = convertToDate(a.createdAt)?.getTime() || 0
+      const dateB = convertToDate(b.createdAt)?.getTime() || 0
+      return dateA - dateB
+    })
+
+    return sortedIncidencias
       .filter(incidencia => {
         // Filtrar por ubicación si hay un filtro activo
         if (filtroUbicacion && incidencia.maquina?.location !== filtroUbicacion) {

@@ -635,6 +635,16 @@ const Equipment: NextPage = () => {
                 await updateMaquinas(selectedIncidencia.machineId, { status: status as any });
               }
             }}
+            onUpdateFoto={async (fotoUrl) => {
+              if (selectedIncidencia?.id && selectedIncidencia?.machineId) {
+                await updateIncidencia(
+                  selectedIncidencia.machineId,
+                  selectedIncidencia.id,
+                  { fotoUrl }
+                );
+              }
+            }}
+            maquinaRealTime={maquinas.find(m => m.id === selectedIncidencia?.machineId)}
           />
         )
       }

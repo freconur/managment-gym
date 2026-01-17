@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { FaTimes, FaClock, FaCheckCircle, FaUser, FaDollarSign, FaTools, FaStickyNote, FaCheckSquare, FaSave, FaPlay, FaLock, FaEdit, FaPlus, FaTrash, FaCog, FaMapMarkerAlt, FaTag, FaCalendarAlt, FaTimesCircle, FaSpinner } from 'react-icons/fa'
+import { FaTimes, FaClock, FaCheckCircle, FaUser, FaDollarSign, FaTools, FaStickyNote, FaCheckSquare, FaSave, FaPlay, FaLock, FaEdit, FaPlus, FaTrash, FaCog, FaMapMarkerAlt, FaTag, FaCalendarAlt, FaTimesCircle, FaSpinner, FaCamera, FaCloudUploadAlt, FaImage } from 'react-icons/fa'
 import styles from '@/styles/MantenimientoDetailModal.module.css'
 import { Incidencia, Tarea, Usuario, Machine } from '@/features/types/types'
 import { useEscapeKey } from '@/features/hooks/useEscapeKey'
@@ -9,6 +9,9 @@ import DeleteConfirmModal from './mantenimiento/DeleteConfirmModal'
 import MantenimientoInfo from './mantenimiento/MantenimientoInfo'
 import MantenimientoTareas from './mantenimiento/MantenimientoTareas'
 import MantenimientoNotas from './mantenimiento/MantenimientoNotas'
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
+import { storage } from '@/firebase/firebase.config'
+import { compressImage } from '@/utils/imageUtils'
 
 interface MantenimientoDetailModalProps {
   isOpen: boolean
@@ -21,6 +24,8 @@ interface MantenimientoDetailModalProps {
   onDelete?: (id: string) => Promise<void>
   validateSiEsAdmin?: (dni: string, pin: string) => Promise<boolean>
   onUpdateMachineStatus?: (status: string) => Promise<void>
+  onUpdateFoto?: (fotoUrl: string) => Promise<void>
+  maquinaRealTime?: Machine
 }
 
 export const MantenimientoDetailModal: React.FC<MantenimientoDetailModalProps> = ({
@@ -33,7 +38,9 @@ export const MantenimientoDetailModal: React.FC<MantenimientoDetailModalProps> =
   onUpdate,
   onDelete,
   validateSiEsAdmin,
-  onUpdateMachineStatus
+  onUpdateMachineStatus,
+  onUpdateFoto,
+  maquinaRealTime
 }) => {
   const [tareas, setTareas] = useState<Tarea[]>([])
   const [isUpdating, setIsUpdating] = useState(false)
@@ -52,6 +59,7 @@ export const MantenimientoDetailModal: React.FC<MantenimientoDetailModalProps> =
   const [showDeleteAuthModal, setShowDeleteAuthModal] = useState(false)
 
   const [isDeleting, setIsDeleting] = useState(false)
+  const [uploadingImage, setUploadingImage] = useState(false)
 
 
 
@@ -104,12 +112,14 @@ export const MantenimientoDetailModal: React.FC<MantenimientoDetailModalProps> =
     }
   }, [mantenimiento])
 
-  // Sincronizar status de máquina cuando cambia el mantenimiento
+  // Sincronizar status de máquina cuando cambia el mantenimiento o la máquina en tiempo real
   useEffect(() => {
-    if (mantenimiento?.maquina?.status) {
-      setStatusEditado(mantenimiento.maquina.status)
+    // Priorizamos maquinaRealTime que es la data más fresca del contexto superior
+    const statusActual = maquinaRealTime?.status || mantenimiento?.maquina?.status
+    if (statusActual) {
+      setStatusEditado(statusActual)
     }
-  }, [mantenimiento])
+  }, [mantenimiento?.maquina?.status, maquinaRealTime?.status])
 
 
 
@@ -356,6 +366,30 @@ export const MantenimientoDetailModal: React.FC<MantenimientoDetailModalProps> =
 
 
 
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, useCamera: boolean = false) => {
+    const file = e.target.files?.[0]
+    if (!file || !onUpdateFoto) return
+
+    setUploadingImage(true)
+    try {
+      console.log(`Original file size: ${(file.size / 1024 / 1024).toFixed(2)} MB`)
+
+      const compressedFile = await compressImage(file, 0.1) // 0.1 MB = ~100KB
+      console.log(`Compressed file size: ${(compressedFile.size / 1024 / 1024).toFixed(4)} MB`)
+
+      const storageRef = ref(storage, `mantenimiento-evidencia/${file.name}-${Date.now()}`)
+      await uploadBytes(storageRef, compressedFile)
+      const url = await getDownloadURL(storageRef)
+
+      await onUpdateFoto(url)
+    } catch (error) {
+      console.error('Error uploading image:', error)
+      alert('Error al subir la imagen. Por favor intente de nuevo.')
+    } finally {
+      setUploadingImage(false)
+    }
+  }
+
   const tareasCompletadas = tareas.filter(t => t.completada).length
   const totalTareas = tareas.length
   const progresoTareas = totalTareas > 0 ? Math.round((tareasCompletadas / totalTareas) * 100) : 0
@@ -434,8 +468,8 @@ export const MantenimientoDetailModal: React.FC<MantenimientoDetailModalProps> =
                       } else {
                         setTecnicoEditado({})
                       }
-                      if (mantenimiento?.maquina?.status) {
-                        setStatusEditado(mantenimiento.maquina.status)
+                      if (maquinaRealTime?.status || mantenimiento?.maquina?.status) {
+                        setStatusEditado(maquinaRealTime?.status || mantenimiento?.maquina?.status || '')
                       }
                       if (mantenimiento?.tareas) {
                         setTareas(mantenimiento.tareas)
@@ -476,6 +510,7 @@ export const MantenimientoDetailModal: React.FC<MantenimientoDetailModalProps> =
               setDescripcionEditada={setDescripcionEditada}
               statusEditado={statusEditado}
               setStatusEditado={setStatusEditado}
+              maquinaRealTime={maquinaRealTime}
             />
 
             <MantenimientoTareas
@@ -578,6 +613,65 @@ export const MantenimientoDetailModal: React.FC<MantenimientoDetailModalProps> =
                       )}
                     </div>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {/* Evidencia de Mantenimiento (Foto) */}
+            {(hasStarted || mantenimiento.fotoUrl) && (
+              <div className={styles.mantenimientoDetailSection}>
+                <h4 className={styles.mantenimientoDetailSectionTitleWithIcon}>
+                  <FaImage size={14} />
+                  Evidencia de Mantenimiento
+                </h4>
+                <div className={styles.evidenceContainer}>
+                  {mantenimiento.fotoUrl ? (
+                    <div className={styles.evidencePreview}>
+                      <img src={mantenimiento.fotoUrl} alt="Evidencia de mantenimiento" className={styles.evidenceImage} />
+                      {hasStarted && (
+                        <div className={styles.evidenceActions}>
+                          <label htmlFor="evidence-upload" className={`${styles.button} ${styles.evidenceButtonSmall}`}>
+                            <FaCloudUploadAlt /> Cambiar
+                          </label>
+                          <label htmlFor="evidence-camera" className={`${styles.button} ${styles.evidenceButtonSmall}`}>
+                            <FaCamera /> Tomar otra
+                          </label>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className={styles.evidenceUploadPlaceholder}>
+                      <p className={styles.evidencePlaceholderText}>Cargue una imagen o tome una foto como prueba del mantenimiento realizado.</p>
+                      <div className={styles.evidenceButtonsGroup}>
+                        <label htmlFor="evidence-upload" className={`${styles.button} ${styles.evidenceButton}`}>
+                          {uploadingImage ? <FaSpinner className={styles.spinner} /> : <FaCloudUploadAlt />}
+                          {uploadingImage ? ' Subiendo...' : ' Subir Imagen'}
+                        </label>
+                        <label htmlFor="evidence-camera" className={`${styles.button} ${styles.evidenceButton}`}>
+                          {uploadingImage ? <FaSpinner className={styles.spinner} /> : <FaCamera />}
+                          {uploadingImage ? ' Tomando...' : ' Tomar Foto'}
+                        </label>
+                      </div>
+                    </div>
+                  )}
+
+                  <input
+                    type="file"
+                    id="evidence-upload"
+                    accept="image/*"
+                    onChange={(e) => handleImageUpload(e)}
+                    style={{ display: 'none' }}
+                    disabled={uploadingImage}
+                  />
+                  <input
+                    type="file"
+                    id="evidence-camera"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={(e) => handleImageUpload(e, true)}
+                    style={{ display: 'none' }}
+                    disabled={uploadingImage}
+                  />
                 </div>
               </div>
             )}

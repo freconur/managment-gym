@@ -24,10 +24,17 @@ export const EquiposTable = ({
 }: EquiposTableProps) => {
   const [filtroUbicacion, setFiltroUbicacion] = useState<string>("");
   const [filtroEstado, setFiltroEstado] = useState<string>("");
+  const [filtroNombre, setFiltroNombre] = useState<string>("");
+  const [ordenNombre, setOrdenNombre] = useState<'asc' | 'desc'>('asc');
 
-  // Filtrar máquinas según los filtros
+  // Filtrar y ordenar máquinas de forma eficiente
   const maquinasFiltradas = useMemo(() => {
-    return maquinas.filter((maquina) => {
+    let result = maquinas.filter((maquina) => {
+      // Filtro por nombre (case-insensitive)
+      if (filtroNombre && !maquina.name?.toLowerCase().includes(filtroNombre.toLowerCase())) {
+        return false;
+      }
+
       // Filtro por ubicación
       if (filtroUbicacion && maquina.location !== filtroUbicacion) {
         return false;
@@ -40,7 +47,21 @@ export const EquiposTable = ({
 
       return true;
     });
-  }, [maquinas, filtroUbicacion, filtroEstado]);
+
+    // Ordenar resultados
+    result.sort((a, b) => {
+      const nameA = a.name?.toLowerCase() || '';
+      const nameB = b.name?.toLowerCase() || '';
+
+      if (ordenNombre === 'asc') {
+        return nameA.localeCompare(nameB);
+      } else {
+        return nameB.localeCompare(nameA);
+      }
+    });
+
+    return result;
+  }, [maquinas, filtroNombre, filtroUbicacion, filtroEstado, ordenNombre]);
 
   return (
     <div>
@@ -76,7 +97,51 @@ export const EquiposTable = ({
           <table className={styles.equipmentTable}>
             <thead>
               <tr>
-                <th>Nombre</th>
+                <th>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "0.5rem",
+                    }}
+                  >
+                    <span>Nombre</span>
+                    <div style={{ display: 'flex', gap: '0.25rem' }}>
+                      <input
+                        type="text"
+                        placeholder="Buscar por nombre..."
+                        value={filtroNombre}
+                        onChange={(e) => setFiltroNombre(e.target.value)}
+                        style={{
+                          padding: "0.375rem 0.5rem",
+                          border: "1px solid #d1d5db",
+                          borderRadius: "0.375rem",
+                          fontSize: "0.875rem",
+                          backgroundColor: "#fff",
+                          color: "#374151",
+                          flex: 1,
+                          minWidth: '150px'
+                        }}
+                      />
+                      <select
+                        value={ordenNombre}
+                        onChange={(e) => setOrdenNombre(e.target.value as 'asc' | 'desc')}
+                        style={{
+                          padding: "0.375rem 0.5rem",
+                          border: "1px solid #d1d5db",
+                          borderRadius: "0.375rem",
+                          fontSize: "0.875rem",
+                          backgroundColor: "#fff",
+                          color: "#374151",
+                          cursor: "pointer",
+                        }}
+                      >
+                        <option value="asc">A↑Z</option>
+                        <option value="desc">Z↓A</option>
+                      </select>
+                    </div>
+                  </div>
+                </th>
                 <th>
                   <div
                     style={{
@@ -99,6 +164,7 @@ export const EquiposTable = ({
                         color: "#374151",
                         cursor: "pointer",
                         minWidth: "150px",
+                        height: '34px'
                       }}
                     >
                       <option value="">Todas</option>
@@ -132,6 +198,7 @@ export const EquiposTable = ({
                         color: "#374151",
                         cursor: "pointer",
                         minWidth: "120px",
+                        height: '34px'
                       }}
                     >
                       <option value="">Todos</option>
@@ -183,23 +250,22 @@ export const EquiposTable = ({
                         className={styles.tableCellLink}
                       >
                         <span
-                          className={`${styles.statusBadge} ${
-                            machine.status === "active"
-                              ? styles.statusActive
-                              : machine.status === "maintenance"
+                          className={`${styles.statusBadge} ${machine.status === "active"
+                            ? styles.statusActive
+                            : machine.status === "maintenance"
                               ? styles.statusMaintenance
                               : machine.status === "inactive"
-                              ? styles.statusInactive
-                              : ""
-                          }`}
+                                ? styles.statusInactive
+                                : ""
+                            }`}
                         >
                           {machine.status === "active"
                             ? "Activo"
                             : machine.status === "maintenance"
-                            ? "Mantenimiento"
-                            : machine.status === "inactive"
-                            ? "Inactivo"
-                            : "N/A"}
+                              ? "Mantenimiento"
+                              : machine.status === "inactive"
+                                ? "Inactivo"
+                                : "N/A"}
                         </span>
                       </Link>
                     </td>
