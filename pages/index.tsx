@@ -34,6 +34,23 @@ const Home: NextPage = () => {
             🏋️ Gestión de Equipos
           </Link>
           <Link
+            href="/reportes-maquinas"
+            style={{
+              display: 'inline-block',
+              padding: '1rem 2rem',
+              backgroundColor: '#10b981',
+              color: 'white',
+              textDecoration: 'none',
+              borderRadius: '0.5rem',
+              fontWeight: '600',
+              transition: 'background-color 0.2s'
+            }}
+            onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#059669'}
+            onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#10b981'}
+          >
+            📈 Reportes de Equipos
+          </Link>
+          <Link
             href="/members"
             style={{
               display: 'inline-block',

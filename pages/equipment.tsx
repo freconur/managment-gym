@@ -17,7 +17,7 @@ import { MantenimientoDetailModal } from "@/components/MantenimientoDetailModal"
 import { QRReader } from "@/components/QRReader";
 import { EquiposTable } from "@/components/EquiposTable";
 import { AuthModal } from "@/components/AuthModal";
-import { FaUserPlus, FaTools, FaTimes, FaQrcode, FaDumbbell, FaPlus, FaHome } from "react-icons/fa";
+import { FaUserPlus, FaTools, FaTimes, FaQrcode, FaDumbbell, FaPlus, FaHome, FaChartBar } from "react-icons/fa";
 import { Machine, Usuario, Incidencia, Tarea } from "@/features/types/types";
 
 import { useEscapeKey } from "@/features/hooks/useEscapeKey"
@@ -370,6 +370,15 @@ const Equipment: NextPage = () => {
                 aria-label="Volver al Inicio"
               >
                 <FaHome size={16} />
+              </button>
+              <button
+                onClick={() => router.push('/reportes-maquinas')}
+                className={`${styles.button} ${styles.buttonIcon}`}
+                style={{ backgroundColor: "#10b981", color: "white" }}
+                title="Reportes de Equipos"
+                aria-label="Reportes de Equipos"
+              >
+                <FaChartBar size={16} />
               </button>
               <button
                 onClick={() => setIsQRReaderOpen(true)}
