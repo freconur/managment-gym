@@ -39,6 +39,7 @@ const EquipmentReportsPage: NextPage = () => {
     const [customStart, setCustomStart] = useState('')
     const [customEnd, setCustomEnd] = useState('')
     const [selectedType, setSelectedType] = useState('all')
+    const [selectedMachineId, setSelectedMachineId] = useState('all')
     const [exporting, setExporting] = useState(false)
     const reportRef = useRef<HTMLDivElement>(null)
 
@@ -229,6 +230,11 @@ const EquipmentReportsPage: NextPage = () => {
         // Type Filter
         if (selectedType !== 'all') {
             filtered = filtered.filter(item => item.tipo === selectedType)
+        }
+
+        // Machine Filter
+        if (selectedMachineId !== 'all') {
+            filtered = filtered.filter(item => item.machineId === selectedMachineId)
         }
 
         return filtered
@@ -467,11 +473,11 @@ const EquipmentReportsPage: NextPage = () => {
 
     // 5. Data for the summary table
     const tableData = useMemo(() => {
-        const machineStats: Record<string, { name: string, incidencias: number, atendidas: number, pendientes: number, mantenimiento: number, total: number }> = {}
+        const machineStats: Record<string, { id: string, name: string, incidencias: number, atendidas: number, pendientes: number, mantenimiento: number, total: number }> = {}
 
         maquinas.forEach(m => {
             if (m.id) {
-                machineStats[m.id] = { name: m.name || 'Sin nombre', incidencias: 0, atendidas: 0, pendientes: 0, mantenimiento: 0, total: 0 }
+                machineStats[m.id] = { id: m.id, name: m.name || 'Sin nombre', incidencias: 0, atendidas: 0, pendientes: 0, mantenimiento: 0, total: 0 }
             }
         })
 
@@ -558,6 +564,17 @@ const EquipmentReportsPage: NextPage = () => {
                             <option value="all">Todos los Eventos</option>
                             <option value="incidencia">Solo Incidencias</option>
                             <option value="mantenimiento">Solo Mantenimientos</option>
+                        </select>
+
+                        <select
+                            value={selectedMachineId}
+                            onChange={(e) => setSelectedMachineId(e.target.value)}
+                            className={styles.select}
+                        >
+                            <option value="all">Todas las Máquinas</option>
+                            {maquinas.map(m => (
+                                <option key={m.id} value={m.id}>{m.name}</option>
+                            ))}
                         </select>
                     </div>
                 </div>
@@ -765,26 +782,32 @@ const EquipmentReportsPage: NextPage = () => {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {tableData.map((stat, index) => (
-                                                <tr key={index}>
-                                                    <td>{stat.name}</td>
-                                                    <td style={{ textAlign: 'center' }}>
-                                                        <span className={styles.incidenciasBadge} style={{ backgroundColor: '#f3f4f6', color: '#374151' }}>{stat.incidencias}</span>
-                                                    </td>
-                                                    <td style={{ textAlign: 'center' }}>
-                                                        <span className={styles.mantenimientoBadge}>{stat.atendidas}</span>
-                                                    </td>
-                                                    <td style={{ textAlign: 'center' }}>
-                                                        <span className={styles.incidenciasBadge} style={{ backgroundColor: '#ffedd5', color: '#9a3412' }}>{stat.pendientes}</span>
-                                                    </td>
-                                                    <td style={{ textAlign: 'center' }}>
-                                                        <span className={styles.mantenimientoBadge} style={{ backgroundColor: '#dbeafe', color: '#1e40af' }}>{stat.mantenimiento}</span>
-                                                    </td>
-                                                    <td style={{ textAlign: 'center' }}>
-                                                        <strong>{stat.total}</strong>
-                                                    </td>
-                                                </tr>
-                                            ))}
+                                            {tableData
+                                                .filter(stat => selectedMachineId === 'all' || stat.id === selectedMachineId)
+                                                .map((stat, index) => (
+                                                    <tr key={index}>
+                                                        <td>
+                                                            <Link href={`/reportes/maquina/${stat.id}`} className={styles.machineLink}>
+                                                                {stat.name}
+                                                            </Link>
+                                                        </td>
+                                                        <td style={{ textAlign: 'center' }}>
+                                                            <span className={styles.incidenciasBadge} style={{ backgroundColor: '#f3f4f6', color: '#374151' }}>{stat.incidencias}</span>
+                                                        </td>
+                                                        <td style={{ textAlign: 'center' }}>
+                                                            <span className={styles.mantenimientoBadge}>{stat.atendidas}</span>
+                                                        </td>
+                                                        <td style={{ textAlign: 'center' }}>
+                                                            <span className={styles.incidenciasBadge} style={{ backgroundColor: '#ffedd5', color: '#9a3412' }}>{stat.pendientes}</span>
+                                                        </td>
+                                                        <td style={{ textAlign: 'center' }}>
+                                                            <span className={styles.mantenimientoBadge} style={{ backgroundColor: '#dbeafe', color: '#1e40af' }}>{stat.mantenimiento}</span>
+                                                        </td>
+                                                        <td style={{ textAlign: 'center' }}>
+                                                            <strong>{stat.total}</strong>
+                                                        </td>
+                                                    </tr>
+                                                ))}
                                             {tableData.length === 0 && (
                                                 <tr>
                                                     <td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>

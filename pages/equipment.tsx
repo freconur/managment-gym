@@ -60,6 +60,7 @@ const Equipment: NextPage = () => {
   const [isQRReaderOpen, setIsQRReaderOpen] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authError, setAuthError] = useState('');
+  const [authAction, setAuthAction] = useState<'mantenimiento' | 'usuario' | 'equipo' | null>(null);
 
   // Handle escape for inline modal
   useEscapeKey(() => {
@@ -109,7 +110,9 @@ const Equipment: NextPage = () => {
   };
 
   const handleOpenUsuarioModal = () => {
-    setIsUsuarioModalOpen(true);
+    setAuthAction('usuario');
+    setShowAuthModal(true);
+    setAuthError('');
   };
 
   const handleCloseUsuarioModal = () => {
@@ -117,7 +120,9 @@ const Equipment: NextPage = () => {
   };
 
   const handleOpenEquipmentFormModal = () => {
-    setIsEquipmentFormModalOpen(true);
+    setAuthAction('equipo');
+    setShowAuthModal(true);
+    setAuthError('');
   };
 
   const handleCloseEquipmentFormModal = () => {
@@ -226,6 +231,7 @@ const Equipment: NextPage = () => {
   const handleOpenMantenimientoModal = () => {
     // Verificar si hay una incidencia seleccionada para obtener la máquina
     if (selectedIncidencia?.machineId) {
+      setAuthAction('mantenimiento');
       setShowAuthModal(true);
       setAuthError('');
     }
@@ -237,9 +243,18 @@ const Equipment: NextPage = () => {
       if (esAdmin) {
         setShowAuthModal(false);
         setAuthError('');
-        setShowMantenimientoModal(true);
+
+        if (authAction === 'mantenimiento') {
+          setShowMantenimientoModal(true);
+        } else if (authAction === 'usuario') {
+          setIsUsuarioModalOpen(true);
+        } else if (authAction === 'equipo') {
+          setIsEquipmentFormModalOpen(true);
+        }
+
+        setAuthAction(null);
       } else {
-        setAuthError('Acceso denegado. Solo administradores y desarrolladores pueden registrar mantenimientos.');
+        setAuthError('Acceso denegado. Solo administradores y desarrolladores pueden realizar esta acción.');
       }
     } catch (error) {
       console.error('Error al validar administrador:', error);

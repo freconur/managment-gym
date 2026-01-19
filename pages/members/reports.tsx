@@ -1,7 +1,7 @@
 import type { NextPage } from 'next'
 import Head from 'next/head'
 import Link from 'next/link'
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import {
     getFirestore,
     collection,
@@ -11,7 +11,7 @@ import {
     Timestamp
 } from 'firebase/firestore'
 import { app } from '@/firebase/firebase.config'
-import { FaChartBar, FaArrowLeft, FaFilter } from 'react-icons/fa'
+import { FaChartBar, FaArrowLeft, FaFilter, FaFilePdf } from 'react-icons/fa'
 import { SubEnvironment } from '@/features/types/types'
 import {
     Chart as ChartJS,
@@ -59,6 +59,8 @@ const ReportsPage: NextPage = () => {
     const [customStart, setCustomStart] = useState('')
     const [customEnd, setCustomEnd] = useState('')
     const [selectedCompany, setSelectedCompany] = useState<string>('all')
+    const [exporting, setExporting] = useState(false)
+    const reportRef = useRef<HTMLDivElement>(null)
 
     const [selectedSex, setSelectedSex] = useState<string>('all')
     const [subEnvironmentsList, setSubEnvironmentsList] = useState<SubEnvironment[]>([])
@@ -244,19 +246,29 @@ const ReportsPage: NextPage = () => {
 
         filteredData.forEach(item => {
             if (!item.timestamp?.toDate) return
-            const date = item.timestamp.toDate().toLocaleDateString()
-            counts[date] = (counts[date] || 0) + 1
+            const dateObj = item.timestamp.toDate()
+            // Use local date components to avoid UTC shifts
+            const year = dateObj.getFullYear()
+            const month = String(dateObj.getMonth() + 1).padStart(2, '0')
+            const day = String(dateObj.getDate()).padStart(2, '0')
+            const dateKey = `${year}-${month}-${day}`
+            counts[dateKey] = (counts[dateKey] || 0) + 1
         })
 
-        // Sort by date
-        const sortedDates = Object.keys(counts).sort((a, b) => new Date(a).getTime() - new Date(b).getTime())
+        // Sort keys chronologically (ISO strings sort naturally)
+        const sortedKeys = Object.keys(counts).sort()
 
         return {
-            labels: sortedDates,
+            // Convert keys to "DD/MM(Count)" format for localized display
+            labels: sortedKeys.map(key => {
+                const [year, month, day] = key.split('-');
+                const count = counts[key];
+                return `${day}/${month}(${count})`;
+            }),
             datasets: [
                 {
                     label: 'Ingresos por Día',
-                    data: sortedDates.map(d => counts[d]),
+                    data: sortedKeys.map(key => counts[key]),
                     borderColor: 'rgb(75, 192, 192)',
                     backgroundColor: 'rgba(75, 192, 192, 0.5)',
                     tension: 0.3, // Smooth curve
@@ -265,6 +277,153 @@ const ReportsPage: NextPage = () => {
         }
     }, [filteredData])
 
+
+    const handleExportPDF = async () => {
+        if (!reportRef.current) return
+
+        setExporting(true)
+        try {
+            // @ts-ignore
+            const jsPDF = (await import('jspdf')).default
+            // @ts-ignore
+            const html2canvas = (await import('html2canvas')).default
+
+            const toBase64 = (url: string): Promise<string> => {
+                return new Promise((resolve) => {
+                    const img = new Image()
+                    img.crossOrigin = 'Anonymous'
+                    img.onload = () => {
+                        try {
+                            const canvas = document.createElement('canvas')
+                            canvas.width = img.width
+                            canvas.height = img.height
+                            const ctx = canvas.getContext('2d')
+                            ctx?.drawImage(img, 0, 0)
+                            resolve(canvas.toDataURL('image/jpeg'))
+                        } catch (e) { resolve(url) }
+                    }
+                    img.onerror = () => resolve(url)
+                    img.src = url
+                })
+            }
+
+            const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+            const margin = 10
+            const captureWidth = 1200 // Force desktop width for PDF
+            const pageWidth = pdf.internal.pageSize.getWidth()
+            const pageHeight = pdf.internal.pageSize.getHeight()
+            const contentWidth = pageWidth - (margin * 2)
+
+            pdf.setFontSize(18); pdf.setTextColor(17, 24, 39)
+            pdf.text('Reporte de Ingresos de Miembros', margin, margin + 5)
+            pdf.setFontSize(11); pdf.setTextColor(75, 85, 99)
+            pdf.text(`Fecha de generación: ${new Date().toLocaleDateString()}`, margin, margin + 12)
+
+            let currentY = margin + 20
+
+            // 1. Create a "Desktop Staging" container
+            const staging = document.createElement('div')
+            staging.style.width = captureWidth + 'px'
+            staging.style.position = 'fixed'
+            staging.style.left = '-9999px'
+            staging.style.top = '0'
+            staging.style.backgroundColor = 'white'
+            staging.className = reportRef.current.className // Keep same grid classes
+            staging.style.display = 'grid'
+            staging.style.gridTemplateColumns = 'repeat(auto-fit, minmax(250px, 1fr))'
+            staging.style.gap = '2rem'
+
+            // 2. Clone the entire report into staging
+            const reportClone = reportRef.current.cloneNode(true) as HTMLElement
+            reportClone.style.width = captureWidth + 'px'
+            reportClone.style.maxWidth = 'none'
+            staging.appendChild(reportClone)
+            document.body.appendChild(staging)
+
+            const cards = Array.from(reportClone.children) as HTMLElement[]
+            const rows: HTMLElement[][] = []
+            let currentRow: HTMLElement[] = []
+            let lastOffsetTop = -1
+
+            cards.forEach(card => {
+                if (lastOffsetTop === -1 || Math.abs(card.offsetTop - lastOffsetTop) < 20) {
+                    currentRow.push(card)
+                } else {
+                    rows.push(currentRow)
+                    currentRow = [card]
+                }
+                lastOffsetTop = card.offsetTop
+            })
+            if (currentRow.length > 0) rows.push(currentRow)
+
+            for (const rowCards of rows) {
+                const rowContainer = document.createElement('div')
+                rowContainer.className = styles.chartsGrid
+                rowContainer.style.display = 'grid'
+                rowContainer.style.gridTemplateColumns = 'repeat(auto-fit, minmax(250px, 1fr))'
+                rowContainer.style.gap = '2rem'
+                rowContainer.style.width = captureWidth + 'px'
+                rowContainer.style.position = 'fixed'
+                rowContainer.style.left = '-9999px'
+                rowContainer.style.top = '0'
+                rowContainer.style.padding = '10px'
+                rowContainer.style.backgroundColor = 'white'
+                document.body.appendChild(rowContainer)
+
+                const cardIndices = rowCards.map(c => Array.from(reportClone.children).indexOf(c))
+                const originalCards = cardIndices.map(idx => reportRef.current!.children[idx] as HTMLElement)
+
+                rowCards.forEach((card, cardIndexInRow) => {
+                    const originalCard = originalCards[cardIndexInRow]
+                    const clone = card.cloneNode(true) as HTMLElement
+                    clone.style.width = card.offsetWidth + 'px'
+                    rowContainer.appendChild(clone)
+
+                    const originalCanvases = Array.from(originalCard.querySelectorAll('canvas'))
+                    const clonedCanvases = Array.from(clone.querySelectorAll('canvas'))
+                    originalCanvases.forEach((cvs, i) => {
+                        const clonedCvs = clonedCanvases[i]
+                        if (clonedCvs) {
+                            clonedCvs.width = cvs.width
+                            clonedCvs.height = cvs.height
+                            clonedCvs.getContext('2d')?.drawImage(cvs, 0, 0)
+                        }
+                    })
+                })
+
+                const allImages = Array.from(rowContainer.querySelectorAll('img'))
+                for (const img of allImages) if (img.src && !img.src.startsWith('data:')) img.src = await toBase64(img.src)
+
+                const canvas = await html2canvas(rowContainer, {
+                    scale: 2,
+                    useCORS: true,
+                    allowTaint: true,
+                    backgroundColor: 'white'
+                })
+
+                const imgData = canvas.toDataURL('image/jpeg', 0.95)
+                const imgWidth = contentWidth
+                const imgHeight = (canvas.height * imgWidth) / canvas.width
+
+                if (currentY + imgHeight > pageHeight - margin) {
+                    pdf.addPage()
+                    currentY = margin
+                }
+                pdf.addImage(imgData, 'JPEG', margin, currentY, imgWidth, imgHeight)
+                currentY += imgHeight + 5
+
+                document.body.removeChild(rowContainer)
+            }
+
+            document.body.removeChild(staging)
+            pdf.save(`reporte-ingresos-${new Date().toISOString().split('T')[0]}.pdf`)
+        } catch (error) {
+            console.error('Error generating PDF:', error)
+            alert('Hubo un error al generar el PDF.')
+        } finally {
+            setExporting(false)
+        }
+    }
 
     return (
         <>
@@ -275,12 +434,23 @@ const ReportsPage: NextPage = () => {
                 <main className={styles.main}>
 
                     <div className={styles.header}>
-                        <Link href="/members" className={styles.backLink}>
-                            <FaArrowLeft /> Volver a Miembros
-                        </Link>
-                        <h1 className={styles.title}>
-                            <FaChartBar className={styles.titleIcon} /> Reportes de Ingresos
-                        </h1>
+                        <div className={styles.headerTitleGroup}>
+                            <Link href="/members" className={styles.backLink}>
+                                <FaArrowLeft /> Volver a Miembros
+                            </Link>
+                            <h1 className={styles.title}>
+                                <FaChartBar className={styles.titleIcon} /> Reportes de Ingresos
+                            </h1>
+                        </div>
+                        {!loading && (
+                            <button
+                                onClick={handleExportPDF}
+                                disabled={exporting}
+                                className={styles.exportButton}
+                            >
+                                <FaFilePdf /> {exporting ? 'Generando PDF...' : 'Exportar PDF'}
+                            </button>
+                        )}
                     </div>
 
                     {/* Filters */}
@@ -355,7 +525,7 @@ const ReportsPage: NextPage = () => {
                         <div className={styles.loading}>Cargando datos...</div>
                     ) : (
 
-                        <div className={styles.chartsGrid}>
+                        <div ref={reportRef} className={styles.chartsGrid}>
 
                             {/* Line Chart - Timeline */}
                             <div className={`${styles.card} ${styles.cardFullWidth}`}>
@@ -366,10 +536,24 @@ const ReportsPage: NextPage = () => {
                                         options={{
                                             responsive: true,
                                             maintainAspectRatio: false,
-                                            plugins: { legend: { position: 'top' as const } },
+                                            interaction: {
+                                                mode: 'index',
+                                                intersect: false,
+                                            },
+                                            plugins: {
+                                                legend: { position: 'top' as const },
+                                                tooltip: {
+                                                    callbacks: {
+                                                        label: function (context: any) {
+                                                            return `Ingresos: ${context.parsed.y}`;
+                                                        }
+                                                    }
+                                                }
+                                            },
                                             scales: {
                                                 x: {
-                                                    offset: true, // Centers points away from the Y-axis
+                                                    offset: true,
+                                                    ticks: { autoSkip: true, maxRotation: 45, maxTicksLimit: 7 },
                                                     grid: { display: false }
                                                 },
                                                 y: {
@@ -397,6 +581,9 @@ const ReportsPage: NextPage = () => {
                                             maintainAspectRatio: false,
                                             plugins: { legend: { display: false } },
                                             scales: {
+                                                x: {
+                                                    ticks: { autoSkip: true, maxTicksLimit: 8 }
+                                                },
                                                 y: {
                                                     ticks: { precision: 0 },
                                                     grid: {
