@@ -35,27 +35,18 @@ export const UsuarioActionsModal: React.FC<UsuarioActionsModalProps> = ({
     rol: ''
   });
   const [isPinModalOpen, setIsPinModalOpen] = useState(false);
-  const [isDeletePinModalOpen, setIsDeletePinModalOpen] = useState(false);
   const [pinData, setPinData] = useState({
     pin: '',
     confirmPin: ''
-  });
-  const [deletePinData, setDeletePinData] = useState({
-    pin: ''
   });
   const [pinErrors, setPinErrors] = useState({
     pin: '',
     confirmPin: ''
   });
-  const [deletePinError, setDeletePinError] = useState('');
 
   useEscapeKey(() => {
     if (isPinModalOpen) {
       handleClosePinModal();
-      return;
-    }
-    if (isDeletePinModalOpen) {
-      handleCloseDeletePinModal();
       return;
     }
     if (isEditing) {
@@ -301,143 +292,11 @@ export const UsuarioActionsModal: React.FC<UsuarioActionsModalProps> = ({
   };
 
   const handleDeleteClick = () => {
-    setIsDeletePinModalOpen(true);
-  };
-
-  const handleDeletePinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/\D/g, '').slice(0, 4);
-    setDeletePinData({ pin: value });
-    if (deletePinError) {
-      setDeletePinError('');
-    }
-  };
-
-  const handleDeletePinSubmit = () => {
-    if (!deletePinData.pin) {
-      setDeletePinError('El PIN es requerido');
-      return;
-    }
-
-    if (deletePinData.pin.length !== 4) {
-      setDeletePinError('El PIN debe tener exactamente 4 dígitos');
-      return;
-    }
-
-    // Validar que el PIN coincida con el del usuario
-    if (usuario.pin && Number(deletePinData.pin) !== usuario.pin) {
-      setDeletePinError('El PIN ingresado no coincide');
-      return;
-    }
-
-    // Si el PIN es correcto, proceder con la eliminación
-    if (onDelete) {
+    if (usuario && onDelete && window.confirm(`¿Está seguro de que desea eliminar al usuario ${usuario.nombres} ${usuario.apellidos}? Esta acción no se puede deshacer.`)) {
       onDelete(usuario);
     }
-    setIsDeletePinModalOpen(false);
-    setDeletePinData({ pin: '' });
-    setDeletePinError('');
-    onClose();
   };
 
-  const handleCloseDeletePinModal = () => {
-    setIsDeletePinModalOpen(false);
-    setDeletePinData({ pin: '' });
-    setDeletePinError('');
-  };
-
-  if (isDeletePinModalOpen) {
-    return (
-      <div className={styles.modalOverlay} onClick={handleCloseDeletePinModal}>
-        <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-          <div className={styles.modalHeader}>
-            <h3 className={styles.modalTitle}>Confirmar Eliminación</h3>
-            <button
-              type="button"
-              onClick={handleCloseDeletePinModal}
-              className={styles.modalCloseButton}
-              aria-label="Cerrar modal"
-            >
-              <FaTimes size={20} />
-            </button>
-          </div>
-          <div className={styles.modalBody}>
-            <div style={{ marginBottom: '1.5rem' }}>
-              <p style={{
-                color: '#dc2626',
-                fontSize: '0.875rem',
-                marginBottom: '1rem',
-                fontWeight: 500
-              }}>
-                ⚠️ Esta acción no se puede deshacer
-              </p>
-              <p style={{
-                color: '#374151',
-                fontSize: '0.875rem',
-                marginBottom: '0.5rem'
-              }}>
-                Para eliminar al usuario <strong>{usuario.nombres} {usuario.apellidos}</strong>,
-                ingrese el PIN del usuario:
-              </p>
-            </div>
-            <div className={styles.modalSection}>
-              <div className={styles.formField}>
-                <label className={styles.label} htmlFor="deletePin">
-                  PIN del Usuario (4 dígitos)
-                </label>
-                <input
-                  type="password"
-                  id="deletePin"
-                  name="deletePin"
-                  value={deletePinData.pin}
-                  onChange={handleDeletePinChange}
-                  placeholder="Ingrese el PIN (4 dígitos)"
-                  className={styles.input}
-                  required
-                  maxLength={4}
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  autoFocus
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      handleDeletePinSubmit();
-                    }
-                    if (!/[0-9]/.test(e.key) && !['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
-                      e.preventDefault();
-                    }
-                  }}
-                />
-                {deletePinError && (
-                  <span style={{ color: 'red', fontSize: '0.875rem', marginTop: '0.25rem', display: 'block' }}>
-                    {deletePinError}
-                  </span>
-                )}
-              </div>
-            </div>
-            <div className={styles.modalButtonGroup} style={{ marginTop: '1.5rem', justifyContent: 'flex-end' }}>
-              <button
-                type="button"
-                onClick={handleCloseDeletePinModal}
-                className={`${styles.button} ${styles.buttonSecondary}`}
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={handleDeletePinSubmit}
-                className={`${styles.button} ${styles.buttonDanger}`}
-                disabled={deletePinData.pin.length !== 4}
-                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-              >
-                <FaTrash size={16} />
-                Eliminar Usuario
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   if (isPinModalOpen) {
     return (

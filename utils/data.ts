@@ -74,14 +74,14 @@ export const prioridadDeMantenimiento = [
 ]
 
 export const roles = [
-    /* {
+    {
         id: 0,
         name: 'Desarrollador'
     },
     {
         id: 1,
         name: 'Administrador'
-    }, */
+    },
     {
         id: 2,
         name: 'Tecnico'

@@ -10,6 +10,7 @@ import { EquipmentForm } from "@/components/EquipmentForm";
 import { MachineDetailsModal } from "@/components/MachineDetailsModal";
 import { NuevoUsuarioModal } from "@/components/NuevoUsuarioModal";
 import { UsuariosTable } from "@/components/UsuariosTable";
+import { UsuarioActionsModal } from "@/components/UsuarioActionsModal";
 import { CalendarView } from "@/components/CalendarView";
 import { IncidenciaDetailModal } from "@/components/IncidenciaDetailModal";
 import { MantenimientoModal } from "@/components/MantenimientoModal";
@@ -60,7 +61,10 @@ const Equipment: NextPage = () => {
   const [isQRReaderOpen, setIsQRReaderOpen] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authError, setAuthError] = useState('');
-  const [authAction, setAuthAction] = useState<'mantenimiento' | 'usuario' | 'equipo' | null>(null);
+  const [authAction, setAuthAction] = useState<'mantenimiento' | 'usuario' | 'equipo' | 'delete_usuario' | 'manage_usuario' | null>(null);
+  const [usuarioToDelete, setUsuarioToDelete] = useState<Usuario | null>(null);
+  const [isUsuarioActionsModalOpen, setIsUsuarioActionsModalOpen] = useState(false);
+  const [selectedUserForActions, setSelectedUserForActions] = useState<Usuario | null>(null);
 
   // Handle escape for inline modal
   useEscapeKey(() => {
@@ -158,16 +162,16 @@ const Equipment: NextPage = () => {
     }
   };
 
-  const handleDeleteUsuario = async (usuario: Usuario) => {
-    try {
-      if (usuario.id || usuario.dni) {
-        const id = usuario.id || usuario.dni || "";
-        await deleteUsuario(id);
-        await getUsuarios();
-      }
-    } catch (error) {
-      console.error("Error al eliminar usuario:", error);
-    }
+  const handleOpenUsuarioActions = (usuario: Usuario) => {
+    setSelectedUserForActions(usuario);
+    setAuthAction('manage_usuario');
+    setShowAuthModal(true);
+    setAuthError('');
+  };
+
+  const handleCloseUsuarioActionsModal = () => {
+    setIsUsuarioActionsModalOpen(false);
+    setSelectedUserForActions(null);
   };
 
   useEffect(() => {
@@ -250,6 +254,15 @@ const Equipment: NextPage = () => {
           setIsUsuarioModalOpen(true);
         } else if (authAction === 'equipo') {
           setIsEquipmentFormModalOpen(true);
+        } else if (authAction === 'delete_usuario' && usuarioToDelete) {
+          const id = usuarioToDelete.id || usuarioToDelete.dni || "";
+          if (id) {
+            await deleteUsuario(id);
+            await getUsuarios();
+          }
+          setUsuarioToDelete(null);
+        } else if (authAction === 'manage_usuario') {
+          setIsUsuarioActionsModalOpen(true);
         }
 
         setAuthAction(null);
@@ -516,7 +529,7 @@ const Equipment: NextPage = () => {
 
         <UsuariosTable
           onEdit={handleEditUsuario}
-          onDelete={handleDeleteUsuario}
+          onOpenActions={handleOpenUsuarioActions}
         />
 
         <CalendarView incidencias={eventos} onSelectEvent={handleSelectEvent} />
@@ -542,6 +555,20 @@ const Equipment: NextPage = () => {
         isOpen={isUsuarioModalOpen}
         onClose={handleCloseUsuarioModal}
         onSubmit={handleSubmitUsuario}
+      />
+      <UsuarioActionsModal
+        isOpen={isUsuarioActionsModalOpen}
+        usuario={selectedUserForActions}
+        onClose={handleCloseUsuarioActionsModal}
+        onEdit={handleEditUsuario}
+        onDelete={async (usuario) => {
+          if (usuario.id || usuario.dni) {
+            const id = usuario.id || usuario.dni || "";
+            await deleteUsuario(id);
+            await getUsuarios();
+            handleCloseUsuarioActionsModal();
+          }
+        }}
       />
 
       {/* Modal de Formulario de Equipo */}

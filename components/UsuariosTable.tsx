@@ -8,12 +8,11 @@ import { UsuarioActionsModal } from './UsuarioActionsModal';
 interface UsuariosTableProps {
   onEdit?: (usuario: Usuario) => void;
   onDelete?: (usuario: Usuario) => void;
+  onOpenActions?: (usuario: Usuario) => void;
 }
 
-export const UsuariosTable: React.FC<UsuariosTableProps> = ({ onEdit, onDelete }) => {
+export const UsuariosTable: React.FC<UsuariosTableProps> = ({ onEdit, onDelete, onOpenActions }) => {
   const { getUsuarios, usuarios, loadingUsuarios } = useManagment();
-  const [selectedUsuario, setSelectedUsuario] = useState<Usuario | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     const unsubscribe = getUsuarios();
@@ -51,14 +50,10 @@ export const UsuariosTable: React.FC<UsuariosTableProps> = ({ onEdit, onDelete }
     return roles[rol.toLowerCase()] || rol;
   };
 
-  const handleOpenModal = (usuario: Usuario) => {
-    setSelectedUsuario(usuario);
-    setIsModalOpen(true);
-  };
-
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setSelectedUsuario(null);
+  const handleOpenActions = (usuario: Usuario) => {
+    if (onOpenActions) {
+      onOpenActions(usuario);
+    }
   };
 
   const handleEdit = (usuario: Usuario) => {
@@ -134,7 +129,7 @@ export const UsuariosTable: React.FC<UsuariosTableProps> = ({ onEdit, onDelete }
                   <td className={styles.actionsCell}>
                     <div className={styles.actionsGroup}>
                       <button
-                        onClick={() => handleOpenModal(usuario)}
+                        onClick={() => handleOpenActions(usuario)}
                         className={`${styles.actionButton} ${styles.settingsButton}`}
                         aria-label="Acciones de usuario"
                         title="Acciones de usuario"
@@ -149,13 +144,6 @@ export const UsuariosTable: React.FC<UsuariosTableProps> = ({ onEdit, onDelete }
           </table>
         </div>
       )}
-      <UsuarioActionsModal
-        isOpen={isModalOpen}
-        usuario={selectedUsuario}
-        onClose={handleCloseModal}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
-      />
     </div>
   );
 };
