@@ -28,6 +28,17 @@ import {
 import { Bar, Doughnut, Line } from 'react-chartjs-2'
 import styles from './Reports.module.css'
 import { InactiveMembersFilter } from '@/components/InactiveMembersFilter'
+import {
+    Document,
+    Page,
+    Text,
+    View,
+    StyleSheet,
+    Image,
+    pdf,
+    Font
+} from '@react-pdf/renderer'
+import { ThemeToggle } from '@/components/ThemeToggle'
 
 
 ChartJS.register(
@@ -41,6 +52,89 @@ ChartJS.register(
     PointElement,
     LineElement
 )
+
+const pdfStyles = StyleSheet.create({
+    page: { padding: 40, fontFamily: 'Helvetica', backgroundColor: '#ffffff' },
+    header: { marginBottom: 25, borderBottom: 1, borderBottomColor: '#e5e7eb', paddingBottom: 15 },
+    title: { fontSize: 22, fontWeight: 'bold', color: '#111827' },
+    subtitle: { fontSize: 10, color: '#6b7280', marginTop: 5 },
+    section: { marginBottom: 25 },
+    sectionTitle: { fontSize: 14, fontWeight: 'bold', color: '#374151', marginBottom: 12, borderLeft: 4, borderLeftColor: '#10b981', paddingLeft: 10 },
+    summaryGrid: { flexDirection: 'row', gap: 15, marginBottom: 20 },
+    summaryItem: { flex: 1, padding: 15, backgroundColor: '#f9fafb', borderRadius: 8, alignItems: 'center', borderWidth: 1, borderStyle: 'solid', borderColor: '#f3f4f6' },
+    summaryLabel: { fontSize: 8, color: '#6b7280', marginBottom: 4 },
+    summaryValue: { fontSize: 16, fontWeight: 'bold', color: '#059669' },
+    chartContainer: { width: '100%', marginBottom: 20, alignItems: 'center' },
+    chartImage: { width: '100%', height: 200, objectFit: 'contain' },
+    row: { flexDirection: 'row', gap: 15 },
+    halfColumn: { flex: 1 },
+    footer: { position: 'absolute', bottom: 30, left: 40, right: 40, borderTopWidth: 1, borderTopStyle: 'solid', borderTopColor: '#f3f4f6', paddingTop: 10, alignItems: 'center' },
+    footerText: { fontSize: 8, color: '#9ca3af' }
+});
+
+interface MembersReportPDFProps {
+    data: any[];
+    charts: {
+        timeline: string;
+        company: string;
+        sex: string;
+    };
+    stats: {
+        totalIngresos: number;
+        empresasActivas: number;
+    };
+}
+
+const MembersReportPDF = ({ data, charts, stats }: MembersReportPDFProps) => (
+    <Document>
+        <Page size="A4" style={pdfStyles.page}>
+            <Text style={pdfStyles.title}>Reporte de Ingresos de Miembros</Text>
+            <Text style={pdfStyles.subtitle}>Management Gym - Generado el {new Date().toLocaleDateString()}</Text>
+
+            <View style={pdfStyles.section}>
+                <Text style={pdfStyles.sectionTitle}>Resumen Ejecutivo</Text>
+                <View style={pdfStyles.summaryGrid}>
+                    <View style={pdfStyles.summaryItem}>
+                        <Text style={pdfStyles.summaryLabel}>Total de Ingresos</Text>
+                        <Text style={pdfStyles.summaryValue}>{stats.totalIngresos}</Text>
+                    </View>
+                    <View style={pdfStyles.summaryItem}>
+                        <Text style={pdfStyles.summaryLabel}>Empresas Activas</Text>
+                        <Text style={pdfStyles.summaryValue}>{stats.empresasActivas}</Text>
+                    </View>
+                </View>
+            </View>
+
+            <View style={pdfStyles.section}>
+                <Text style={pdfStyles.sectionTitle}>Tendencia de Ingresos</Text>
+                {charts.timeline && (
+                    <View style={pdfStyles.chartContainer}>
+                        <Image src={charts.timeline} style={pdfStyles.chartImage} />
+                    </View>
+                )}
+            </View>
+
+            <View style={pdfStyles.section}>
+                <View style={pdfStyles.row}>
+                    <View style={pdfStyles.halfColumn}>
+                        <Text style={pdfStyles.sectionTitle}>Ingresos por Empresa</Text>
+                        {charts.company && <Image src={charts.company} style={[pdfStyles.chartImage, { height: 150 }]} />}
+                    </View>
+                    <View style={pdfStyles.halfColumn}>
+                        <Text style={pdfStyles.sectionTitle}>Distribución por Sexo</Text>
+                        {charts.sex && <Image src={charts.sex} style={[pdfStyles.chartImage, { height: 150 }]} />}
+                    </View>
+                </View>
+            </View>
+
+            <View style={pdfStyles.footer}>
+                <Text style={pdfStyles.footerText}>
+                    Este reporte contiene información consolidada de los registros de asistencia en el periodo seleccionado.
+                </Text>
+            </View>
+        </Page>
+    </Document>
+);
 
 const db = getFirestore(app)
 
@@ -283,145 +377,52 @@ const ReportsPage: NextPage = () => {
 
         setExporting(true)
         try {
-            // @ts-ignore
-            const jsPDF = (await import('jspdf')).default
-            // @ts-ignore
-            const html2canvas = (await import('html2canvas')).default
-
-            const toBase64 = (url: string): Promise<string> => {
-                return new Promise((resolve) => {
-                    const img = new Image()
-                    img.crossOrigin = 'Anonymous'
-                    img.onload = () => {
-                        try {
-                            const canvas = document.createElement('canvas')
-                            canvas.width = img.width
-                            canvas.height = img.height
-                            const ctx = canvas.getContext('2d')
-                            ctx?.drawImage(img, 0, 0)
-                            resolve(canvas.toDataURL('image/jpeg'))
-                        } catch (e) { resolve(url) }
-                    }
-                    img.onerror = () => resolve(url)
-                    img.src = url
-                })
-            }
-
-            const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
-            const margin = 10
-            const captureWidth = 1200 // Force desktop width for PDF
-            const pageWidth = pdf.internal.pageSize.getWidth()
-            const pageHeight = pdf.internal.pageSize.getHeight()
-            const contentWidth = pageWidth - (margin * 2)
-
-            pdf.setFontSize(18); pdf.setTextColor(17, 24, 39)
-            pdf.text('Reporte de Ingresos de Miembros', margin, margin + 5)
-            pdf.setFontSize(11); pdf.setTextColor(75, 85, 99)
-            pdf.text(`Fecha de generación: ${new Date().toLocaleDateString()}`, margin, margin + 12)
-
-            let currentY = margin + 20
-
-            // 1. Create a "Desktop Staging" container
-            const staging = document.createElement('div')
-            staging.style.width = captureWidth + 'px'
-            staging.style.position = 'fixed'
-            staging.style.left = '-9999px'
-            staging.style.top = '0'
-            staging.style.backgroundColor = 'white'
-            staging.className = reportRef.current.className // Keep same grid classes
-            staging.style.display = 'grid'
-            staging.style.gridTemplateColumns = 'repeat(auto-fit, minmax(250px, 1fr))'
-            staging.style.gap = '2rem'
-
-            // 2. Clone the entire report into staging
-            const reportClone = reportRef.current.cloneNode(true) as HTMLElement
-            reportClone.style.width = captureWidth + 'px'
-            reportClone.style.maxWidth = 'none'
-            staging.appendChild(reportClone)
-            document.body.appendChild(staging)
-
-            const cards = Array.from(reportClone.children) as HTMLElement[]
-            const rows: HTMLElement[][] = []
-            let currentRow: HTMLElement[] = []
-            let lastOffsetTop = -1
-
-            cards.forEach(card => {
-                if (lastOffsetTop === -1 || Math.abs(card.offsetTop - lastOffsetTop) < 20) {
-                    currentRow.push(card)
-                } else {
-                    rows.push(currentRow)
-                    currentRow = [card]
+            const getChartImage = (index: number): string => {
+                const canvases = reportRef.current?.querySelectorAll('canvas');
+                if (canvases && canvases[index]) {
+                    return (canvases[index] as HTMLCanvasElement).toDataURL('image/png');
                 }
-                lastOffsetTop = card.offsetTop
-            })
-            if (currentRow.length > 0) rows.push(currentRow)
+                return '';
+            };
 
-            for (const rowCards of rows) {
-                const rowContainer = document.createElement('div')
-                rowContainer.className = styles.chartsGrid
-                rowContainer.style.display = 'grid'
-                rowContainer.style.gridTemplateColumns = 'repeat(auto-fit, minmax(250px, 1fr))'
-                rowContainer.style.gap = '2rem'
-                rowContainer.style.width = captureWidth + 'px'
-                rowContainer.style.position = 'fixed'
-                rowContainer.style.left = '-9999px'
-                rowContainer.style.top = '0'
-                rowContainer.style.padding = '10px'
-                rowContainer.style.backgroundColor = 'white'
-                document.body.appendChild(rowContainer)
+            // Order of charts in the DOM:
+            // 0: Timeline (Line)
+            // 1: Company (Bar)
+            // 2: Sex (Doughnut)
 
-                const cardIndices = rowCards.map(c => Array.from(reportClone.children).indexOf(c))
-                const originalCards = cardIndices.map(idx => reportRef.current!.children[idx] as HTMLElement)
+            const charts = {
+                timeline: getChartImage(0),
+                company: getChartImage(1),
+                sex: getChartImage(2),
+            };
 
-                rowCards.forEach((card, cardIndexInRow) => {
-                    const originalCard = originalCards[cardIndexInRow]
-                    const clone = card.cloneNode(true) as HTMLElement
-                    clone.style.width = card.offsetWidth + 'px'
-                    rowContainer.appendChild(clone)
+            const stats = {
+                totalIngresos: filteredData.length,
+                empresasActivas: companyChartData.labels?.length || 0
+            };
 
-                    const originalCanvases = Array.from(originalCard.querySelectorAll('canvas'))
-                    const clonedCanvases = Array.from(clone.querySelectorAll('canvas'))
-                    originalCanvases.forEach((cvs, i) => {
-                        const clonedCvs = clonedCanvases[i]
-                        if (clonedCvs) {
-                            clonedCvs.width = cvs.width
-                            clonedCvs.height = cvs.height
-                            clonedCvs.getContext('2d')?.drawImage(cvs, 0, 0)
-                        }
-                    })
-                })
+            const blob = await pdf(
+                <MembersReportPDF
+                    data={filteredData}
+                    charts={charts}
+                    stats={stats}
+                />
+            ).toBlob();
 
-                const allImages = Array.from(rowContainer.querySelectorAll('img'))
-                for (const img of allImages) if (img.src && !img.src.startsWith('data:')) img.src = await toBase64(img.src)
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `reporte-ingresos-${new Date().toISOString().split('T')[0]}.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
 
-                const canvas = await html2canvas(rowContainer, {
-                    scale: 2,
-                    useCORS: true,
-                    allowTaint: true,
-                    backgroundColor: 'white'
-                })
-
-                const imgData = canvas.toDataURL('image/jpeg', 0.95)
-                const imgWidth = contentWidth
-                const imgHeight = (canvas.height * imgWidth) / canvas.width
-
-                if (currentY + imgHeight > pageHeight - margin) {
-                    pdf.addPage()
-                    currentY = margin
-                }
-                pdf.addImage(imgData, 'JPEG', margin, currentY, imgWidth, imgHeight)
-                currentY += imgHeight + 5
-
-                document.body.removeChild(rowContainer)
-            }
-
-            document.body.removeChild(staging)
-            pdf.save(`reporte-ingresos-${new Date().toISOString().split('T')[0]}.pdf`)
         } catch (error) {
-            console.error('Error generating PDF:', error)
-            alert('Hubo un error al generar el PDF.')
+            console.error('Error generating PDF:', error);
+            alert('Hubo un error al generar el PDF.');
         } finally {
-            setExporting(false)
+            setExporting(false);
         }
     }
 
@@ -443,13 +444,16 @@ const ReportsPage: NextPage = () => {
                             </h1>
                         </div>
                         {!loading && (
-                            <button
-                                onClick={handleExportPDF}
-                                disabled={exporting}
-                                className={styles.exportButton}
-                            >
-                                <FaFilePdf /> {exporting ? 'Generando PDF...' : 'Exportar PDF'}
-                            </button>
+                            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                                <ThemeToggle />
+                                <button
+                                    onClick={handleExportPDF}
+                                    disabled={exporting}
+                                    className={styles.exportButton}
+                                >
+                                    <FaFilePdf /> {exporting ? 'Generando PDF...' : 'Exportar PDF'}
+                                </button>
+                            </div>
                         )}
                     </div>
 

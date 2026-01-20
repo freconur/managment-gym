@@ -26,6 +26,7 @@ import styles from './Members.module.css'
 import { MembersTable } from '@/components/MembersTable'
 import { MembersForm } from '@/components/MembersForm'
 import { Member, Company, Area, Cargo } from '@/features/types/types'
+import { ThemeToggle } from '@/components/ThemeToggle'
 
 
 const db = getFirestore(app)
@@ -317,10 +318,11 @@ const MembersPage: NextPage = () => {
                 <meta name="description" content="Registro de usuarios del gimnasio" />
             </Head>
             <main className={styles.container}>
-                <div className={styles.headerLinkContainer}>
+                <div className={styles.headerLinkContainer} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Link href="/" className={styles.backLink}>
                         &larr; Volver al inicio
                     </Link>
+                    <ThemeToggle />
                 </div>
 
                 <h1 className={styles.pageTitle}>Registro de Usuarios</h1>

@@ -1,20 +1,16 @@
 .container {
-    background-color: white;
+    background-color: var(--bg-card);
     border-radius: 1rem;
     padding: 1.5rem;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     margin-bottom: 2rem;
-    border: 1px solid #fed7aa;
-    /* Orange tint to highlight attention */
-    background: #fff7ed;
-    /* Light orange bg */
+    border: 1px solid var(--border-glass);
 }
 
 .title {
     font-size: 1.25rem;
     font-weight: 700;
-    color: #c2410c;
-    /* Dark orange */
+    color: var(--text-primary);
     margin: 0 0 1rem 0;
     display: flex;
     align-items: center;
@@ -34,21 +30,21 @@
 .table th {
     text-align: left;
     padding: 0.75rem;
-    border-bottom: 2px solid #fdba74;
-    color: #9a3412;
+    border-bottom: 2px solid var(--border-glass);
+    color: var(--text-secondary);
     font-weight: 600;
 }
 
 .table td {
     padding: 0.75rem;
-    border-bottom: 1px solid #fed7aa;
-    color: #374151;
+    border-bottom: 1px solid var(--border-glass);
+    color: var(--text-primary);
     vertical-align: middle;
 }
 
 .nameCell {
     font-weight: 500;
-    color: #1f293b;
+    color: var(--text-primary);
 }
 
 .amenityTags {
@@ -58,13 +54,13 @@
 }
 
 .tag {
-    background-color: #ffedd5;
-    color: #c2410c;
+    background-color: rgba(255, 255, 255, 0.05);
+    color: var(--text-secondary);
     padding: 0.25rem 0.6rem;
     border-radius: 9999px;
     font-size: 0.75rem;
     font-weight: 600;
-    border: 1px solid #fdba74;
+    border: 1px solid var(--border-glass);
 }
 
 .returnButton {
@@ -95,7 +91,7 @@
     align-items: center;
     justify-content: center;
     padding: 2rem;
-    color: #c2410c;
+    color: var(--text-secondary);
     gap: 0.5rem;
 }
 

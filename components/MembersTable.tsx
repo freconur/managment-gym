@@ -60,9 +60,9 @@ export const MembersTable: React.FC<MembersTableProps> = ({
 
     return (
         <div className={styles.tableContainer}>
-            <div className={styles.searchBarContainer} style={{ padding: '1rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
+            <div className={styles.searchBarContainer} style={{ padding: '1.5rem', display: 'flex', gap: '1rem', alignItems: 'center', borderBottom: '1px solid var(--border-glass)' }}>
                 <div style={{ position: 'relative', flex: 1, maxWidth: '400px' }}>
-                    <FaSearch style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }} />
+                    <FaSearch style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
                     <input
                         type="text"
                         placeholder="Buscar por DNI, Nombre o Apellidos..."
@@ -70,10 +70,14 @@ export const MembersTable: React.FC<MembersTableProps> = ({
                         onChange={(e) => setSearchTerm(e.target.value)}
                         style={{
                             width: '100%',
-                            padding: '0.5rem 0.5rem 0.5rem 2.5rem',
-                            borderRadius: '0.375rem',
-                            border: '1px solid #d1d5db',
-                            fontSize: '0.95rem'
+                            padding: '0.625rem 0.625rem 0.625rem 2.75rem',
+                            borderRadius: '0.75rem',
+                            border: '1px solid var(--border-glass)',
+                            fontSize: '0.95rem',
+                            backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                            color: 'var(--text-primary)',
+                            outline: 'none',
+                            transition: 'all 0.2s'
                         }}
                     />
                 </div>
@@ -95,18 +99,21 @@ export const MembersTable: React.FC<MembersTableProps> = ({
                                         value={filterEmpresa}
                                         onChange={(e) => setFilterEmpresa(e.target.value)}
                                         style={{
-                                            padding: '4px',
-                                            borderRadius: '4px',
-                                            border: 'none',
-                                            fontSize: '0.8em',
-                                            color: '#333',
-                                            fontWeight: 'normal'
+                                            padding: '4px 8px',
+                                            borderRadius: '6px',
+                                            border: '1px solid var(--border-glass)',
+                                            fontSize: '0.8rem',
+                                            color: 'var(--text-primary)',
+                                            backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                            fontWeight: 'normal',
+                                            cursor: 'pointer',
+                                            outline: 'none'
                                         }}
                                         onClick={(e) => e.stopPropagation()}
                                     >
-                                        <option value="">Todas</option>
+                                        <option value="" style={{ backgroundColor: 'var(--bg-card)' }}>Todas</option>
                                         {empresas.map(emp => (
-                                            <option key={emp.id} value={emp.nombre}>{emp.nombre}</option>
+                                            <option key={emp.id} value={emp.nombre} style={{ backgroundColor: 'var(--bg-card)' }}>{emp.nombre}</option>
                                         ))}
                                     </select>
                                 </div>

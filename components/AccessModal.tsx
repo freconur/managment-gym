@@ -209,6 +209,11 @@ export const AccessModal: React.FC<AccessModalProps> = ({ isOpen, onClose }) => 
     const handleRegister = async () => {
         if (!member) return;
 
+        if (selectedSubEnvironments.length === 0) {
+            setError('Debe seleccionar al menos un Sub-Ambiente de Acceso');
+            return;
+        }
+
         setRegistering(true);
         try {
             await addDoc(collection(db, 'asistencias'), {
@@ -232,6 +237,7 @@ export const AccessModal: React.FC<AccessModalProps> = ({ isOpen, onClose }) => 
             });
 
             setSuccessMsg(`¡Ingreso registrado para ${member.nombre}!`);
+            setError(''); // Clear any previous errors
             setDni('');
             setMember(null);
             setSelectedSubEnvironments([]);
@@ -364,7 +370,7 @@ export const AccessModal: React.FC<AccessModalProps> = ({ isOpen, onClose }) => 
 
                             <div className={styles.subEnvironmentsSection}>
                                 <div className={styles.subEnvHeader}>
-                                    <h4><FaMapMarkerAlt /> Sub-Ambulantes de Acceso</h4>
+                                    <h4><FaMapMarkerAlt /> Sub ambientes de acceso</h4>
                                     <button
                                         onClick={() => setIsSubEnvModalOpen(true)}
                                         className={styles.manageSubEnvBtn}

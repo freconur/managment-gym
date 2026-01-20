@@ -14,7 +14,7 @@
 .usuariosTitle {
   font-size: 1.5rem;
   font-weight: 600;
-  color: #111827;
+  color: var(--text-primary);
   margin: 0;
   display: flex;
   align-items: center;
@@ -24,7 +24,7 @@
 .usuariosCount {
   font-size: 1rem;
   font-weight: 400;
-  color: #6b7280;
+  color: var(--text-secondary);
 }
 
 /* Empty State */
@@ -58,9 +58,9 @@
 
 /* Table Container */
 .tableContainer {
-  background-color: white;
+  background-color: var(--bg-card);
   border-radius: 0.75rem;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border-glass);
   overflow: hidden;
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
   overflow-x: auto;
@@ -98,12 +98,12 @@
 }
 
 .usuariosTable tbody tr {
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border-glass);
   transition: all 0.15s ease;
 }
 
 .usuariosTable tbody tr:hover {
-  background-color: #f7fafc;
+  background-color: rgba(255, 255, 255, 0.02);
   transform: translateY(-1px);
   box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.05);
 }
@@ -114,25 +114,25 @@
 
 .usuariosTable td {
   padding: 1rem 1.25rem;
-  color: #111827;
+  color: var(--text-primary);
   vertical-align: middle;
 }
 
 .tableCellDni {
   font-family: 'Courier New', monospace;
   font-weight: 600;
-  color: #4b5563;
+  color: var(--text-secondary);
   font-size: 0.875rem;
 }
 
 .tableCellName {
   font-weight: 500;
-  color: #111827;
+  color: var(--text-primary);
 }
 
 .tableCellPin {
   font-family: 'Courier New', monospace;
-  color: #6b7280;
+  color: var(--text-secondary);
   font-size: 0.875rem;
   letter-spacing: 0.05em;
 }

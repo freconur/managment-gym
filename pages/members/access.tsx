@@ -7,6 +7,7 @@ import styles from './Access.module.css'
 import { AccessModal } from '@/components/AccessModal'
 import { RecentAccessFeed } from '@/components/RecentAccessFeed'
 import { AmenitiesReturnList } from '@/components/AmenitiesReturnList'
+import { ThemeToggle } from '@/components/ThemeToggle'
 
 const AccessPage: NextPage = () => {
 	const [isModalOpen, setIsModalOpen] = useState(false)
@@ -19,10 +20,11 @@ const AccessPage: NextPage = () => {
 			<div className={styles.container}>
 				<main className={styles.mainWrapper}>
 
-					<div className={styles.backLinkWrapper}>
+					<div className={styles.backLinkWrapper} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
 						<Link href="/members" className={styles.backLink}>
 							<FaArrowLeft /> Volver a Miembros
 						</Link>
+						<ThemeToggle />
 					</div>
 
 					<div className={styles.contentGrid}>

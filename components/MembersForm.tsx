@@ -47,11 +47,28 @@ export const MembersForm: React.FC<MembersFormProps> = ({
     return (
         <div className={styles.overlay}>
             <div className={styles.modal}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingRight: '1.5rem', borderBottom: '1px solid #e5e7eb' }}>
-                    <h2 className={styles.formTitle}>
+                <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '1.5rem 2rem',
+                    borderBottom: '1px solid var(--border-glass)'
+                }}>
+                    <h2 className={styles.formTitle} style={{ margin: 0, color: 'var(--text-primary)' }}>
                         {isEditing ? 'Editar Usuario' : 'Nuevo Usuario'}
                     </h2>
-                    <button onClick={onClose} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#6b7280' }}>
+                    <button onClick={onClose} style={{
+                        border: 'none',
+                        background: 'none',
+                        cursor: 'pointer',
+                        color: 'var(--text-secondary)',
+                        padding: '0.5rem',
+                        borderRadius: '0.5rem',
+                        transition: 'all 0.2s',
+                        display: 'flex',
+                        alignItems: 'center'
+                    }} onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)')}
+                        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}>
                         <FaTimes size={20} />
                     </button>
                 </div>
@@ -253,6 +270,6 @@ export const MembersForm: React.FC<MembersFormProps> = ({
                     </div>
                 </form>
             </div>
-        </div>
+        </div >
     );
 };

@@ -3,7 +3,7 @@ import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useEquipmentForm } from "@/features/hooks/useEquipmentForm";
-import styles from "@/styles/equipment.module.css";
+import styles from "@/styles/EquipmentRedesign.module.css";
 import { useEffect, useRef, useState } from "react";
 import { useManagment } from "@/features/hooks/useManagment";
 import { EquipmentForm } from "@/components/EquipmentForm";
@@ -18,7 +18,8 @@ import { MantenimientoDetailModal } from "@/components/MantenimientoDetailModal"
 import { QRReader } from "@/components/QRReader";
 import { EquiposTable } from "@/components/EquiposTable";
 import { AuthModal } from "@/components/AuthModal";
-import { FaUserPlus, FaTools, FaTimes, FaQrcode, FaDumbbell, FaPlus, FaHome, FaChartBar } from "react-icons/fa";
+import { FaUserPlus, FaTools, FaTimes, FaQrcode, FaDumbbell, FaPlus, FaHome, FaChartBar, FaUsers, FaChartLine } from "react-icons/fa";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { Machine, Usuario, Incidencia, Tarea } from "@/features/types/types";
 
 import { useEscapeKey } from "@/features/hooks/useEscapeKey"
@@ -380,167 +381,129 @@ const Equipment: NextPage = () => {
 
 
   return (
-    <>
+    <div className={styles.container}>
       <Head>
         <title>Equipos - Management Gym</title>
         <meta name="description" content="Gestión de equipos del gimnasio" />
       </Head>
-      <main className={styles.main}>
-        <div className={styles.header}>
-          <div className={styles.titleWithButtons}>
+
+      <header className={styles.header}>
+        <div className={styles.headerInner}>
+          <div className={styles.titleGroup}>
             <h1 className={styles.title}>Gestión de Equipos</h1>
-            <div className={styles.headerButtons}>
-              <button
-                onClick={() => router.push('/')}
-                className={`${styles.button} ${styles.buttonIcon}`}
-                style={{ backgroundColor: "#3b82f6", color: "white" }}
-                title="Volver al Inicio"
-                aria-label="Volver al Inicio"
-              >
-                <FaHome size={16} />
-              </button>
-              <button
-                onClick={() => router.push('/reportes-maquinas')}
-                className={`${styles.button} ${styles.buttonIcon}`}
-                style={{ backgroundColor: "#10b981", color: "white" }}
-                title="Reportes de Equipos"
-                aria-label="Reportes de Equipos"
-              >
-                <FaChartBar size={16} />
-              </button>
-              <button
-                onClick={() => setIsQRReaderOpen(true)}
-                className={`${styles.button} ${styles.buttonIcon}`}
-                style={{ backgroundColor: "#8b5cf6", color: "white" }}
-                title="Lector de Código QR"
-                aria-label="Lector de Código QR"
-              >
-                <FaQrcode size={16} />
-              </button>
-              <button
-                onClick={handleOpenUsuarioModal}
-                className={`${styles.button} ${styles.buttonIcon} ${styles.buttonUser}`}
-                title="Nuevo Usuario"
-                aria-label="Nuevo Usuario"
-              >
-                <FaUserPlus size={16} />
-              </button>
-              <button
-                onClick={handleOpenEquipmentFormModal}
-                className={`${styles.button} ${styles.buttonIcon} ${styles.buttonEquipment}`}
-                title="Agregar Nuevo Equipo"
-                aria-label="Agregar Nuevo Equipo"
-              >
-                <div style={{ position: 'relative', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <FaDumbbell size={18} style={{ transform: 'rotate(-45deg)' }} />
-                  <FaPlus size={9} style={{ position: 'absolute', top: 0, right: 0 }} />
-                </div>
-              </button>
-            </div>
+          </div>
+
+          <div className={styles.headerButtons}>
+            <ThemeToggle />
+            <button
+              onClick={() => router.push('/')}
+              className={styles.actionButton}
+              title="Volver al Inicio"
+            >
+              <FaHome size={18} />
+            </button>
+            <button
+              onClick={() => router.push('/reportes-maquinas')}
+              className={styles.actionButton}
+              title="Reportes de Equipos"
+            >
+              <FaChartBar size={18} />
+            </button>
+            <button
+              onClick={() => setIsQRReaderOpen(true)}
+              className={styles.actionButton}
+              title="Lector de Código QR"
+            >
+              <FaQrcode size={18} />
+            </button>
+            <button
+              onClick={handleOpenUsuarioModal}
+              className={`${styles.actionButton} ${styles.buttonUser}`}
+              title="Nuevo Usuario"
+            >
+              <FaUserPlus size={18} />
+            </button>
+            <button
+              onClick={handleOpenEquipmentFormModal}
+              className={`${styles.actionButton} ${styles.buttonEquipment}`}
+              title="Agregar Nuevo Equipo"
+            >
+              <FaPlus size={18} />
+            </button>
           </div>
         </div>
+      </header>
 
+      <main className={styles.main}>
         <QRReader
           isOpen={isQRReaderOpen}
           onClose={() => setIsQRReaderOpen(false)}
           onScanSuccess={(decodedText) => {
             try {
               console.log("Código QR escaneado:", decodedText);
-
-              // Extraer el ID de la máquina del código QR
-              // Puede ser: un ID directo, una URL completa, o una ruta relativa
               let machineId = decodedText.trim();
-
-              // Si es una URL completa, extraer el ID
               try {
                 const url = new URL(decodedText);
-                const pathParts = url.pathname
-                  .split("/")
-                  .filter((part) => part);
-                const idIndex = pathParts.findIndex(
-                  (part) => part === "maquina"
-                );
+                const pathParts = url.pathname.split("/").filter((part) => part);
+                const idIndex = pathParts.findIndex((part) => part === "maquina");
                 if (idIndex !== -1 && pathParts[idIndex + 1]) {
                   machineId = pathParts[idIndex + 1];
                 }
               } catch {
-                // Si no es una URL válida, verificar si es una ruta relativa
                 if (decodedText.includes("/maquina/")) {
                   const parts = decodedText.split("/maquina/");
                   if (parts[1]) {
-                    machineId = parts[1]
-                      .split("/")[0]
-                      .split("?")[0]
-                      .split("#")[0];
+                    machineId = parts[1].split("/")[0].split("?")[0].split("#")[0];
                   }
                 }
-                // Si no, asumimos que decodedText es directamente el ID
               }
-
-              // Limpiar el ID de caracteres inválidos
               machineId = machineId.replace(/[^a-zA-Z0-9_-]/g, "");
-
-              // Validar que el ID no esté vacío
-              if (!machineId || machineId.length === 0) {
-                alert(
-                  "No se pudo extraer un ID válido de la máquina del código QR"
-                );
+              if (!machineId) {
+                alert("No se pudo extraer un ID válido de la máquina del código QR");
                 return;
               }
-
-              // Redirigir a la página de la máquina de forma segura
-              // El QRReader ya cerró el modal y detuvo la cámara, esperamos un momento adicional antes de navegar
               setTimeout(() => {
-                try {
-                  // Intentar navegar con router.push
-                  const navigationPromise = router.push(
-                    `/maquina/${machineId}?from=equipment`
-                  );
-
-                  // Si router.push devuelve una promesa, manejarla
-                  if (
-                    navigationPromise &&
-                    typeof navigationPromise.catch === "function"
-                  ) {
-                    navigationPromise.catch((error) => {
-                      console.error("Error al navegar con router.push:", error);
-                      // Fallback a window.location si router.push falla
-                      window.location.href = `/maquina/${machineId}?from=equipment`;
-                    });
-                  }
-                } catch (error) {
-                  console.error("Error al navegar:", error);
-                  // Fallback a window.location si router.push falla
-                  window.location.href = `/maquina/${machineId}?from=equipment`;
-                }
+                router.push(`/maquina/${machineId}?from=equipment`);
               }, 300);
             } catch (error) {
               console.error("Error al procesar código QR:", error);
-              alert(
-                `Error al procesar el código QR: ${error instanceof Error ? error.message : "Error desconocido"
-                }`
-              );
             }
           }}
-          onScanError={(errorMessage) => {
-            console.error("Error al escanear QR:", errorMessage);
-          }}
+          onScanError={(errorMessage) => console.error("Error al escanear QR:", errorMessage)}
         />
 
-        <UsuariosTable
-          onEdit={handleEditUsuario}
-          onOpenActions={handleOpenUsuarioActions}
-        />
+        <section className={styles.sectionCard}>
+          <div className={styles.sectionHeader}>
+            <FaUsers className={styles.sectionIcon} />
+            <h2 className={styles.sectionTitle}>Gestión de Usuarios</h2>
+          </div>
+          <UsuariosTable
+            onEdit={handleEditUsuario}
+            onOpenActions={handleOpenUsuarioActions}
+          />
+        </section>
 
-        <CalendarView incidencias={eventos} onSelectEvent={handleSelectEvent} />
+        <section className={styles.sectionCard}>
+          <div className={styles.sectionHeader}>
+            <FaChartLine className={styles.sectionIcon} />
+            <h2 className={styles.sectionTitle}>Calendario de Actividades</h2>
+          </div>
+          <CalendarView incidencias={eventos} onSelectEvent={handleSelectEvent} />
+        </section>
 
-        <EquiposTable
-          maquinas={maquinas}
-          ubicaciones={ubicaciones}
-          onOpenModal={handleOpenModal}
-          from="equipment"
-        />
-      </main >
+        <section className={styles.sectionCard}>
+          <div className={styles.sectionHeader}>
+            <FaDumbbell className={styles.sectionIcon} />
+            <h2 className={styles.sectionTitle}>Inventario de Equipos</h2>
+          </div>
+          <EquiposTable
+            maquinas={maquinas}
+            ubicaciones={ubicaciones}
+            onOpenModal={handleOpenModal}
+            from="equipment"
+          />
+        </section>
+      </main>
       <MachineDetailsModal
         isOpen={isModalOpen}
         machine={selectedMachine}
@@ -731,7 +694,7 @@ const Equipment: NextPage = () => {
         onAccept={handleAuthAccept}
         error={authError}
       />
-    </>
+    </div>
   );
 };
 

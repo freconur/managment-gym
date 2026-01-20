@@ -3,6 +3,7 @@ import Head from 'next/head'
 import Link from 'next/link'
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { FaChartBar, FaArrowLeft, FaFilter, FaTools, FaExclamationTriangle, FaFilePdf } from 'react-icons/fa'
+import { ThemeToggle } from '@/components/ThemeToggle'
 import { useManagment } from '@/features/hooks/useManagment'
 import { Incidencia, Machine } from '@/features/types/types'
 import {
@@ -19,6 +20,16 @@ import {
 } from 'chart.js'
 import { Bar, Doughnut, Line } from 'react-chartjs-2'
 import styles from '@/styles/ReportsEquipment.module.css'
+import {
+    Document,
+    Page,
+    Text,
+    View,
+    StyleSheet,
+    Image,
+    pdf,
+    Font
+} from '@react-pdf/renderer'
 
 ChartJS.register(
     CategoryScale,
@@ -31,6 +42,119 @@ ChartJS.register(
     PointElement,
     LineElement
 )
+
+const pdfStyles = StyleSheet.create({
+    page: { padding: 30, fontFamily: 'Helvetica', backgroundColor: '#ffffff' },
+    header: { marginBottom: 20, borderBottomWidth: 1, borderBottomStyle: 'solid', borderBottomColor: '#e5e7eb', paddingBottom: 10 },
+    title: { fontSize: 18, fontWeight: 'bold', color: '#111827' },
+    subtitle: { fontSize: 10, color: '#6b7280', marginTop: 4 },
+    section: { marginBottom: 20 },
+    sectionTitle: { fontSize: 12, fontWeight: 'bold', color: '#374151', marginBottom: 10, borderLeftWidth: 3, borderLeftStyle: 'solid', borderLeftColor: '#3b82f6', paddingLeft: 8 },
+    summaryGrid: { flexDirection: 'row', gap: 10, marginBottom: 15 },
+    summaryItem: { flex: 1, padding: 10, backgroundColor: '#f3f4f6', borderRadius: 6, alignItems: 'center' },
+    summaryLabel: { fontSize: 7, color: '#6b7280', marginBottom: 2 },
+    summaryValue: { fontSize: 12, fontWeight: 'bold', color: '#111827' },
+    chartGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+    chartItem: { width: '48%', marginBottom: 10 },
+    chartImage: { width: '100%', height: 140, objectFit: 'contain' },
+    fullChart: { width: '100%', height: 180, objectFit: 'contain', marginTop: 10 },
+    table: { width: 'auto', borderStyle: 'solid', borderWidth: 1, borderColor: '#e5e7eb', borderBottomWidth: 0 },
+    tableRow: { flexDirection: 'row', borderBottomColor: '#e5e7eb', borderBottomWidth: 1, minHeight: 20, alignItems: 'center' },
+    tableHeader: { backgroundColor: '#f9fafb' },
+    tableCell: { padding: 4, fontSize: 7, color: '#374151' },
+    colName: { width: '30%' },
+    colInc: { width: '15%', textAlign: 'center' },
+    colAt: { width: '15%', textAlign: 'center' },
+    colPen: { width: '15%', textAlign: 'center' },
+    colMaint: { width: '15%', textAlign: 'center' },
+    colTotal: { width: '10%', textAlign: 'center', fontWeight: 'bold' },
+    bold: { fontWeight: 'bold' }
+});
+
+interface EquipmentReportPDFProps {
+    data: any;
+    stats: any[];
+    charts: Record<string, string>;
+}
+
+const EquipmentReportPDF = ({ data, stats, charts }: EquipmentReportPDFProps) => {
+    const counts = {
+        total: data.length,
+        incidencias: data.filter((e: any) => e.tipo === 'incidencia').length,
+        atendidas: data.filter((e: any) => e.tipo === 'incidencia' && e.atendida).length,
+        pendientes: data.filter((e: any) => e.tipo === 'incidencia' && !e.atendida).length,
+        mantenimientos: data.filter((e: any) => e.tipo === 'mantenimiento').length,
+    };
+
+    return (
+        <Document>
+            <Page size="A4" style={pdfStyles.page}>
+                <View style={pdfStyles.header}>
+                    <Text style={pdfStyles.title}>Reporte General de Equipos</Text>
+                    <Text style={pdfStyles.subtitle}>Management Gym - Generado el {new Date().toLocaleDateString()}</Text>
+                </View>
+
+                <View style={pdfStyles.section}>
+                    <Text style={pdfStyles.sectionTitle}>Métricas Generales</Text>
+                    <View style={pdfStyles.summaryGrid}>
+                        <View style={pdfStyles.summaryItem}><Text style={pdfStyles.summaryLabel}>Total Eventos</Text><Text style={pdfStyles.summaryValue}>{counts.total}</Text></View>
+                        <View style={pdfStyles.summaryItem}><Text style={pdfStyles.summaryLabel}>Incidencias</Text><Text style={[pdfStyles.summaryValue, { color: '#ef4444' }]}>{counts.incidencias}</Text></View>
+                        <View style={pdfStyles.summaryItem}><Text style={pdfStyles.summaryLabel}>Atendidas</Text><Text style={[pdfStyles.summaryValue, { color: '#22c55e' }]}>{counts.atendidas}</Text></View>
+                        <View style={pdfStyles.summaryItem}><Text style={pdfStyles.summaryLabel}>Pendientes</Text><Text style={[pdfStyles.summaryValue, { color: '#f97316' }]}>{counts.pendientes}</Text></View>
+                        <View style={pdfStyles.summaryItem}><Text style={pdfStyles.summaryLabel}>Mantenimientos</Text><Text style={[pdfStyles.summaryValue, { color: '#3b82f6' }]}>{counts.mantenimientos}</Text></View>
+                    </View>
+                </View>
+
+                <View style={pdfStyles.section}>
+                    <Text style={pdfStyles.sectionTitle}>Distribución y Estados</Text>
+                    <View style={pdfStyles.chartGrid}>
+                        {charts.type && <View style={pdfStyles.chartItem}><Text style={{ fontSize: 8, textAlign: 'center' }}>Distribución por Tipo</Text><Image src={charts.type} style={pdfStyles.chartImage} /></View>}
+                        {charts.status && <View style={pdfStyles.chartItem}><Text style={{ fontSize: 8, textAlign: 'center' }}>Estado de Incidencias</Text><Image src={charts.status} style={pdfStyles.chartImage} /></View>}
+                        {charts.maintType && <View style={pdfStyles.chartItem}><Text style={{ fontSize: 8, textAlign: 'center' }}>Tipos de Mantenimiento</Text><Image src={charts.maintType} style={pdfStyles.chartImage} /></View>}
+                    </View>
+                </View>
+
+                <View style={pdfStyles.section}>
+                    <Text style={pdfStyles.sectionTitle}>Tendencia Temporal</Text>
+                    {charts.trend && <Image src={charts.trend} style={pdfStyles.fullChart} />}
+                </View>
+
+                <View style={pdfStyles.section} break>
+                    <Text style={pdfStyles.sectionTitle}>Análisis por Equipo y Usuario</Text>
+                    <View style={pdfStyles.chartGrid}>
+                        {charts.topMachines && <View style={{ width: '100%', marginBottom: 15 }}><Text style={{ fontSize: 8, textAlign: 'center' }}>Top 10 Equipos</Text><Image src={charts.topMachines} style={pdfStyles.fullChart} /></View>}
+                        {charts.techInc && <View style={pdfStyles.chartItem}><Text style={{ fontSize: 8, textAlign: 'center' }}>Incidencias por Usuario</Text><Image src={charts.techInc} style={pdfStyles.chartImage} /></View>}
+                        {charts.techMaint && <View style={pdfStyles.chartItem}><Text style={{ fontSize: 8, textAlign: 'center' }}>Mantenimientos por Técnico</Text><Image src={charts.techMaint} style={pdfStyles.chartImage} /></View>}
+                    </View>
+                </View>
+
+                <View style={pdfStyles.section}>
+                    <Text style={pdfStyles.sectionTitle}>Resumen estadístico por Máquina</Text>
+                    <View style={pdfStyles.table}>
+                        <View style={[pdfStyles.tableRow, pdfStyles.tableHeader]}>
+                            <Text style={[pdfStyles.tableCell, pdfStyles.colName, pdfStyles.bold]}>Equipo</Text>
+                            <Text style={[pdfStyles.tableCell, pdfStyles.colInc, pdfStyles.bold]}>Inc.</Text>
+                            <Text style={[pdfStyles.tableCell, pdfStyles.colAt, pdfStyles.bold]}>Atend.</Text>
+                            <Text style={[pdfStyles.tableCell, pdfStyles.colPen, pdfStyles.bold]}>Pend.</Text>
+                            <Text style={[pdfStyles.tableCell, pdfStyles.colMaint, pdfStyles.bold]}>Mant.</Text>
+                            <Text style={[pdfStyles.tableCell, pdfStyles.colTotal, pdfStyles.bold]}>Total</Text>
+                        </View>
+                        {stats.map((row, idx) => (
+                            <View key={idx} style={pdfStyles.tableRow}>
+                                <Text style={[pdfStyles.tableCell, pdfStyles.colName]}>{row.name}</Text>
+                                <Text style={[pdfStyles.tableCell, pdfStyles.colInc]}>{row.incidencias}</Text>
+                                <Text style={[pdfStyles.tableCell, pdfStyles.colAt]}>{row.atendidas}</Text>
+                                <Text style={[pdfStyles.tableCell, pdfStyles.colPen]}>{row.pendientes}</Text>
+                                <Text style={[pdfStyles.tableCell, pdfStyles.colMaint]}>{row.mantenimiento}</Text>
+                                <Text style={[pdfStyles.tableCell, pdfStyles.colTotal]}>{row.total}</Text>
+                            </View>
+                        ))}
+                    </View>
+                </View>
+            </Page>
+        </Document>
+    );
+};
 
 const EquipmentReportsPage: NextPage = () => {
     const { getAllEventos, eventos, getMaquinas, maquinas } = useManagment()
@@ -48,137 +172,55 @@ const EquipmentReportsPage: NextPage = () => {
 
         setExporting(true)
         try {
-            // @ts-ignore
-            const jsPDF = (await import('jspdf')).default
-            // @ts-ignore
-            const html2canvas = (await import('html2canvas')).default
-
-            // Configurar jsPDF (A4 en mm)
-            const pdf = new jsPDF({
-                orientation: 'portrait',
-                unit: 'mm',
-                format: 'a4'
-            })
-
-            const pageWidth = pdf.internal.pageSize.getWidth()
-            const pageHeight = pdf.internal.pageSize.getHeight()
-            const margin = 15 // Margen de 15mm
-            const contentWidth = pageWidth - (margin * 2)
-            const gap = 5 // Espacio entre columnas en el PDF
-
-            // 1. Añadir Título y Encabezado
-            pdf.setFontSize(18)
-            pdf.setTextColor(17, 24, 39) // #111827
-            pdf.text('Reporte de Equipos - Management Gym', margin, margin + 5)
-
-            pdf.setFontSize(11)
-            pdf.setTextColor(75, 85, 99) // #4b5563
-            pdf.text(`Fecha de generación: ${new Date().toLocaleDateString()}`, margin, margin + 12)
-
-            let currentY = margin + 20 // Posición inicial después del encabezado
-
-            // 2. Obtener todas las secciones (cards)
-            const cards = Array.from(reportRef.current.querySelectorAll(`.${styles.card}`))
-
-            for (let i = 0; i < cards.length; i++) {
-                const card = cards[i] as HTMLElement
-                const isFullWidth = card.classList.contains(styles.cardFullWidth)
-
-                // Look-ahead para detectar grupo de hasta 3 cards pequeñas
-                const card2 = !isFullWidth && cards[i + 1] ? cards[i + 1] as HTMLElement : null
-                const is2Small = card2 && !card2.classList.contains(styles.cardFullWidth)
-
-                const card3 = is2Small && cards[i + 2] ? cards[i + 2] as HTMLElement : null
-                const is3Small = card3 && !card3.classList.contains(styles.cardFullWidth)
-
-                if (is3Small) {
-                    // Procesar tres cards lado a lado
-                    const canvases = await Promise.all([
-                        html2canvas(card, { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff' }),
-                        html2canvas(card2!, { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff' }),
-                        html2canvas(card3!, { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff' })
-                    ])
-
-                    const imgDatas = canvases.map(c => c.toDataURL('image/jpeg', 1.0))
-                    const colWidth = (contentWidth - (gap * 2)) / 3
-
-                    let maxHeight = 0
-                    const renderedImages = imgDatas.map(data => {
-                        const props = pdf.getImageProperties(data)
-                        const h = (props.height * colWidth) / props.width
-                        if (h > maxHeight) maxHeight = h
-                        return { data, h }
-                    })
-
-                    if (currentY + maxHeight > pageHeight - margin) {
-                        pdf.addPage()
-                        currentY = margin
-                    }
-
-                    renderedImages.forEach((img, index) => {
-                        pdf.addImage(img.data, 'JPEG', margin + (index * (colWidth + gap)), currentY, colWidth, img.h)
-                    })
-
-                    currentY += maxHeight + 10
-                    i += 2 // Saltar las siguientes 2 cards
-                } else if (is2Small) {
-                    // Procesar dos cards lado a lado
-                    const canvases = await Promise.all([
-                        html2canvas(card, { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff' }),
-                        html2canvas(card2!, { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff' })
-                    ])
-
-                    const imgDatas = canvases.map(c => c.toDataURL('image/jpeg', 1.0))
-                    const colWidth = (contentWidth - gap) / 2
-
-                    let maxHeight = 0
-                    const renderedImages = imgDatas.map(data => {
-                        const props = pdf.getImageProperties(data)
-                        const h = (props.height * colWidth) / props.width
-                        if (h > maxHeight) maxHeight = h
-                        return { data, h }
-                    })
-
-                    if (currentY + maxHeight > pageHeight - margin) {
-                        pdf.addPage()
-                        currentY = margin
-                    }
-
-                    renderedImages.forEach((img, index) => {
-                        pdf.addImage(img.data, 'JPEG', margin + (index * (colWidth + gap)), currentY, colWidth, img.h)
-                    })
-
-                    currentY += maxHeight + 10
-                    i++ // Saltar la siguiente card
-                } else {
-                    // Procesar una sola card full width
-                    const canvas = await html2canvas(card, {
-                        scale: 2,
-                        useCORS: true,
-                        logging: false,
-                        backgroundColor: '#ffffff'
-                    })
-
-                    const imgData = canvas.toDataURL('image/jpeg', 1.0)
-                    const imgProps = pdf.getImageProperties(imgData)
-                    const imgHeight = (imgProps.height * contentWidth) / imgProps.width
-
-                    if (currentY + imgHeight > pageHeight - margin) {
-                        pdf.addPage()
-                        currentY = margin
-                    }
-
-                    pdf.addImage(imgData, 'JPEG', margin, currentY, contentWidth, imgHeight)
-                    currentY += imgHeight + 10
+            const getChartImage = (index: number): string => {
+                const canvases = reportRef.current?.querySelectorAll('canvas');
+                if (canvases && canvases[index]) {
+                    return (canvases[index] as HTMLCanvasElement).toDataURL('image/png');
                 }
-            }
+                return '';
+            };
 
-            pdf.save(`reporte-maquinas-${new Date().toISOString().split('T')[0]}.pdf`)
+            // Order of charts in the DOM:
+            // 0: Type Distribution
+            // 1: Incident Status
+            // 2: Maintenance Types
+            // 3: Top Machines
+            // 4: Tech Incidents
+            // 5: Tech Maintenance
+            // 6: Trend Chart
+
+            const charts = {
+                type: getChartImage(0),
+                status: getChartImage(1),
+                maintType: getChartImage(2),
+                topMachines: getChartImage(3),
+                techInc: getChartImage(4),
+                techMaint: getChartImage(5),
+                trend: getChartImage(6)
+            };
+
+            const blob = await pdf(
+                <EquipmentReportPDF
+                    data={filteredData}
+                    stats={tableData}
+                    charts={charts}
+                />
+            ).toBlob();
+
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `reporte-maquinas-${new Date().toISOString().split('T')[0]}.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+
         } catch (error) {
-            console.error('Error generating PDF:', error)
-            alert('Hubo un error al generar el PDF. Por favor, intente de nuevo.')
+            console.error('Error generating PDF:', error);
+            alert('Hubo un error al generar el PDF.');
         } finally {
-            setExporting(false)
+            setExporting(false);
         }
     }
 
@@ -512,13 +554,16 @@ const EquipmentReportsPage: NextPage = () => {
                     <h1 className={styles.title}>
                         <FaChartBar className={styles.titleIcon} /> Reportes de Equipos
                     </h1>
-                    <button
-                        onClick={handleExportPDF}
-                        className={styles.exportButton}
-                        disabled={exporting || loading}
-                    >
-                        <FaFilePdf /> {exporting ? 'Generando...' : 'Exportar PDF'}
-                    </button>
+                    <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                        <ThemeToggle />
+                        <button
+                            onClick={handleExportPDF}
+                            className={styles.exportButton}
+                            disabled={exporting || loading}
+                        >
+                            <FaFilePdf /> {exporting ? 'Generando...' : 'Exportar PDF'}
+                        </button>
+                    </div>
                 </div>
 
                 {/* Filters (Excluded from PDF) */}

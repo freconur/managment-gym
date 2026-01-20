@@ -22,7 +22,7 @@
   margin: 0;
   font-size: 2rem;
   font-weight: 700;
-  color: #111827;
+  color: var(--text-primary);
   flex: 1;
   min-width: 200px;
 }
@@ -341,7 +341,7 @@
 
 .sectionTitle {
   margin: 0;
-  color: #111827;
+  color: var(--text-primary);
   flex: 1;
   min-width: 200px;
 }
@@ -427,15 +427,15 @@
 
 /* Table container */
 .tableContainer {
-  background-color: white;
+  background-color: transparent;
   border-radius: 0.75rem;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border-glass);
   overflow-x: auto;
   overflow-y: hidden;
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
-  scrollbar-color: #cbd5e1 #f1f5f9;
+  scrollbar-color: var(--text-secondary) var(--bg-main);
 }
 
 .tableContainer::-webkit-scrollbar {
@@ -443,17 +443,17 @@
 }
 
 .tableContainer::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: var(--bg-main);
   border-radius: 4px;
 }
 
 .tableContainer::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: var(--text-secondary);
   border-radius: 4px;
 }
 
 .tableContainer::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: var(--accent-primary);
 }
 
 .equipmentTable {
@@ -464,15 +464,15 @@
 }
 
 .equipmentTable thead {
-  background-color: #f9fafb;
-  border-bottom: 2px solid #e5e7eb;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-bottom: 2px solid var(--border-glass);
 }
 
 .equipmentTable th {
   padding: 0.75rem 1rem;
   text-align: left;
   font-weight: 600;
-  color: #374151;
+  color: var(--text-secondary);
   font-size: 0.875rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -480,12 +480,12 @@
 }
 
 .equipmentTable tbody tr {
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border-glass);
   transition: background-color 0.15s;
 }
 
 .equipmentTable tbody tr:hover {
-  background-color: #f9fafb;
+  background-color: rgba(255, 255, 255, 0.02);
 }
 
 .equipmentTable tbody tr:last-child {
@@ -494,7 +494,7 @@
 
 .equipmentTable td {
   padding: 0.75rem 1rem;
-  color: #111827;
+  color: var(--text-primary);
   vertical-align: middle;
   white-space: nowrap;
 }
@@ -848,7 +848,7 @@
 .detailTitle {
   font-size: 2rem;
   font-weight: 700;
-  color: #111827;
+  color: var(--text-primary);
   margin: 0 0 0.5rem 0;
   line-height: 1.2;
 }
@@ -857,7 +857,7 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  color: #6b7280;
+  color: var(--text-secondary);
   font-size: 1.125rem;
   font-weight: 400;
 }
@@ -887,9 +887,9 @@
 }
 
 .detailCard {
-  background-color: white;
+  background-color: var(--bg-card);
   border-radius: 0.75rem;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border-glass);
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
   overflow: hidden;
   transition: box-shadow 0.2s;
@@ -904,15 +904,15 @@
   align-items: center;
   gap: 0.75rem;
   padding: 1.25rem 1.5rem;
-  background-color: #f9fafb;
-  border-bottom: 1px solid #e5e7eb;
-  color: #374151;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid var(--border-glass);
+  color: var(--text-primary);
 }
 
 .detailCardTitle {
   font-size: 1.125rem;
   font-weight: 600;
-  color: #111827;
+  color: var(--text-primary);
   margin: 0;
 }
 
@@ -925,7 +925,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 0.75rem 0;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--border-glass);
 }
 
 .detailInfoRow:last-child {
@@ -935,7 +935,7 @@
 .detailInfoLabel {
   font-size: 0.875rem;
   font-weight: 500;
-  color: #6b7280;
+  color: var(--text-secondary);
   display: flex;
   align-items: center;
 }
@@ -943,7 +943,7 @@
 .detailInfoValue {
   font-size: 0.875rem;
   font-weight: 500;
-  color: #111827;
+  color: var(--text-primary);
   text-align: right;
 }
 
@@ -951,7 +951,7 @@
   width: 100%;
   display: flex;
   justify-content: center;
-  background-color: #f3f4f6;
+  background-color: rgba(255, 255, 255, 0.05);
   border-radius: 0.5rem;
   overflow: hidden;
   margin-top: 1rem;
@@ -967,15 +967,15 @@
 .detailInfoValueId {
   font-size: 0.75rem;
   font-weight: 500;
-  color: #111827;
+  color: var(--text-primary);
   font-family: monospace;
-  background-color: #f3f4f6;
+  background-color: rgba(255, 255, 255, 0.1);
   padding: 0.25rem 0.5rem;
   border-radius: 0.375rem;
 }
 
 .detailNotesText {
-  color: #374151;
+  color: var(--text-primary);
   line-height: 1.6;
   margin: 0;
   font-size: 0.875rem;
@@ -1580,7 +1580,7 @@
   font-size: 1.5rem;
   font-weight: 600;
   margin: 0;
-  color: #1f2937;
+  color: var(--text-primary);
 }
 
 .calendarLegend {
@@ -1595,7 +1595,7 @@
   align-items: center;
   gap: 0.5rem;
   font-size: 0.875rem;
-  color: #4b5563;
+  color: var(--text-secondary);
 }
 
 .legendColor {
@@ -1607,10 +1607,11 @@
 
 .calendarWrapper {
   width: 100%;
-  background: white;
+  background: var(--bg-card);
   border-radius: 0.5rem;
   padding: 1rem;
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  color: var(--text-primary);
 }
 
 /* Override react-big-calendar styles */
@@ -1620,17 +1621,21 @@
 
 .calendarWrapper :global(.rbc-header) {
   padding: 0.75rem 0.5rem;
-  border-bottom: 2px solid #e5e7eb;
+  border-bottom: 2px solid var(--border-glass);
   font-weight: 600;
-  color: #374151;
+  color: var(--text-primary);
 }
 
 .calendarWrapper :global(.rbc-today) {
-  background-color: #eff6ff;
+  background-color: rgba(59, 130, 246, 0.1);
 }
 
 .calendarWrapper :global(.rbc-off-range-bg) {
-  background-color: #f9fafb;
+  background-color: rgba(0, 0, 0, 0.2);
+}
+
+[data-theme='dark'] .calendarWrapper :global(.rbc-off-range-bg) {
+  background-color: rgba(255, 255, 255, 0.05);
 }
 
 .calendarWrapper :global(.rbc-event) {
@@ -1656,9 +1661,9 @@
 
 .calendarWrapper :global(.rbc-toolbar button) {
   padding: 0.5rem 1rem;
-  border: 1px solid #d1d5db;
-  background: white;
-  color: #374151;
+  border: 1px solid var(--border-glass);
+  background: var(--bg-card);
+  color: var(--text-primary);
   border-radius: 0.375rem;
   cursor: pointer;
   font-size: 0.875rem;
@@ -1666,8 +1671,8 @@
 }
 
 .calendarWrapper :global(.rbc-toolbar button:hover) {
-  background-color: #f3f4f6;
-  border-color: #9ca3af;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-color: var(--text-secondary);
 }
 
 .calendarWrapper :global(.rbc-toolbar button.rbc-active) {
@@ -1679,7 +1684,7 @@
 .calendarWrapper :global(.rbc-toolbar-label) {
   font-weight: 600;
   font-size: 1.125rem;
-  color: #1f2937;
+  color: var(--text-primary);
 }
 
 /* Custom Toolbar Styles */
@@ -1756,15 +1761,15 @@
 }
 
 .calendarWrapper :global(.rbc-day-bg) {
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border-glass);
 }
 
 .calendarWrapper :global(.rbc-time-slot) {
-  border-top: 1px solid #f3f4f6;
+  border-top: 1px solid var(--border-glass);
 }
 
 .calendarWrapper :global(.rbc-time-header-content) {
-  border-left: 1px solid #e5e7eb;
+  border-left: 1px solid var(--border-glass);
 }
 
 .calendarWrapper :global(.rbc-agenda-view table) {
@@ -1774,15 +1779,26 @@
 
 .calendarWrapper :global(.rbc-agenda-view table thead th) {
   padding: 0.75rem;
-  background-color: #f9fafb;
-  border-bottom: 2px solid #e5e7eb;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-bottom: 2px solid var(--border-glass);
   font-weight: 600;
   text-align: left;
+  color: var(--text-primary);
 }
 
 .calendarWrapper :global(.rbc-agenda-view table tbody td) {
   padding: 0.75rem;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border-glass);
+  color: var(--text-primary);
+}
+
+/* Force date color visibility */
+.calendarWrapper :global(.rbc-button-link) {
+  color: var(--text-primary);
+}
+
+.calendarWrapper :global(.rbc-date-cell) {
+  color: var(--text-primary);
 }
 
 @media (max-width: 768px) {

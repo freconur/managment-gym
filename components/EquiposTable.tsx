@@ -114,11 +114,11 @@ export const EquiposTable = ({
                         onChange={(e) => setFiltroNombre(e.target.value)}
                         style={{
                           padding: "0.375rem 0.5rem",
-                          border: "1px solid #d1d5db",
+                          border: "1px solid var(--border-glass)",
                           borderRadius: "0.375rem",
                           fontSize: "0.875rem",
-                          backgroundColor: "#fff",
-                          color: "#374151",
+                          backgroundColor: "rgba(255, 255, 255, 0.05)",
+                          color: "var(--text-primary)",
                           flex: 1,
                           minWidth: '150px'
                         }}
@@ -128,11 +128,11 @@ export const EquiposTable = ({
                         onChange={(e) => setOrdenNombre(e.target.value as 'asc' | 'desc')}
                         style={{
                           padding: "0.375rem 0.5rem",
-                          border: "1px solid #d1d5db",
+                          border: "1px solid var(--border-glass)",
                           borderRadius: "0.375rem",
                           fontSize: "0.875rem",
-                          backgroundColor: "#fff",
-                          color: "#374151",
+                          backgroundColor: "rgba(255, 255, 255, 0.05)",
+                          color: "var(--text-primary)",
                           cursor: "pointer",
                         }}
                       >
@@ -157,11 +157,11 @@ export const EquiposTable = ({
                       onClick={(e) => e.stopPropagation()}
                       style={{
                         padding: "0.375rem 0.5rem",
-                        border: "1px solid #d1d5db",
+                        border: "1px solid var(--border-glass)",
                         borderRadius: "0.375rem",
                         fontSize: "0.875rem",
-                        backgroundColor: "#fff",
-                        color: "#374151",
+                        backgroundColor: "rgba(255, 255, 255, 0.05)",
+                        color: "var(--text-primary)",
                         cursor: "pointer",
                         minWidth: "150px",
                         height: '34px'
@@ -191,11 +191,11 @@ export const EquiposTable = ({
                       onClick={(e) => e.stopPropagation()}
                       style={{
                         padding: "0.375rem 0.5rem",
-                        border: "1px solid #d1d5db",
+                        border: "1px solid var(--border-glass)",
                         borderRadius: "0.375rem",
                         fontSize: "0.875rem",
-                        backgroundColor: "#fff",
-                        color: "#374151",
+                        backgroundColor: "rgba(255, 255, 255, 0.05)",
+                        color: "var(--text-primary)",
                         cursor: "pointer",
                         minWidth: "120px",
                         height: '34px'
@@ -219,7 +219,7 @@ export const EquiposTable = ({
                     style={{
                       textAlign: "center",
                       padding: "2rem",
-                      color: "#6b7280",
+                      color: "var(--text-secondary)",
                     }}
                   >
                     No se encontraron máquinas con los filtros seleccionados

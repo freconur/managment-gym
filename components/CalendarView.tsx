@@ -350,7 +350,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         </h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', width: '100%' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <label style={{ fontSize: '0.875rem', fontWeight: '500', color: '#374151', whiteSpace: 'nowrap' }}>
+            <label style={{ fontSize: '0.875rem', fontWeight: '500', color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
               Filtrar por ubicación:
             </label>
             <select
@@ -358,11 +358,11 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
               onChange={(e) => setFiltroUbicacion(e.target.value)}
               style={{
                 padding: '0.5rem 0.75rem',
-                border: '1px solid #d1d5db',
+                border: '1px solid var(--border-glass)',
                 borderRadius: '0.375rem',
                 fontSize: '0.875rem',
-                backgroundColor: '#fff',
-                color: '#374151',
+                backgroundColor: "rgba(255, 255, 255, 0.05)",
+                color: "var(--text-primary)",
                 cursor: 'pointer',
                 minWidth: '200px'
               }}

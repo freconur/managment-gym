@@ -5,7 +5,8 @@
     margin: 0 auto;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     min-height: 100vh;
-    background-color: #f8fafc;
+    background-color: var(--bg-main);
+    color: var(--text-primary);
 }
 
 .mainWrapper {
@@ -62,12 +63,11 @@
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    color: #64748b;
-    /* Slate-500 */
+    color: var(--text-secondary);
     text-decoration: none;
     font-weight: 500;
     margin-bottom: 2rem;
-    transition: color 0.2s;
+    transition: all 0.2s;
 }
 
 .backLink:hover {
