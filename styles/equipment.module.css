@@ -2512,7 +2512,7 @@
 
 /* Equipment Form Premium Styles */
 .equipmentFormContainer {
-  background-color: white;
+  background-color: transparent;
   padding: 0;
   /* Inherits from modal or parent, so keep it clean or add if standalone */
 }
@@ -2537,7 +2537,9 @@
 .equipmentLabel {
   font-size: 0.875rem;
   font-weight: 600;
-  color: #374151;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary);
   margin-left: 0.25rem;
   display: flex;
   justify-content: space-between;
@@ -2547,28 +2549,31 @@
 .equipmentInput {
   width: 100%;
   padding: 0.875rem 1rem;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border-glass);
   border-radius: 0.75rem;
   font-size: 1rem;
   transition: all 0.2s;
-  background-color: #f9fafb;
+  background-color: var(--bg-input);
+  color: var(--text-primary);
 }
 
 .equipmentInput:focus {
   outline: none;
   border-color: #3b82f6;
-  background-color: white;
+  background-color: var(--bg-card);
   box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
 }
 
 .equipmentSelect {
   width: 100%;
   padding: 0.875rem 1rem;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border-glass);
   border-radius: 0.75rem;
   font-size: 1rem;
   transition: all 0.2s;
-  background-color: #f9fafb;
+  background-color: var(--bg-input);
+  background: var(--bg-input);
+  color: var(--text-primary);
   appearance: none;
   background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
   background-position: right 0.5rem center;
@@ -2579,32 +2584,33 @@
 .equipmentSelect:focus {
   outline: none;
   border-color: #3b82f6;
-  background-color: white;
+  background-color: var(--bg-card);
   box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
 }
 
 .equipmentTextarea {
   width: 100%;
   padding: 0.875rem 1rem;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border-glass);
   border-radius: 0.75rem;
   font-size: 1rem;
   transition: all 0.2s;
-  background-color: #f9fafb;
+  background-color: var(--bg-input);
   font-family: inherit;
   resize: vertical;
   min-height: 100px;
+  color: var(--text-primary);
 }
 
 .equipmentTextarea:focus {
   outline: none;
   border-color: #3b82f6;
-  background-color: white;
+  background-color: var(--bg-card);
   box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
 }
 
 .equipmentUploadContainer {
-  border: 2px dashed #e5e7eb;
+  border: 2px dashed var(--border-glass);
   border-radius: 1rem;
   padding: 1.5rem;
   display: flex;
@@ -2612,12 +2618,12 @@
   align-items: center;
   gap: 1rem;
   transition: all 0.2s;
-  background-color: #f9fafb;
+  background-color: var(--bg-input);
 }
 
 .equipmentUploadContainer:hover {
   border-color: #3b82f6;
-  background-color: #eff6ff;
+  background-color: var(--bg-card-hover);
 }
 
 .equipmentConfigButton {
