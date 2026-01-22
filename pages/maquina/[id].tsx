@@ -474,7 +474,7 @@ const MaquinaPAge = () => {
                 <span className={styles.detailInfoValue}>{maquina.brand || 'N/A'}</span>
               </div>
               <div className={styles.detailInfoRow}>
-                <span className={styles.detailInfoLabel}>Modelo</span>
+                <span className={styles.detailInfoLabel}>Tipo(Especialidad)</span>
                 <span className={styles.detailInfoValue}>{maquina.model || 'N/A'}</span>
               </div>
               {maquina.id && (

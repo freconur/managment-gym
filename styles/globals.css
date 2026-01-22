@@ -19,6 +19,14 @@
   --border-glass: rgba(255, 255, 255, 0.1);
   --accent-primary: #3b82f6;
   --accent-secondary: #10b981;
+  color-scheme: dark;
+}
+
+/* Global fix for select options in dark mode */
+[data-theme='dark'] select option {
+  background-color: #1e293b;
+  /* Solid color matching --bg-card */
+  color: #f8fafc;
 }
 
 * {
