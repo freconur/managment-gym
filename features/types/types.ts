@@ -27,6 +27,7 @@ export type ManagmentAction =
   | { type: ManagmentRegister.MACHINE_REGISTER; payload: Machine }
   | { type: ManagmentRegister.MACHINE_UPDATE; payload: Machine }
   | { type: ManagmentRegister.MACHINE_DELETE; payload: { id: string } }
+  | { type: ManagmentRegister.USER_CHECKLIST; payload: { id: Usuario } }
 
 export type PiezaReemplazada = {
   id?: string;
@@ -64,6 +65,7 @@ export type Incidencia = {
   costo?: number;
   piezasReemplazadas?: PiezaReemplazada[];
   tareas?: Tarea[]; // Checklist de tareas
+  notes?: string;
   notas?: string;
   createdAt?: any; // Timestamp de Firebase
   updatedAt?: any; // Timestamp de Firebase
@@ -71,6 +73,7 @@ export type Incidencia = {
   maquina?: Machine;
   maquinaDejoFuncionar?: boolean;
   fotoUrl?: string;
+  userChecklist?: Usuario;
 }
 
 export type Mantenimiento = Incidencia;
@@ -127,5 +130,42 @@ export interface SubEnvironment {
 export interface Amenity {
   id: string;
   nombre: string;
+  createdAt?: any;
+}
+
+export type ChecklistStatus = 'in_progress' | 'completed';
+export type ChecklistItemStatus = 'pending' | 'ok' | 'incidencia';
+
+export interface Checklist {
+  id?: string;
+  date: string; // YYYY-MM-DD
+  status: ChecklistStatus;
+  totalCount: number;
+  completedCount: number;
+  incidencesCount: number;
+  incidenciaIds?: string[]; // Aggregated list of all incidences in this checklist
+  startTime: any;
+  endTime?: any;
+  performedBy?: Usuario;
+  createdAt: any;
+}
+
+export interface ChecklistItem {
+  id: string; // machineId
+  machineName: string;
+  location: string;
+  status: ChecklistItemStatus;
+  incidenciaId?: string;
+  updatedAt: any;
+  incidenciaIds?: string[]; // Multiple incidences
+  notas?: string;
+}
+
+export interface ChecklistAssignment {
+  id?: string;
+  userId: string;
+  startDate: string; // YYYY-MM-DD
+  endDate: string; // YYYY-MM-DD
+  user?: Usuario;
   createdAt?: any;
 }

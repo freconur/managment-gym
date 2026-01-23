@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react'
 import { FaTimes, FaCamera, FaImage, FaExclamationCircle, FaUser, FaIdCard, FaCalendarAlt, FaTools } from 'react-icons/fa'
 import Image from 'next/image'
 import styles from './IncidenciaModal.module.css'
-import { Usuario } from '@/features/types/types'
+import { Usuario, Machine } from '@/features/types/types'
 import { storage } from '@/firebase/firebase.config'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { compressImage } from '@/utils/imageCompression'
@@ -21,15 +21,20 @@ interface IncidenciaModalProps {
     prioridad: 'baja' | 'media' | 'alta' | 'urgente'
     usuario?: Usuario
     fotoUrl: string
+    maquina: Machine
   }) => Promise<void>
-  usuariosValidate: Usuario
+  usuariosValidate: Usuario,
+  usuarioChecklist?: Usuario
+  maquina?: Machine
 }
 
 export const IncidenciaModal: React.FC<IncidenciaModalProps> = ({
   isOpen,
   onClose,
   onSubmit,
-  usuariosValidate
+  usuariosValidate,
+  usuarioChecklist,
+  maquina
 }) => {
   const [incidenciaForm, setIncidenciaForm] = useState({
     tipo: 'incidencia' as const,
@@ -40,8 +45,9 @@ export const IncidenciaModal: React.FC<IncidenciaModalProps> = ({
     fechaProgramada: new Date(),
     descripcion: '',
     prioridad: 'media' as 'baja' | 'media' | 'alta' | 'urgente',
-    usuario: usuariosValidate
+    usuario: (usuarioChecklist as any)?.user || usuariosValidate
   })
+  console.log('usuarioChecklist', usuarioChecklist)
   const [fotoFile, setFotoFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [isUploading, setIsUploading] = useState(false)
@@ -108,10 +114,25 @@ export const IncidenciaModal: React.FC<IncidenciaModalProps> = ({
       await uploadBytes(storageRef, fotoFile)
       fotoUrl = await getDownloadURL(storageRef)
 
+      // Formatear la descripción para incluir los campos estructurados
+      // Esto es necesario porque IncidenciaDetailModal parsea el texto buscando signos de interrogación
+      let descripcionFinal = `¿La máquina dejó de funcionar? ${incidenciaForm.maquinaDejoFuncionar ? 'Sí' : 'No'}\n`
+      descripcionFinal += `¿Se rompió alguna pieza? ${incidenciaForm.piezaRota ? 'Sí' : 'No'}\n`
+
+      if (incidenciaForm.piezaRota && incidenciaForm.nombrePiezaRota) {
+        descripcionFinal += `Nombre de la pieza rota: ${incidenciaForm.nombrePiezaRota}\n`
+      }
+
+      if (incidenciaForm.descripcion) {
+        descripcionFinal += `Descripción adicional: ${incidenciaForm.descripcion}`
+      }
+
       await onSubmit({
         ...incidenciaForm,
-        usuario: usuariosValidate,
-        fotoUrl
+        descripcion: descripcionFinal, // Enviar descripción formateada
+        usuario: (usuarioChecklist as any)?.user || usuariosValidate,
+        fotoUrl,
+        maquina: maquina!
       })
 
       // Resetear formulario después de enviar
@@ -136,7 +157,6 @@ export const IncidenciaModal: React.FC<IncidenciaModalProps> = ({
   }
 
   if (!isOpen) return null
-
   return (
     <div className={styles.overlay} onClick={onClose}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>

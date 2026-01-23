@@ -1,0 +1,130 @@
+.container {
+    width: 100%;
+    background: var(--bg-card);
+    border: 1px solid var(--border-glass);
+    border-radius: 1.5rem;
+    overflow: hidden;
+    margin-top: 2rem;
+}
+
+.scrollWrapper {
+    overflow-x: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--accent-primary) transparent;
+}
+
+.scrollWrapper::-webkit-scrollbar {
+    height: 6px;
+}
+
+.scrollWrapper::-webkit-scrollbar-thumb {
+    background: var(--border-glass);
+    border-radius: 10px;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.75rem;
+    min-width: 1200px;
+}
+
+.th {
+    padding: 0.75rem 0.5rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-glass);
+    color: var(--text-secondary);
+    font-weight: 700;
+    text-align: center;
+}
+
+.thSticky {
+    position: sticky;
+    left: 0;
+    z-index: 10;
+    background: var(--bg-card);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    text-align: left;
+    min-width: 180px;
+    padding-left: 1rem;
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
+}
+
+.td {
+    padding: 0.5rem;
+    border: 1px solid var(--border-glass);
+    text-align: center;
+    color: var(--text-primary);
+}
+
+.tdSticky {
+    position: sticky;
+    left: 0;
+    z-index: 10;
+    background: var(--bg-card);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    text-align: left;
+    padding-left: 1rem;
+    font-weight: 600;
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
+}
+
+.dayCell {
+    width: 30px;
+    height: 30px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.dayCell:hover {
+    background: rgba(59, 130, 246, 0.15);
+}
+
+.checkIcon {
+    color: #10b981;
+    font-size: 1rem;
+}
+
+.incIcon {
+    color: #ef4444;
+    font-size: 1rem;
+}
+
+.pendingIcon {
+    color: var(--border-glass);
+}
+
+.observationCell {
+    text-align: left;
+    padding: 0.5rem 1rem;
+    min-width: 200px;
+    color: var(--text-secondary);
+    font-style: italic;
+    white-space: normal;
+}
+
+.today {
+    background: rgba(59, 130, 246, 0.05);
+    border: 2px solid var(--accent-primary) !important;
+}
+
+.headerRow th {
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.05), transparent);
+}
+
+.incidenceChip {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin: 0.1rem;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    font-style: normal;
+}

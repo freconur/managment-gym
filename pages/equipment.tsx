@@ -18,7 +18,7 @@ import { MantenimientoDetailModal } from "@/components/MantenimientoDetailModal"
 import { QRReader } from "@/components/QRReader";
 import { EquiposTable } from "@/components/EquiposTable";
 import { AuthModal } from "@/components/AuthModal";
-import { FaUserPlus, FaTools, FaTimes, FaQrcode, FaDumbbell, FaPlus, FaHome, FaChartBar, FaUsers, FaChartLine } from "react-icons/fa";
+import { FaUserPlus, FaTools, FaTimes, FaQrcode, FaDumbbell, FaPlus, FaHome, FaChartBar, FaUsers, FaChartLine, FaClipboardList } from "react-icons/fa";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Machine, Usuario, Incidencia, Tarea } from "@/features/types/types";
 
@@ -410,6 +410,13 @@ const Equipment: NextPage = () => {
               <FaChartBar size={18} />
             </button>
             <button
+              onClick={() => router.push('/checklist')}
+              className={styles.actionButton}
+              title="Checklist Diario"
+            >
+              <FaClipboardList size={18} />
+            </button>
+            <button
               onClick={() => setIsQRReaderOpen(true)}
               className={styles.actionButton}
               title="Lector de Código QR"
@@ -611,7 +618,7 @@ const Equipment: NextPage = () => {
                 await updateIncidencia(
                   selectedIncidencia.machineId,
                   selectedIncidencia.id,
-                  { notas }
+                  { notas: notas }
                 );
               }
             }}

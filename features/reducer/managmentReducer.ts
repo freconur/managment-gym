@@ -5,6 +5,11 @@ import { ManagmentRegister } from "@/features/actions/actionaManagment"
 
 export const managmentGym = (state: Managment, action: ManagmentAction) => {
   switch (action.type) {
+    case ManagmentRegister.USER_CHECKLIST:
+      return {
+        ...state,
+        userChecklist: action.payload
+      }
     case ManagmentRegister.MACHINE_REGISTER:
       return {
         ...state,
@@ -13,7 +18,7 @@ export const managmentGym = (state: Managment, action: ManagmentAction) => {
     case ManagmentRegister.MACHINE_UPDATE:
       return {
         ...state,
-        machine: state.machine.map(m => 
+        machine: state.machine.map(m =>
           m.id === action.payload.id ? action.payload : m
         )
       }

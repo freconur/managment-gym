@@ -6,7 +6,7 @@ interface Props {
   children: ReactNode
 }
 const initialState: Managment = {
-  machine: []
+  machine: [],
 }
 
 export const GlobalContext = createContext<[Managment, Dispatch<ManagmentAction>]>([initialState, () => { }])

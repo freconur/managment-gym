@@ -87,6 +87,16 @@ export const useManagment = () => {
     return false;
   }
 
+  const validateAndGetUser = async (dni: string, pin: string): Promise<Usuario | null> => {
+    const pathRef = collection(db, 'usuarios');
+    const q = query(pathRef, where('dni', '==', dni), where('pin', '==', Number(pin)));
+    const snapshot = await getDocs(q);
+    if (snapshot.docs.length > 0) {
+      return snapshot.docs[0].data() as Usuario;
+    }
+    return null;
+  }
+
   const getUsuarios = useCallback(() => {
     const pathRef = collection(db, 'usuarios');
     const q = query(pathRef, orderBy('apellidos', 'asc'));
@@ -351,6 +361,16 @@ export const useManagment = () => {
 
   ///////////////////////MAIN CALENDARVIEW///////////////////////
 
+  const getUserByDni = async (dni: string): Promise<Usuario | null> => {
+    const pathRef = collection(db, 'usuarios');
+    const q = query(pathRef, where('dni', '==', dni));
+    const snapshot = await getDocs(q);
+    if (snapshot.docs.length > 0) {
+      return snapshot.docs[0].data() as Usuario;
+    }
+    return null;
+  }
+
   const getAllEventos = useCallback(() => {
     const q = query(collectionGroup(db, 'eventos'), orderBy('createdAt', 'desc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -404,6 +424,16 @@ export const useManagment = () => {
   }
   //////////////////////REUSABLE TASKS//////////////////////////
 
+  const getIncidencia = useCallback(async (machineId: string, id: string) => {
+    if (!machineId || !id) return null;
+    const docRef = doc(db, `maquinas/${machineId}/eventos/`, id);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      return { id: docSnap.id, ...docSnap.data() } as Incidencia;
+    }
+    return null;
+  }, [])
+
   return {
     getUbicaciones,
     ubicaciones,
@@ -443,6 +473,9 @@ export const useManagment = () => {
     reusableTasks,
     createReusableTask,
     updateReusableTask,
-    deleteReusableTask
+    deleteReusableTask,
+    getIncidencia,
+    validateAndGetUser,
+    getUserByDni
   };
 };

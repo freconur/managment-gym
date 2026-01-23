@@ -35,13 +35,14 @@ export const IncidenciaDetailModal: React.FC<IncidenciaDetailModalProps> = ({
   if (!isOpen || !incidencia) return null
 
   const handleDeleteClick = () => {
-    if (!incidencia.usuario?.pin) {
-      setPinError('No hay PIN configurado para el usuario que reportó esta incidencia')
-      return
-    }
     setShowPinModal(true)
     setPin('')
-    setPinError('')
+
+    if (!incidencia.usuario?.pin) {
+      setPinError('No hay PIN configurado para el usuario que reportó esta incidencia')
+    } else {
+      setPinError('')
+    }
   }
 
   const handlePinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -551,89 +552,89 @@ export const IncidenciaDetailModal: React.FC<IncidenciaDetailModalProps> = ({
           )}
 
 
-        {/* Botón de Cerrar Footer */}
-        <div className={styles.modalButtonGroup} style={{ justifyContent: 'flex-end', borderTop: '2px solid #e5e7eb', paddingTop: '1.5rem' }}>
-          <button
-            type="button"
-            onClick={onClose}
-            className={`${styles.button} ${styles.buttonSubmit} ${styles.modalButton}`}
-            style={{ minWidth: '120px' }}
-          >
-            Cerrar
-          </button>
-        </div>
-      </div>
-    </div>
-
-      {/* Modal de Validación de PIN */ }
-  {
-    showPinModal && (
-      <div className={styles.modalOverlay} onClick={handleClosePinModal} style={{ zIndex: 2000 }}>
-        <div className={styles.modalContent} onClick={(e) => e.stopPropagation()} style={{ maxWidth: '400px' }}>
-          <div className={styles.modalHeader}>
-            <h3 className={styles.modalTitle}>
-              <FaLock size={20} style={{ marginRight: '0.5rem', verticalAlign: 'middle' }} />
-              Validar PIN
-            </h3>
+          {/* Botón de Cerrar Footer */}
+          <div className={styles.modalButtonGroup} style={{ justifyContent: 'flex-end', borderTop: '2px solid #e5e7eb', paddingTop: '1.5rem' }}>
             <button
               type="button"
-              onClick={handleClosePinModal}
-              className={styles.modalCloseButton}
-              aria-label="Cerrar modal"
+              onClick={onClose}
+              className={`${styles.button} ${styles.buttonSubmit} ${styles.modalButton}`}
+              style={{ minWidth: '120px' }}
             >
-              <FaTimes size={20} />
+              Cerrar
             </button>
           </div>
-          <div className={styles.modalBody}>
-            <form onSubmit={handlePinSubmit}>
-              <div className={styles.formField}>
-                <label className={styles.label}>
-                  Ingrese el PIN del usuario que reportó esta incidencia
-                </label>
-                <input
-                  type="password"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  value={pin}
-                  onChange={handlePinChange}
-                  className={styles.input}
-                  placeholder="Ingrese su PIN (4 dígitos)"
-                  autoFocus
-                  maxLength={4}
-                  disabled={isDeleting}
-                />
-                {pinError && (
-                  <p className={styles.dangerMessage}>
-                    {pinError}
-                  </p>
-                )}
-              </div>
-              <div className={styles.modalButtonGroup}>
+        </div>
+      </div>
+
+      {/* Modal de Validación de PIN */}
+      {
+        showPinModal && (
+          <div className={styles.modalOverlay} onClick={handleClosePinModal} style={{ zIndex: 2000 }}>
+            <div className={styles.modalContent} onClick={(e) => e.stopPropagation()} style={{ maxWidth: '400px' }}>
+              <div className={styles.modalHeader}>
+                <h3 className={styles.modalTitle}>
+                  <FaLock size={20} style={{ marginRight: '0.5rem', verticalAlign: 'middle' }} />
+                  Validar PIN
+                </h3>
                 <button
                   type="button"
                   onClick={handleClosePinModal}
-                  className={`${styles.button} ${styles.buttonSecondary} ${styles.modalButton}`}
-                  disabled={isDeleting}
+                  className={styles.modalCloseButton}
+                  aria-label="Cerrar modal"
                 >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className={`${styles.button} ${styles.buttonSubmit} ${styles.modalButton}`}
-                  disabled={isDeleting}
-                  style={{
-                    backgroundColor: isDeleting ? '#9ca3af' : '#ef4444'
-                  }}
-                >
-                  {isDeleting ? 'Eliminando...' : 'Eliminar'}
+                  <FaTimes size={20} />
                 </button>
               </div>
-            </form>
+              <div className={styles.modalBody}>
+                <form onSubmit={handlePinSubmit}>
+                  <div className={styles.formField}>
+                    <label className={styles.label}>
+                      Ingrese el PIN del usuario que reportó esta incidencia
+                    </label>
+                    <input
+                      type="password"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      value={pin}
+                      onChange={handlePinChange}
+                      className={styles.input}
+                      placeholder="Ingrese su PIN (4 dígitos)"
+                      autoFocus
+                      maxLength={4}
+                      disabled={isDeleting}
+                    />
+                    {pinError && (
+                      <p className={styles.dangerMessage}>
+                        {pinError}
+                      </p>
+                    )}
+                  </div>
+                  <div className={styles.modalButtonGroup}>
+                    <button
+                      type="button"
+                      onClick={handleClosePinModal}
+                      className={`${styles.button} ${styles.buttonSecondary} ${styles.modalButton}`}
+                      disabled={isDeleting}
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      className={`${styles.button} ${styles.buttonSubmit} ${styles.modalButton}`}
+                      disabled={isDeleting}
+                      style={{
+                        backgroundColor: isDeleting ? '#9ca3af' : '#ef4444'
+                      }}
+                    >
+                      {isDeleting ? 'Eliminando...' : 'Eliminar'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
-    )
-  }
+        )
+      }
     </div >
   )
 }
