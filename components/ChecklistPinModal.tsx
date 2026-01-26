@@ -68,7 +68,7 @@ export const ChecklistPinModal: React.FC<ChecklistPinModalProps> = ({
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit}>
+                <form onSubmit={handleSubmit} autoComplete="off">
                     <div className={styles.modalBody}>
                         {!assignedUser && (
                             <div className={styles.formGroup}>
@@ -80,6 +80,8 @@ export const ChecklistPinModal: React.FC<ChecklistPinModalProps> = ({
                                     onChange={(e) => setDni(e.target.value)}
                                     placeholder="DNI del encargado"
                                     autoFocus
+                                    name="user_dni_search"
+                                    autoComplete="off"
                                 />
                             </div>
                         )}
@@ -99,6 +101,12 @@ export const ChecklistPinModal: React.FC<ChecklistPinModalProps> = ({
                                 placeholder="****"
                                 maxLength={4}
                                 autoFocus={!!assignedUser}
+                                name="pin_code_entry"
+                                id="pin_code_entry"
+                                autoComplete="one-time-code"
+                                data-lpignore="true"
+                                inputMode="numeric"
+                                pattern="[0-9]*"
                             />
                         </div>
 

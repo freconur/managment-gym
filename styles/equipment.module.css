@@ -317,7 +317,15 @@
   border-radius: 0.5rem;
   font-size: 1rem;
   background-color: white;
+  color: var(--text-primary);
 }
+
+:global([data-theme='dark']) .select {
+  background-color: var(--bg-card);
+  color: var(--text-primary);
+  border-color: var(--border-glass);
+}
+
 
 .textarea {
   width: 100%;
@@ -497,6 +505,14 @@
   color: var(--text-primary);
   vertical-align: middle;
   white-space: nowrap;
+}
+
+:global([data-theme='dark']) .equipmentTable th {
+  color: var(--text-secondary);
+}
+
+:global([data-theme='dark']) .equipmentTable td {
+  color: var(--text-primary);
 }
 
 .tableCellName {
@@ -698,6 +714,15 @@
   overflow: hidden;
   animation: slideUp 0.3s ease-out;
   transform-origin: center;
+}
+
+:global([data-theme='dark']) .modalContent {
+  background-color: var(--bg-card);
+  color: var(--text-primary);
+}
+
+:global([data-theme='dark']) .modalTitle {
+  color: var(--text-primary);
 }
 
 .modalContentLarge {
@@ -2398,6 +2423,17 @@
   border-color: #3b82f6;
   background-color: white;
   box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+}
+
+:global([data-theme='dark']) .userInput {
+  background-color: var(--bg-card);
+  color: var(--text-primary);
+  border-color: var(--border-glass);
+}
+
+:global([data-theme='dark']) .userInput:focus {
+  background-color: var(--bg-card-hover);
+  border-color: var(--accent-primary);
 }
 
 .userInputError {

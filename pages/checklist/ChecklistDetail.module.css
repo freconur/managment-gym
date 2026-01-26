@@ -148,3 +148,22 @@
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5);
 }
+.thIndex {
+    position: sticky;
+    left: 0;
+    z-index: 20; /* Higher than regular headers */
+    width: 40px;
+    text-align: center;
+    background: #1f2937; /* Match header background or use dark gray */
+}
+
+.tdIndex {
+    position: sticky;
+    left: 0;
+    z-index: 10;
+    background: var(--bg-card); /* Opaque background to hide scrolling content */
+    text-align: center;
+    font-weight: 600;
+    color: var(--text-secondary);
+    border-right: 1px solid var(--border-glass);
+}

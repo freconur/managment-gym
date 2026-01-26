@@ -13,6 +13,20 @@
     scrollbar-color: var(--accent-primary) transparent;
 }
 
+.thIndex {
+    width: 40px;
+    min-width: 40px;
+    background: rgba(255, 255, 255, 0.05);
+    text-align: center;
+    color: var(--text-secondary);
+}
+
+.tdIndex {
+    text-align: center;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
 .scrollWrapper::-webkit-scrollbar {
     height: 6px;
 }

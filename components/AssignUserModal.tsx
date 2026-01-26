@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import styles from '@/styles/AssignUserModal.module.css';
-import { FaTimes, FaUserCog, FaCalendarAlt } from 'react-icons/fa';
+import { FaTimes, FaUserCog, FaCalendarAlt, FaBuilding, FaTrash } from 'react-icons/fa';
 import { Usuario } from '@/features/types/types';
+import { useManagment } from '@/features/hooks/useManagment';
+import { useChecklist } from '@/features/hooks/useChecklist';
 
 interface AssignUserModalProps {
     isOpen: boolean;
     onClose: () => void;
     usuarios: Usuario[];
-    onAssign: (userId: string, startDate: string, endDate: string) => Promise<void>;
+    onAssign: (userId: string, startDate: string, endDate: string, gym: string, assignmentId?: string) => Promise<void>;
 }
 
 export const AssignUserModal: React.FC<AssignUserModalProps> = ({
@@ -17,6 +19,41 @@ export const AssignUserModal: React.FC<AssignUserModalProps> = ({
     onAssign
 }) => {
     const [selectedUserId, setSelectedUserId] = useState('');
+    const [selectedGym, setSelectedGym] = useState('');
+    const [editingId, setEditingId] = useState<string | null>(null);
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+    const [filterGym, setFilterGym] = useState('');
+    const { ubicaciones, getUbicaciones } = useManagment();
+    const { assignments, getAssignments, deleteAssignment } = useChecklist();
+
+    const toggleSort = () => {
+        setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+    };
+
+    React.useEffect(() => {
+        if (isOpen) {
+            const unsub = getUbicaciones();
+            const unsubAssignments = getAssignments();
+            return () => {
+                unsub();
+                unsubAssignments();
+            };
+        } else {
+            // Reset state on close
+            setEditingId(null);
+            setSelectedUserId('');
+            setSelectedGym('');
+            // Reset dates to default
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const today = `${year}-${month}-${day}`;
+            setStartDate(today);
+            setEndDate(today);
+        }
+    }, [isOpen, getUbicaciones, getAssignments]);
+
     const [startDate, setStartDate] = useState(() => {
         const now = new Date();
         const year = now.getFullYear();
@@ -41,11 +78,11 @@ export const AssignUserModal: React.FC<AssignUserModalProps> = ({
 
         try {
             setIsSubmitting(true);
-            await onAssign(selectedUserId, startDate, endDate);
+            await onAssign(selectedUserId, startDate, endDate, selectedGym, editingId || undefined);
             onClose();
         } catch (error) {
             console.error('Error assigning user:', error);
-            alert('Error al asignar usuario');
+            alert(error instanceof Error ? error.message : 'Error al asignar usuario');
         } finally {
             setIsSubmitting(false);
         }
@@ -57,7 +94,7 @@ export const AssignUserModal: React.FC<AssignUserModalProps> = ({
                 <div className={styles.modalHeader}>
                     <h3 className={styles.modalTitle}>
                         <FaUserCog />
-                        Configurar Encargado
+                        {editingId ? 'Editar Encargado' : 'Configurar Encargado'}
                     </h3>
                     <button className={styles.modalCloseButton} onClick={onClose}>
                         <FaTimes size={20} />
@@ -83,11 +120,31 @@ export const AssignUserModal: React.FC<AssignUserModalProps> = ({
                             </select>
                         </div>
 
+                        <div className={styles.formGroup}>
+                            <label className={styles.label}>
+                                <FaBuilding style={{ marginRight: '0.5rem' }} />
+                                Gym / Ubicación
+                            </label>
+                            <select
+                                className={styles.select}
+                                value={selectedGym}
+                                onChange={(e) => setSelectedGym(e.target.value)}
+                                required
+                            >
+                                <option value="">-- Seleccionar Gym --</option>
+                                {ubicaciones.map(u => (
+                                    <option key={u.id} value={u.name}>
+                                        {u.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
                         <div className={styles.dateRangeGrid}>
                             <div className={styles.formGroup}>
                                 <label className={styles.label}>
                                     <FaCalendarAlt style={{ marginRight: '0.5rem' }} />
-                                    Desde
+                                    Fecha Inicio
                                 </label>
                                 <input
                                     type="date"
@@ -100,7 +157,7 @@ export const AssignUserModal: React.FC<AssignUserModalProps> = ({
                             <div className={styles.formGroup}>
                                 <label className={styles.label}>
                                     <FaCalendarAlt style={{ marginRight: '0.5rem' }} />
-                                    Hasta
+                                    Fecha Fin
                                 </label>
                                 <input
                                     type="date"
@@ -123,10 +180,105 @@ export const AssignUserModal: React.FC<AssignUserModalProps> = ({
                             className={`${styles.button} ${styles.buttonSubmit}`}
                             disabled={isSubmitting || !selectedUserId}
                         >
-                            {isSubmitting ? 'Guardando...' : 'Guardar Asignación'}
+                            {isSubmitting ? 'Guardando...' : (editingId ? 'Actualizar Asignación' : 'Guardar Asignación')}
                         </button>
                     </div>
                 </form>
+
+                <div className={styles.assignmentsSection}>
+                    <h4 className={styles.assignmentsHeader}>Asignaciones Recientes</h4>
+                    {assignments.length === 0 ? (
+                        <p className={styles.emptyState}>No hay asignaciones registradas.</p>
+                    ) : (
+                        <div className={styles.tableWrapper}>
+                            <table className={styles.table}>
+                                <thead>
+                                    <tr>
+                                        <th className={styles.th}>Encargado</th>
+                                        <th
+                                            className={`${styles.th} ${styles.sortHeader}`}
+                                            onClick={toggleSort}
+                                            title="Click para ordenar"
+                                        >
+                                            Rango
+                                            {sortOrder === 'asc' ? <span style={{ fontSize: '0.7em' }}>▲</span> : <span style={{ fontSize: '0.7em' }}>▼</span>}
+                                        </th>
+                                        <th className={styles.th}>
+                                            <div className={styles.gymFilterContainer}>
+                                                Gym
+                                                <select
+                                                    value={filterGym}
+                                                    onChange={(e) => setFilterGym(e.target.value)}
+                                                    className={styles.gymFilterSelect}
+                                                    onClick={(e) => e.stopPropagation()}
+                                                >
+                                                    <option value="">Todos</option>
+                                                    {ubicaciones.map(u => (
+                                                        <option key={u.id} value={u.name}>{u.name}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        </th>
+                                        <th className={styles.th} style={{ textAlign: 'center' }}>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {[...assignments]
+                                        .filter(a => filterGym ? a.gym === filterGym : true)
+                                        .sort((a, b) => {
+                                            return sortOrder === 'asc'
+                                                ? a.startDate.localeCompare(b.startDate)
+                                                : b.startDate.localeCompare(a.startDate);
+                                        }).map((assignment) => (
+                                            <tr key={assignment.id} className={styles.tr}>
+                                                <td className={styles.td}>
+                                                    {assignment.user ? `${assignment.user.nombres} ${assignment.user.apellidos}` : 'Usuario desconocido'}
+                                                </td>
+                                                <td className={styles.td}>
+                                                    {assignment.startDate} - {assignment.endDate}
+                                                </td>
+                                                <td className={styles.td}>
+                                                    {assignment.gym || '-'}
+                                                </td>
+                                                <td className={styles.td} style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+                                                    <button
+                                                        onClick={() => {
+
+                                                            setSelectedUserId(assignment.userId);
+                                                            setStartDate(assignment.startDate);
+                                                            setEndDate(assignment.endDate);
+                                                            setSelectedGym(assignment.gym || '');
+                                                            setEditingId(assignment.id || null);
+                                                        }}
+                                                        title="Editar (Cargar en formulario)"
+                                                        style={{ background: 'none', border: 'none', color: '#60a5fa', cursor: 'pointer' }}
+                                                    >
+                                                        <FaUserCog />
+                                                    </button>
+                                                    <button
+                                                        onClick={async () => {
+                                                            if (confirm('¿Estás seguro de eliminar esta asignación?')) {
+                                                                try {
+                                                                    await deleteAssignment(assignment.id!);
+                                                                } catch (error) {
+                                                                    console.error(error);
+                                                                    alert('Error al eliminar');
+                                                                }
+                                                            }
+                                                        }}
+                                                        title="Eliminar"
+                                                        style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}
+                                                    >
+                                                        <FaTrash />
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );

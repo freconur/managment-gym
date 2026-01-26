@@ -16,7 +16,9 @@ import {
     increment,
     Timestamp,
     collectionGroup,
-    writeBatch
+    writeBatch,
+    limit,
+    deleteDoc
 } from "firebase/firestore";
 import { useState, useCallback } from "react";
 import { Checklist, ChecklistItem, Machine, ChecklistItemStatus, ChecklistAssignment, Usuario } from "../types/types";
@@ -32,6 +34,7 @@ export const useChecklist = () => {
     const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>([]);
     const [monthData, setMonthData] = useState<Record<string, Record<string, ChecklistItem>>>({});
     const [usuarioChecklist, setUsuarioChecklist] = useState({});
+    const [assignments, setAssignments] = useState<ChecklistAssignment[]>([]);
 
     const getChecklists = useCallback(() => {
         const pathRef = collection(db, 'checklists');
@@ -90,10 +93,15 @@ export const useChecklist = () => {
         return unsubscribe;
     }, []);
 
-    const startDailyChecklist = async (maquinas: Machine[], user: any) => {
-        // Use local YYYY-MM-DD
-        const now = new Date();
-        const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const startDailyChecklist = async (count: number, user: any, dateStr?: string) => {
+        // Use provided date or local YYYY-MM-DD
+        let today: string;
+        if (dateStr) {
+            today = dateStr;
+        } else {
+            const now = new Date();
+            today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        }
 
         const q = query(collection(db, 'checklists'), where('date', '==', today));
         const snapshot = await getDocs(q);
@@ -105,7 +113,7 @@ export const useChecklist = () => {
             const newChecklist: Omit<Checklist, 'id'> = {
                 date: today,
                 status: 'in_progress',
-                totalCount: maquinas.length,
+                totalCount: count,
                 completedCount: 0,
                 incidencesCount: 0,
                 startTime: serverTimestamp(),
@@ -249,63 +257,74 @@ export const useChecklist = () => {
         await batch.commit();
     };
 
-    const assignUserChecklist = async (userId: string, startDate: string, endDate: string) => {
+    const assignUserChecklist = async (userId: string, startDate: string, endDate: string, gym?: string, assignmentId?: string) => {
         const pathRef = collection(db, 'checklist_assignments');
 
         // 1. Find potential overlaps
-        // Query: assignments starting before or when the new one ends
         const q = query(pathRef, where('startDate', '<=', endDate));
         const snapshot = await getDocs(q);
 
         const batch = writeBatch(db);
 
-        // 2. Filter and delete conflicts
+        // 2. Check for conflicts
         snapshot.docs.forEach(doc => {
+            // Ignore the assignment we are currently editing
+            if (assignmentId && doc.id === assignmentId) return;
+
             const data = doc.data() as ChecklistAssignment;
-            // Intersection Check:
-            // (StartA <= EndB) and (EndA >= StartB)
             if (data.endDate >= startDate) {
-                batch.delete(doc.ref);
+                // Check if it's for the same gym
+                const sameGym = data.gym === gym;
+
+                if (sameGym) {
+                    throw new Error(`Ya existe un encargado asignado para el gimnasio ${gym || 'Global'} en estas fechas (${data.startDate} - ${data.endDate}).`);
+                }
             }
         });
 
-        // 3. Add new assignment
-        // Fetch User Data from 'usuarios' collection (assuming userId matches doc ID or field? Typically doc ID based on usage)
-        // Wait, normally userId might be DNI or Auth ID. The hook useManagment has getUserByDni. 
-        // Let's check useManagment. But here we are in useChecklist.
-        // We can just fetch by doc ID if we assume userId is the doc ID. 
-        // CAUTION: The user provided code suggests looking up.
-        // Let's assume userId passed from the modal is the doc ID (standard).
-        // If it's a DNI, we might need a query.
-        // Looking at AssignUserModal (not shown but inferred), usually selection returns ID.
-        // Let's try doc get first.
-
+        // 3. Add or Update assignment
         let userData: Usuario | undefined;
         try {
             const userDocRef = doc(db, 'usuarios', userId);
             const userSnap = await getDoc(userDocRef);
             if (userSnap.exists()) {
                 userData = { id: userSnap.id, ...userSnap.data() } as Usuario;
-                console.log('userData', userData)
-            } else {
-                // Should we try query by DNI if ID fails? 
-                // Let's stick to ID as primary.
             }
         } catch (e) {
             console.error("Error fetching user for assignment:", e);
         }
 
-        const newAssignment: ChecklistAssignment = {
+        const assignmentData: any = {
             userId,
             startDate,
             endDate,
+            gym,
             user: userData,
-            createdAt: serverTimestamp()
+            updatedAt: serverTimestamp()
         };
-        const newDocRef = doc(pathRef);
-        batch.set(newDocRef, newAssignment);
+
+        if (!assignmentId) {
+            assignmentData.createdAt = serverTimestamp();
+        }
+
+        const targetRef = assignmentId ? doc(db, 'checklist_assignments', assignmentId) : doc(pathRef);
+        batch.set(targetRef, assignmentData, { merge: true });
 
         await batch.commit();
+    };
+
+    const deleteAssignment = async (id: string) => {
+        await deleteDoc(doc(db, 'checklist_assignments', id));
+    };
+
+    const deleteChecklist = async (id: string) => {
+        if (!id) return;
+        try {
+            await deleteDoc(doc(db, 'checklists', id));
+        } catch (error) {
+            console.error("Error deleting checklist:", error);
+            throw error;
+        }
     };
 
     const getChecklistAssignment = async (date: string) => {
@@ -345,6 +364,53 @@ export const useChecklist = () => {
         setUsuarioChecklist({});
     }
 
+    const getAssignments = useCallback(() => {
+        const pathRef = collection(db, 'checklist_assignments');
+        const q = query(pathRef, orderBy('startDate', 'desc'), limit(10));
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const data = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            })) as ChecklistAssignment[];
+            setAssignments(data);
+        });
+        return unsubscribe;
+    }, []);
+
+    const getMonthlyAssignments = useCallback((month: number, year: number) => {
+        // Calculate start and end of the month
+        const startOfMonth = new Date(year, month, 1);
+        const endOfMonth = new Date(year, month + 1, 0);
+
+        const startStr = `${startOfMonth.getFullYear()}-${String(startOfMonth.getMonth() + 1).padStart(2, '0')}-${String(startOfMonth.getDate()).padStart(2, '0')}`;
+        const endStr = `${endOfMonth.getFullYear()}-${String(endOfMonth.getMonth() + 1).padStart(2, '0')}-${String(endOfMonth.getDate()).padStart(2, '0')}`;
+
+        const pathRef = collection(db, 'checklist_assignments');
+
+        // Query assignments that start before the end of the month
+        // We will filter client-side for those that end after the start of the month to handle overlaps completely
+        // Since querying 'startDate' <= endStr is simple.
+        const q = query(
+            pathRef,
+            where('startDate', '<=', endStr),
+            orderBy('startDate', 'desc')
+        );
+
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const data = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            })) as ChecklistAssignment[];
+
+            // Client-side filter: End Date must be >= Start of Month
+            const filtered = data.filter(a => a.endDate >= startStr);
+
+            setAssignments(filtered);
+        });
+
+        return unsubscribe;
+    }, []);
+
     return {
         checklists,
         currentChecklist,
@@ -362,6 +428,11 @@ export const useChecklist = () => {
         getChecklistAssignment,
         getUsuarioCheckList,
         usuarioChecklist,
-        clearUsuarioChecklist
+        clearUsuarioChecklist,
+        assignments,
+        getAssignments,
+        getMonthlyAssignments,
+        deleteAssignment,
+        deleteChecklist
     };
 };

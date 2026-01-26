@@ -24,6 +24,7 @@ import {
   updateDoc,
   where,
   collectionGroup,
+  writeBatch,
 } from "firebase/firestore";
 import { useState, useCallback } from "react";
 import { Machine, Marca, Incidencia, Mantenimiento, Usuario, ReusableTask } from "../types/types";
@@ -140,7 +141,7 @@ export const useManagment = () => {
   }
   const getMaquinas = useCallback(() => {
     const pathRef = collection(db, 'maquinas');
-    const q = query(pathRef, orderBy('createdAt', 'desc'));
+    const q = query(pathRef, orderBy('name', 'asc')); // Order by 'name' (order handled client-side)
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const maquinas = snapshot.docs.map(doc => ({
         id: doc.id,
@@ -149,7 +150,23 @@ export const useManagment = () => {
       setMaquinas(maquinas);
     });
     return unsubscribe;
-  }, [])
+  }, []);
+
+  const saveMachineOrder = async (items: { id?: string; type?: string }[]) => {
+    const batch = writeBatch(db);
+    items.forEach((item, index) => {
+      if (!item.id) return;
+
+      let collectionName = 'maquinas';
+      if (item.type === 'complementary') {
+        collectionName = 'complementary_equipment';
+      }
+
+      const ref = doc(db, collectionName, item.id);
+      batch.update(ref, { order: index });
+    });
+    await batch.commit();
+  };
 
   ///////////////////////MARCAS///////////////////////
   const getMarcas = useCallback(() => {
@@ -476,6 +493,7 @@ export const useManagment = () => {
     deleteReusableTask,
     getIncidencia,
     validateAndGetUser,
-    getUserByDni
+    getUserByDni,
+    saveMachineOrder
   };
 };

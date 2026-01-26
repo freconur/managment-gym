@@ -12,6 +12,7 @@ export type Machine = {
   location?: string;
   notes?: string;
   maquinaDejoFuncionar?: boolean;
+  order?: number;
 }
 
 export type Managment = {
@@ -21,6 +22,20 @@ export type Managment = {
 export type Marca = {
   id?: string;
   name?: string;
+}
+
+export type ComplementaryEquipment = {
+  id?: string;
+  name: string;
+  // category?: string; // Removed as per request, keeping commenting out or just leave it
+  category?: string;
+  location?: string;
+  quantity?: number;
+  status: 'active' | 'inactive';
+  notes?: string;
+  createdAt?: any;
+  updatedAt?: any;
+  order?: number;
 }
 
 export type ManagmentAction =
@@ -167,5 +182,6 @@ export interface ChecklistAssignment {
   startDate: string; // YYYY-MM-DD
   endDate: string; // YYYY-MM-DD
   user?: Usuario;
+  gym?: string;
   createdAt?: any;
 }

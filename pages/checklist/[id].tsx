@@ -1,9 +1,10 @@
 import type { NextPage } from "next";
 import Head from "next/head";
 import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useChecklist } from "@/features/hooks/useChecklist";
 import { useManagment } from "@/features/hooks/useManagment";
+import { useComplementaryEquipment } from "@/features/hooks/useComplementaryEquipment";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { IncidenciaModal } from "@/components/IncidenciaModal";
 import { FaHome, FaCheck, FaExclamationTriangle, FaSave, FaSpinner } from "react-icons/fa";
@@ -38,6 +39,44 @@ const ChecklistDetailPage: NextPage = () => {
     } = useChecklist();
 
     const { maquinas, getMaquinas, usuariosValidate, createIncidencia, getIncidencia, getUserByDni } = useManagment();
+    const { equipment: complementaryEquipment, getComplementaryEquipment } = useComplementaryEquipment();
+
+    const [assignedGym, setAssignedGym] = useState<string | null>(null);
+
+    // Fetch assignment to filter gym
+    useEffect(() => {
+        if (currentChecklist?.date) {
+            getChecklistAssignment(currentChecklist.date).then(assignment => {
+                if (assignment && assignment.gym) {
+                    setAssignedGym(assignment.gym);
+                } else {
+                    setAssignedGym(null);
+                }
+            }).catch(console.error);
+        }
+    }, [currentChecklist, getChecklistAssignment]);
+
+    // Combined Items
+    const allItems = useMemo(() => {
+        const machineItems = maquinas.map(m => ({ ...m, type: 'machine' }));
+        // Filter only active complementary equipment
+        const compItems = complementaryEquipment
+            .filter(c => c.status === 'active')
+            .map(c => ({
+                id: c.id,
+                name: c.name,
+                location: c.location || 'Complementarios',
+                type: 'complementary'
+            }));
+
+        const combined = [...machineItems, ...compItems];
+
+        if (assignedGym) {
+            return combined.filter(item => item.location === assignedGym);
+        }
+
+        return combined;
+    }, [maquinas, complementaryEquipment, assignedGym]);
 
     // UI State
     const [localState, setLocalState] = useState<Record<string, LocalStatus>>({});
@@ -58,24 +97,25 @@ const ChecklistDetailPage: NextPage = () => {
         if (!id) return;
         const sub1 = getChecklistById(id as string);
         const sub2 = getMaquinas();
-        // Also subscribe to items to hydrate state
         const sub3 = getChecklistItems(id as string);
+        const sub4 = getComplementaryEquipment();
         return () => {
             sub1();
             sub2();
             sub3();
+            sub4();
         };
-    }, [id, getChecklistById, getMaquinas, getChecklistItems]);
+    }, [id, getChecklistById, getMaquinas, getChecklistItems, getComplementaryEquipment]);
 
     // Smart Hydration
     useEffect(() => {
-        // Only update if we have machines and haven't dirtied the state
-        if (maquinas.length > 0 && !isDirty) {
+        // Only update if we have items and haven't dirtied the state
+        if (allItems.length > 0 && !isDirty) {
             const currentMap: Record<string, LocalStatus> = {};
 
             // 1. Default all to OK
-            maquinas.forEach(m => {
-                currentMap[m.id!] = { status: 'ok' };
+            allItems.forEach(m => {
+                if (m.id) currentMap[m.id] = { status: 'ok' };
             });
 
             // 2. Override with saved items
@@ -94,7 +134,7 @@ const ChecklistDetailPage: NextPage = () => {
 
             setLocalState(currentMap);
         }
-    }, [maquinas, checklistItems, isDirty]);
+    }, [allItems, checklistItems, isDirty]);
 
     const handleCheckboxChange = (machineId: string) => {
         setIsDirty(true); // Mark as dirty on first interaction
@@ -244,6 +284,7 @@ const ChecklistDetailPage: NextPage = () => {
                     <table className={detailStyles.table}>
                         <thead>
                             <tr>
+                                <th className={`${detailStyles.th} ${detailStyles.thIndex}`}>#</th>
                                 <th className={detailStyles.th} style={{ width: '50px' }}>Estado</th>
                                 <th className={detailStyles.th}>Máquina / Equipo</th>
                                 <th className={detailStyles.th}>Ubicación</th>
@@ -252,13 +293,14 @@ const ChecklistDetailPage: NextPage = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {maquinas.map(machine => {
+                            {allItems.map((machine, index) => {
                                 const state = localState[machine.id!] || { status: 'ok' };
                                 const isOk = state.status === 'ok';
                                 const hasIncidences = state.incidenciaIds && state.incidenciaIds.length > 0;
 
                                 return (
                                     <tr key={machine.id} className={detailStyles.tr}>
+                                        <td className={`${detailStyles.td} ${detailStyles.tdIndex}`}>{index + 1}</td>
                                         <td className={detailStyles.td}>
                                             <div
                                                 className={detailStyles.checkboxWrapper}
@@ -336,7 +378,7 @@ const ChecklistDetailPage: NextPage = () => {
                 onSubmit={handleIncidenciaSubmit}
                 usuariosValidate={usuariosValidate}
                 usuarioChecklist={usuarioChecklist as Usuario}
-                maquina={maquinas.find(m => m.id === selectedMachineId)}
+                maquina={allItems.find(m => m.id === selectedMachineId) as any}
             />
 
             <IncidenciaDetailModal
