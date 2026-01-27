@@ -44,7 +44,7 @@ const ChecklistPage: NextPage = () => {
     const [selectedIncidencia, setSelectedIncidencia] = useState<Incidencia | null>(null);
 
     const [showAuthModal, setShowAuthModal] = useState(false);
-    const [authContext, setAuthContext] = useState<'assignment' | 'date_options' | null>(null);
+    const [authContext, setAuthContext] = useState<'assignment' | 'date_options' | 'complementary' | null>(null);
 
     // Date Action Modal
     const [isDateActionModalOpen, setIsDateActionModalOpen] = useState(false);
@@ -180,6 +180,8 @@ const ChecklistPage: NextPage = () => {
                     setIsAssignModalOpen(true);
                 } else if (authContext === 'date_options') {
                     setIsDateActionModalOpen(true);
+                } else if (authContext === 'complementary') {
+                    setIsComplementaryModalOpen(true);
                 }
             } else {
                 alert("Credenciales inválidas");
@@ -357,7 +359,10 @@ const ChecklistPage: NextPage = () => {
                             </select>
 
                             <button
-                                onClick={() => setIsComplementaryModalOpen(true)}
+                                onClick={() => {
+                                    setAuthContext('complementary');
+                                    setShowAuthModal(true);
+                                }}
                                 className={styles.actionButton}
                                 title="Equipos Complementarios"
                                 style={{

@@ -6,7 +6,6 @@ import { Marca } from '@/features/types/types'
 import { Ubicacion } from '@/features/hooks/useManagment'
 import { estadoDeMaquina } from '@/utils/data'
 import { DeleteMachineModal } from './DeleteMachineModal'
-import { AuthModal } from './AuthModal'
 import { useEscapeKey } from '@/features/hooks/useEscapeKey'
 
 interface MachineDetailsModalProps {
@@ -17,7 +16,6 @@ interface MachineDetailsModalProps {
   onDelete: (id: string) => Promise<void>
   marcas: Marca[]
   ubicaciones: Ubicacion[]
-  validateSiEsAdmin?: (dni: string, pin: string) => Promise<boolean>
 }
 
 export const MachineDetailsModal: React.FC<MachineDetailsModalProps> = ({
@@ -27,18 +25,14 @@ export const MachineDetailsModal: React.FC<MachineDetailsModalProps> = ({
   onUpdate,
   onDelete,
   marcas,
-  ubicaciones,
-  validateSiEsAdmin
+  ubicaciones
 }) => {
   const [isEditing, setIsEditing] = useState(false)
   const [editedMachine, setEditedMachine] = useState<Partial<Machine>>({})
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
-  const [showAuthModal, setShowAuthModal] = useState(false)
-  const [authError, setAuthError] = useState<string>('')
-  const [authType, setAuthType] = useState<'save' | 'delete'>('save')
 
   useEscapeKey(() => {
-    if (showAuthModal || isDeleteModalOpen) return;
+    if (isDeleteModalOpen) return;
     if (isEditing) {
       handleCancel(); // Use existing handleCancel to reset state properly
       return;
@@ -91,16 +85,6 @@ export const MachineDetailsModal: React.FC<MachineDetailsModalProps> = ({
 
   const handleSave = async () => {
     if (!machine?.id) return
-
-    // Si hay función de validación, mostrar modal de autenticación primero
-    if (validateSiEsAdmin) {
-      setAuthType('save')
-      setShowAuthModal(true)
-      setAuthError('')
-      return
-    }
-
-    // Si no hay validación, guardar directamente
     await performSave()
   }
 
@@ -110,56 +94,16 @@ export const MachineDetailsModal: React.FC<MachineDetailsModalProps> = ({
     try {
       await onUpdate(machine.id, editedMachine)
       setIsEditing(false)
-      setShowAuthModal(false)
     } catch (error) {
       console.error('Error al actualizar máquina:', error)
       throw error
     }
   }
 
-  const handleAuthAccept = async (dni: string, pin: string) => {
-    if (!validateSiEsAdmin) {
-      setAuthError('Error de validación')
-      return
-    }
-
-    try {
-      const esAdmin = await validateSiEsAdmin(dni, pin)
-
-      if (esAdmin) {
-        // Si es admin, proceder con la acción
-        setShowAuthModal(false)
-        setAuthError('')
-
-        if (authType === 'save') {
-          await performSave()
-        } else if (authType === 'delete') {
-          setIsDeleteModalOpen(true)
-        }
-      } else {
-        setAuthError('Acceso denegado. Solo administradores y desarrolladores pueden realizar esta acción.')
-      }
-    } catch (error) {
-      console.error('Error al validar administrador:', error)
-      setAuthError('Error al validar credenciales. Intente nuevamente.')
-    }
-  }
-
   const handleCloseAuthModal = () => {
-    setShowAuthModal(false)
-    setAuthError('')
   }
 
   const handleDeleteClick = () => {
-    // Si hay función de validación, mostrar modal de autenticación primero
-    if (validateSiEsAdmin) {
-      setAuthType('delete')
-      setShowAuthModal(true)
-      setAuthError('')
-      return
-    }
-
-    // Si no hay validación, abrir modal de eliminación directamente
     setIsDeleteModalOpen(true)
   }
 
@@ -265,7 +209,7 @@ export const MachineDetailsModal: React.FC<MachineDetailsModalProps> = ({
         </div>
         <div className={styles.modalBody}>
           <div className={styles.modalSection}>
-            <h4 style={{ marginBottom: '1rem', color: '#111827', fontSize: '1.125rem', fontWeight: 600 }}>
+            <h4 style={{ marginBottom: '1rem', color: 'var(--text-primary)', fontSize: '1.125rem', fontWeight: 600 }}>
               Información General
             </h4>
             <div className={styles.cardGrid}>
@@ -395,7 +339,7 @@ export const MachineDetailsModal: React.FC<MachineDetailsModalProps> = ({
           </div>
 
           <div className={styles.modalSection}>
-            <h4 style={{ marginBottom: '1rem', color: '#111827', fontSize: '1.125rem', fontWeight: 600 }}>
+            <h4 style={{ marginBottom: '1rem', color: 'var(--text-primary)', fontSize: '1.125rem', fontWeight: 600 }}>
               Notas
             </h4>
             {isEditing ? (
@@ -414,12 +358,6 @@ export const MachineDetailsModal: React.FC<MachineDetailsModalProps> = ({
           </div>
         </div>
       </div>
-      <AuthModal
-        isOpen={showAuthModal}
-        onClose={handleCloseAuthModal}
-        onAccept={handleAuthAccept}
-        error={authError}
-      />
       <DeleteMachineModal
         isOpen={isDeleteModalOpen}
         machineName={machine?.name || ''}

@@ -1,5 +1,5 @@
 import React from 'react'
-import { FaTimes } from 'react-icons/fa'
+import { FaTimes, FaSpinner } from 'react-icons/fa'
 import styles from '@/styles/equipment.module.css'
 
 interface DeleteUbicacionModalProps {
@@ -7,18 +7,20 @@ interface DeleteUbicacionModalProps {
   ubicacionName: string
   onConfirm: () => void
   onCancel: () => void
+  isDeleting?: boolean
 }
 
 export const DeleteUbicacionModal: React.FC<DeleteUbicacionModalProps> = ({
   isOpen,
   ubicacionName,
   onConfirm,
-  onCancel
+  onCancel,
+  isDeleting = false
 }) => {
   if (!isOpen) return null
 
   return (
-    <div className={styles.modalOverlay} onClick={onCancel}>
+    <div className={styles.modalOverlay} onClick={isDeleting ? undefined : onCancel}>
       <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
         <div className={styles.modalHeader}>
           <h3 className={styles.modalTitle}>Confirmar Eliminación</h3>
@@ -27,6 +29,7 @@ export const DeleteUbicacionModal: React.FC<DeleteUbicacionModalProps> = ({
             onClick={onCancel}
             className={styles.modalCloseButton}
             aria-label="Cerrar modal"
+            disabled={isDeleting}
           >
             <FaTimes size={20} />
           </button>
@@ -44,6 +47,7 @@ export const DeleteUbicacionModal: React.FC<DeleteUbicacionModalProps> = ({
               type="button"
               onClick={onCancel}
               className={`${styles.button} ${styles.buttonSecondary} ${styles.modalButton}`}
+              disabled={isDeleting}
             >
               Cancelar
             </button>
@@ -51,8 +55,17 @@ export const DeleteUbicacionModal: React.FC<DeleteUbicacionModalProps> = ({
               type="button"
               onClick={onConfirm}
               className={`${styles.button} ${styles.buttonDanger} ${styles.modalButton}`}
+              disabled={isDeleting}
+              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center', minWidth: '100px' }}
             >
-              Eliminar
+              {isDeleting ? (
+                <>
+                  <FaSpinner className={styles.spinner} />
+                  Eliminando...
+                </>
+              ) : (
+                'Eliminar'
+              )}
             </button>
           </div>
         </div>

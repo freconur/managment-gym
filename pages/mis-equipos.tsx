@@ -4,6 +4,7 @@ import { EquiposTable } from '@/components/EquiposTable';
 import { useManagment } from '@/features/hooks/useManagment';
 import { Machine } from '@/features/types/types';
 import { MachineDetailsModal } from '@/components/MachineDetailsModal';
+import { AuthModal } from '@/components/AuthModal';
 import styles from '@/styles/equipment.module.css';
 
 const MisEquipos = () => {
@@ -21,16 +22,45 @@ const MisEquipos = () => {
 
   const [selectedMachine, setSelectedMachine] = useState<Machine | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authError, setAuthError] = useState('');
+  const [authAction, setAuthAction] = useState<'details' | null>(null);
   const hasFetched = useRef(false);
 
   const handleOpenModal = (machine: Machine) => {
     setSelectedMachine(machine);
-    setIsModalOpen(true);
+    setAuthAction('details');
+    setShowAuthModal(true);
+    setAuthError('');
   };
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedMachine(null);
+  };
+
+  const handleAuthAccept = async (dni: string, pin: string) => {
+    try {
+      const esAdmin = await validateSiEsAdmin(dni, pin);
+      if (esAdmin) {
+        setShowAuthModal(false);
+        setAuthError('');
+        if (authAction === 'details') {
+          setIsModalOpen(true);
+        }
+        setAuthAction(null);
+      } else {
+        setAuthError('Acceso denegado. Solo administradores y desarrolladores pueden realizar esta acción.');
+      }
+    } catch (error) {
+      console.error('Error al validar administrador:', error);
+      setAuthError('Error al validar credenciales. Intente nuevamente.');
+    }
+  };
+
+  const handleCloseAuthModal = () => {
+    setShowAuthModal(false);
+    setAuthError('');
   };
 
   const handleUpdateMachine = async (id: string, machine: Partial<Machine>) => {
@@ -98,7 +128,12 @@ const MisEquipos = () => {
         onDelete={handleDeleteMachine}
         marcas={marcas}
         ubicaciones={ubicaciones}
-        validateSiEsAdmin={validateSiEsAdmin}
+      />
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={handleCloseAuthModal}
+        onAccept={handleAuthAccept}
+        error={authError}
       />
     </>
   );

@@ -21,6 +21,7 @@ interface EquipmentFormProps {
   marcas: Marca[];
   ubicaciones: Ubicacion[];
   validateSiEsAdmin?: (dni: string, pin: string) => Promise<boolean>;
+  isSubmitting?: boolean;
 }
 
 export const EquipmentForm: React.FC<EquipmentFormProps> = ({
@@ -29,7 +30,8 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
   handleSubmit,
   marcas,
   ubicaciones,
-  validateSiEsAdmin
+  validateSiEsAdmin,
+  isSubmitting = false
 }) => {
   // Estados para Marcas
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -55,6 +57,12 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
   // Estados para Imagen
   const [uploadingImage, setUploadingImage] = useState(false)
 
+  // Estados de guardado
+  const [isSavingMarca, setIsSavingMarca] = useState(false)
+  const [isSavingUbicacion, setIsSavingUbicacion] = useState(false)
+  const [isDeletingMarca, setIsDeletingMarca] = useState(false)
+  const [isDeletingUbicacion, setIsDeletingUbicacion] = useState(false)
+
   const { createMarcas, updateMarcas, deleteMarcas, createUbicaciones, updateUbicaciones, deleteUbicaciones } = useManagment()
 
   const handleSelectMarca = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -77,26 +85,24 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
   }
 
   const handleSaveMarca = async () => {
-    if (!marcaName.trim()) return
+    if (!marcaName.trim() || isSavingMarca) return
 
-    if (isEditing && selectedMarcaId) {
-      // Si está editando, validar si es administrador
-      if (validateSiEsAdmin) {
-        setPendingMarcaData({ id: selectedMarcaId, name: marcaName.trim() })
-        setAuthType('editMarca')
-        setShowAuthModal(true)
-        setAuthError('')
-        return
+    try {
+      setIsSavingMarca(true)
+      if (isEditing && selectedMarcaId) {
+        await updateMarcas(selectedMarcaId, { name: marcaName.trim() })
+      } else {
+        await createMarcas({ name: marcaName.trim() })
       }
-      // Si no hay validación, actualizar directamente
-      await updateMarcas(selectedMarcaId, { name: marcaName.trim() })
-    } else {
-      // Si está creando, no necesita validación
-      await createMarcas({ name: marcaName.trim() })
+      setMarcaName('')
+      setSelectedMarcaId('')
+      setIsEditing(false)
+    } catch (error) {
+      console.error('Error al guardar marca:', error)
+      alert('Error al guardar la marca.')
+    } finally {
+      setIsSavingMarca(false)
     }
-    setMarcaName('')
-    setSelectedMarcaId('')
-    setIsEditing(false)
   }
 
   const performSaveMarca = async () => {
@@ -112,16 +118,6 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
     if (!selectedMarcaId) return
     const marca = marcas.find(m => m.id === selectedMarcaId)
     if (marca) {
-      // Si hay función de validación, mostrar modal de autenticación primero
-      if (validateSiEsAdmin) {
-        setMarcaToDelete({ id: selectedMarcaId, name: marca.name || '' })
-        setAuthType('marca')
-        setShowAuthModal(true)
-        setAuthError('')
-        return
-      }
-
-      // Si no hay validación, abrir modal de eliminación directamente
       setMarcaToDelete({ id: selectedMarcaId, name: marca.name || '' })
       setIsDeleteModalOpen(true)
     }
@@ -180,13 +176,25 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
   }
 
   const confirmDeleteMarca = async () => {
-    if (!marcaToDelete) return
-    await deleteMarcas(marcaToDelete.id)
-    setSelectedMarcaId('')
-    setMarcaName('')
-    setIsEditing(false)
-    setIsDeleteModalOpen(false)
-    setMarcaToDelete(null)
+    if (!marcaToDelete || isDeletingMarca) return
+
+    try {
+      setIsDeletingMarca(true)
+      await deleteMarcas(marcaToDelete.id)
+      setIsDeleteModalOpen(false)
+      setMarcaToDelete(null)
+      // Reset form if the deleted brand was being edited
+      if (selectedMarcaId === marcaToDelete.id) {
+        setMarcaName('')
+        setSelectedMarcaId('')
+        setIsEditing(false)
+      }
+    } catch (error) {
+      console.error('Error al eliminar marca:', error)
+      alert('Error al eliminar la marca.')
+    } finally {
+      setIsDeletingMarca(false)
+    }
   }
 
   const cancelDeleteMarca = () => {
@@ -215,26 +223,24 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
   }
 
   const handleSaveUbicacion = async () => {
-    if (!ubicacionName.trim()) return
+    if (!ubicacionName.trim() || isSavingUbicacion) return
 
-    if (isEditingUbicacion && selectedUbicacionId) {
-      // Si está editando, validar si es administrador
-      if (validateSiEsAdmin) {
-        setPendingUbicacionData({ id: selectedUbicacionId, name: ubicacionName.trim() })
-        setAuthType('editUbicacion')
-        setShowAuthModal(true)
-        setAuthError('')
-        return
+    try {
+      setIsSavingUbicacion(true)
+      if (isEditingUbicacion && selectedUbicacionId) {
+        await updateUbicaciones(selectedUbicacionId, { name: ubicacionName.trim() })
+      } else {
+        await createUbicaciones({ name: ubicacionName.trim() })
       }
-      // Si no hay validación, actualizar directamente
-      await updateUbicaciones(selectedUbicacionId, { name: ubicacionName.trim() })
-    } else {
-      // Si está creando, no necesita validación
-      await createUbicaciones({ name: ubicacionName.trim() })
+      setUbicacionName('')
+      setSelectedUbicacionId('')
+      setIsEditingUbicacion(false)
+    } catch (error) {
+      console.error('Error al guardar ubicación:', error)
+      alert('Error al guardar la ubicación.')
+    } finally {
+      setIsSavingUbicacion(false)
     }
-    setUbicacionName('')
-    setSelectedUbicacionId('')
-    setIsEditingUbicacion(false)
   }
 
   const performSaveUbicacion = async () => {
@@ -250,29 +256,31 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
     if (!selectedUbicacionId) return
     const ubicacion = ubicaciones.find(u => u.id === selectedUbicacionId)
     if (ubicacion) {
-      // Si hay función de validación, mostrar modal de autenticación primero
-      if (validateSiEsAdmin) {
-        setUbicacionToDelete({ id: selectedUbicacionId, name: ubicacion.name || '' })
-        setAuthType('ubicacion')
-        setShowAuthModal(true)
-        setAuthError('')
-        return
-      }
-
-      // Si no hay validación, abrir modal de eliminación directamente
       setUbicacionToDelete({ id: selectedUbicacionId, name: ubicacion.name || '' })
       setIsDeleteUbicacionModalOpen(true)
     }
   }
 
   const confirmDeleteUbicacion = async () => {
-    if (!ubicacionToDelete) return
-    await deleteUbicaciones(ubicacionToDelete.id)
-    setSelectedUbicacionId('')
-    setUbicacionName('')
-    setIsEditingUbicacion(false)
-    setIsDeleteUbicacionModalOpen(false)
-    setUbicacionToDelete(null)
+    if (!ubicacionToDelete || isDeletingUbicacion) return
+
+    try {
+      setIsDeletingUbicacion(true)
+      await deleteUbicaciones(ubicacionToDelete.id)
+      setIsDeleteUbicacionModalOpen(false)
+      setUbicacionToDelete(null)
+      // Reset form if the deleted location was being edited
+      if (selectedUbicacionId === ubicacionToDelete.id) {
+        setUbicacionName('')
+        setSelectedUbicacionId('')
+        setIsEditingUbicacion(false)
+      }
+    } catch (error) {
+      console.error('Error al eliminar ubicación:', error)
+      alert('Error al eliminar la ubicación.')
+    } finally {
+      setIsDeletingUbicacion(false)
+    }
   }
 
   const cancelDeleteUbicacion = () => {
@@ -338,6 +346,7 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
               placeholder="Ej. Cinta de Correr Pro 2000"
               className={styles.equipmentInput}
               autoComplete="off"
+              disabled={isSubmitting}
             />
           </div>
 
@@ -389,7 +398,7 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
                 onChange={handleImageUpload}
                 className={styles.fileInput}
                 id="image-upload"
-                disabled={uploadingImage}
+                disabled={uploadingImage || isSubmitting}
               />
               <input
                 type="file"
@@ -398,7 +407,7 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
                 onChange={handleImageUpload}
                 className={styles.fileInput}
                 id="camera-upload"
-                disabled={uploadingImage}
+                disabled={uploadingImage || isSubmitting}
               />
               <input
                 type="hidden"
@@ -419,6 +428,7 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
                 className={styles.equipmentConfigButton}
                 aria-label="Gestionar marcas"
                 title="Gestionar marcas"
+                disabled={isSubmitting}
               >
                 <FaCog size={16} />
               </button>
@@ -452,6 +462,7 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
               placeholder="Ej. XT-4500"
               className={styles.equipmentInput}
               autoComplete="off"
+              disabled={isSubmitting}
             />
           </div>
 
@@ -465,6 +476,7 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
                 className={styles.equipmentConfigButton}
                 aria-label="Gestionar ubicaciones"
                 title="Gestionar ubicaciones"
+                disabled={isSubmitting}
               >
                 <FaCog size={16} />
               </button>
@@ -475,6 +487,7 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
               onChange={handleChange}
               required
               className={styles.equipmentSelect}
+              disabled={isSubmitting}
             >
               <option value="">Seleccione una ubicación</option>
               {ubicaciones.map((ubicacion) => (
@@ -496,6 +509,7 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
               onChange={handleChange}
               required
               className={styles.equipmentSelect}
+              disabled={isSubmitting}
             >
               <option value="">Seleccione un estado</option>
               {estadoDeMaquina.map((estado) => (
@@ -518,6 +532,7 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
               onChange={handleChange}
               required
               className={styles.equipmentInput}
+              disabled={isSubmitting}
             />
           </div>
 
@@ -533,6 +548,7 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
               rows={3}
               placeholder="Detalles adicionales sobre el estado o características del equipo..."
               className={styles.equipmentTextarea}
+              disabled={isSubmitting}
             />
           </div>
         </div>
@@ -540,9 +556,17 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
         <button
           type="submit"
           className={`${styles.button} ${styles.buttonSubmit}`}
-          style={{ width: '100%', padding: '1rem', fontSize: '1.125rem' }}
+          style={{ width: '100%', padding: '1rem', fontSize: '1.125rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+          disabled={isSubmitting}
         >
-          Guardar Equipo
+          {isSubmitting ? (
+            <>
+              <FaSpinner className={styles.spinner} />
+              Guardando...
+            </>
+          ) : (
+            'Guardar Equipo'
+          )}
         </button>
       </form>
 
@@ -558,6 +582,7 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
         onSaveMarca={handleSaveMarca}
         onDeleteMarca={handleDeleteMarca}
         onMarcaNameChange={setMarcaName}
+        isSaving={isSavingMarca}
       />
 
       <DeleteMarcaModal
@@ -565,6 +590,7 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
         marcaName={marcaToDelete?.name || ''}
         onConfirm={confirmDeleteMarca}
         onCancel={cancelDeleteMarca}
+        isDeleting={isDeletingMarca}
       />
 
       <UbicacionModal
@@ -579,6 +605,7 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
         onSaveUbicacion={handleSaveUbicacion}
         onDeleteUbicacion={handleDeleteUbicacion}
         onUbicacionNameChange={setUbicacionName}
+        isSaving={isSavingUbicacion}
       />
 
       <DeleteUbicacionModal
@@ -586,6 +613,7 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
         ubicacionName={ubicacionToDelete?.name || ''}
         onConfirm={confirmDeleteUbicacion}
         onCancel={cancelDeleteUbicacion}
+        isDeleting={isDeletingUbicacion}
       />
 
       <AuthModal

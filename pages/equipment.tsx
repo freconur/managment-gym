@@ -62,10 +62,11 @@ const Equipment: NextPage = () => {
   const [isQRReaderOpen, setIsQRReaderOpen] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authError, setAuthError] = useState('');
-  const [authAction, setAuthAction] = useState<'mantenimiento' | 'usuario' | 'equipo' | 'delete_usuario' | 'manage_usuario' | null>(null);
+  const [authAction, setAuthAction] = useState<'mantenimiento' | 'usuario' | 'equipo' | 'delete_usuario' | 'manage_usuario' | 'details' | null>(null);
   const [usuarioToDelete, setUsuarioToDelete] = useState<Usuario | null>(null);
   const [isUsuarioActionsModalOpen, setIsUsuarioActionsModalOpen] = useState(false);
   const [selectedUserForActions, setSelectedUserForActions] = useState<Usuario | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Handle escape for inline modal
   useEscapeKey(() => {
@@ -80,7 +81,9 @@ const Equipment: NextPage = () => {
 
   const handleOpenModal = (machine: Machine) => {
     setSelectedMachine(machine);
-    setIsModalOpen(true);
+    setAuthAction('details');
+    setShowAuthModal(true);
+    setAuthError('');
   };
 
   const handleCloseModal = () => {
@@ -189,13 +192,18 @@ const Equipment: NextPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
+
     try {
+      setIsSubmitting(true);
       console.log("formData", formData);
       await agregarMaquina(formData);
       resetForm();
       setIsEquipmentFormModalOpen(false);
     } catch (error) {
       console.error("Error al agregar máquina:", error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
   useEffect(() => {
@@ -264,6 +272,8 @@ const Equipment: NextPage = () => {
           setUsuarioToDelete(null);
         } else if (authAction === 'manage_usuario') {
           setIsUsuarioActionsModalOpen(true);
+        } else if (authAction === 'details') {
+          setIsModalOpen(true);
         }
 
         setAuthAction(null);
@@ -519,7 +529,6 @@ const Equipment: NextPage = () => {
         onDelete={handleDeleteMachine}
         marcas={marcas}
         ubicaciones={ubicaciones}
-        validateSiEsAdmin={validateSiEsAdmin}
       />
       <NuevoUsuarioModal
         isOpen={isUsuarioModalOpen}
@@ -577,6 +586,7 @@ const Equipment: NextPage = () => {
                   marcas={marcas}
                   ubicaciones={ubicaciones}
                   validateSiEsAdmin={validateSiEsAdmin}
+                  isSubmitting={isSubmitting}
                 />
               </div>
             </div>

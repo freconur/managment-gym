@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaTimes, FaPlus, FaEdit, FaTrash, FaBoxOpen } from 'react-icons/fa';
+import { FaTimes, FaPlus, FaEdit, FaTrash, FaBoxOpen, FaSpinner } from 'react-icons/fa';
 import styles from '@/styles/equipment.module.css';
 import { ComplementaryEquipment } from '@/features/types/types';
 import { useComplementaryEquipment } from '@/features/hooks/useComplementaryEquipment';
@@ -26,6 +26,7 @@ export const ComplementaryEquipmentModal: React.FC<ComplementaryEquipmentModalPr
 
     const [view, setView] = useState<'list' | 'form'>('list');
     const [editingItem, setEditingItem] = useState<ComplementaryEquipment | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Form State
     const [formData, setFormData] = useState<Partial<ComplementaryEquipment>>({
@@ -84,9 +85,10 @@ export const ComplementaryEquipmentModal: React.FC<ComplementaryEquipmentModalPr
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!formData.name) return;
+        if (!formData.name || isSubmitting) return;
 
         try {
+            setIsSubmitting(true);
             if (editingItem && editingItem.id) {
                 await updateComplementaryEquipment(editingItem.id, formData);
             } else {
@@ -96,6 +98,8 @@ export const ComplementaryEquipmentModal: React.FC<ComplementaryEquipmentModalPr
         } catch (error) {
             console.error("Error saving equipment:", error);
             alert("Error al guardar el equipo.");
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -146,6 +150,7 @@ export const ComplementaryEquipmentModal: React.FC<ComplementaryEquipmentModalPr
                                         <thead>
                                             <tr>
                                                 <th>Nombre</th>
+                                                <th>Ubicación</th>
                                                 <th>Cant.</th>
                                                 <th>Estado</th>
                                                 <th>Acciones</th>
@@ -155,6 +160,9 @@ export const ComplementaryEquipmentModal: React.FC<ComplementaryEquipmentModalPr
                                             {equipment.map((item) => (
                                                 <tr key={item.id}>
                                                     <td style={{ fontWeight: 500 }}>{item.name}</td>
+                                                    <td style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                                                        {item.location || 'Sin ubicación'}
+                                                    </td>
                                                     <td>{item.quantity}</td>
                                                     <td>
                                                         <span className={`${styles.statusBadge} ${item.status === 'active' ? styles.statusActive : styles.statusInactive
@@ -201,6 +209,7 @@ export const ComplementaryEquipmentModal: React.FC<ComplementaryEquipmentModalPr
                                             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                             required
                                             placeholder="Ej. Mancuernas, Colchonetas..."
+                                            disabled={isSubmitting}
                                         />
                                     </div>
                                     <div className={styles.formField}>
@@ -209,6 +218,7 @@ export const ComplementaryEquipmentModal: React.FC<ComplementaryEquipmentModalPr
                                             className={styles.select}
                                             value={formData.location}
                                             onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                                            disabled={isSubmitting}
                                         >
                                             <option value="">Seleccione una ubicación</option>
                                             {ubicaciones.map((u) => (
@@ -226,6 +236,7 @@ export const ComplementaryEquipmentModal: React.FC<ComplementaryEquipmentModalPr
                                             value={formData.quantity}
                                             onChange={(e) => setFormData({ ...formData, quantity: parseInt(e.target.value) || 0 })}
                                             min="0"
+                                            disabled={isSubmitting}
                                         />
                                     </div>
                                     <div className={styles.formField}>
@@ -234,6 +245,7 @@ export const ComplementaryEquipmentModal: React.FC<ComplementaryEquipmentModalPr
                                             className={styles.select}
                                             value={formData.status}
                                             onChange={(e) => setFormData({ ...formData, status: e.target.value as 'active' | 'inactive' })}
+                                            disabled={isSubmitting}
                                         >
                                             <option value="active">Activo</option>
                                             <option value="inactive">Inactivo</option>
@@ -248,6 +260,7 @@ export const ComplementaryEquipmentModal: React.FC<ComplementaryEquipmentModalPr
                                         onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                                         rows={3}
                                         placeholder="Detalles adicionales..."
+                                        disabled={isSubmitting}
                                     />
                                 </div>
                             </div>
@@ -257,15 +270,24 @@ export const ComplementaryEquipmentModal: React.FC<ComplementaryEquipmentModalPr
                                     type="button"
                                     onClick={resetForm}
                                     className={`${styles.button} ${styles.buttonSecondary}`}
+                                    disabled={isSubmitting}
                                 >
                                     Cancelar
                                 </button>
                                 <button
                                     type="submit"
                                     className={`${styles.button} ${styles.buttonPrimary}`}
-                                    disabled={!formData.name}
+                                    disabled={!formData.name || isSubmitting}
+                                    style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center', minWidth: '100px' }}
                                 >
-                                    {editingItem ? 'Actualizar' : 'Guardar'}
+                                    {isSubmitting ? (
+                                        <>
+                                            <FaSpinner className={styles.spinner} />
+                                            Guardando...
+                                        </>
+                                    ) : (
+                                        editingItem ? 'Actualizar' : 'Guardar'
+                                    )}
                                 </button>
                             </div>
                         </form>

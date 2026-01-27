@@ -1,5 +1,5 @@
 import React from 'react'
-import { FaTimes } from 'react-icons/fa'
+import { FaTimes, FaSpinner } from 'react-icons/fa'
 import styles from '@/styles/equipment.module.css'
 import { Marca } from '@/features/types/types'
 import { useSmartSearch } from '@/features/hooks/useSmartSearch'
@@ -16,6 +16,7 @@ interface MarcaModalProps {
   onSaveMarca: () => void
   onDeleteMarca: () => void
   onMarcaNameChange: (value: string) => void
+  isSaving?: boolean
 }
 
 export const MarcaModal: React.FC<MarcaModalProps> = ({
@@ -29,7 +30,8 @@ export const MarcaModal: React.FC<MarcaModalProps> = ({
   onNewMarca,
   onSaveMarca,
   onDeleteMarca,
-  onMarcaNameChange
+  onMarcaNameChange,
+  isSaving = false
 }) => {
   const marcaSearch = useSmartSearch({
     items: marcas,
@@ -69,6 +71,7 @@ export const MarcaModal: React.FC<MarcaModalProps> = ({
               onChange={(e) => marcaSearch.setSearchTerm(e.target.value)}
               placeholder="Buscar marca por nombre..."
               className={styles.input}
+              disabled={isSaving}
             />
           </div>
           <div className={styles.modalSection}>
@@ -82,6 +85,7 @@ export const MarcaModal: React.FC<MarcaModalProps> = ({
                 onSelectMarca(e)
               }}
               className={styles.select}
+              disabled={isSaving}
             >
               <option value="">Seleccione una marca para editar o eliminar</option>
               {marcaSearch.filteredItems.length === 0 ? (
@@ -106,6 +110,7 @@ export const MarcaModal: React.FC<MarcaModalProps> = ({
                   type="button"
                   onClick={onNewMarca}
                   className={styles.buttonSecondary}
+                  disabled={isSaving}
                 >
                   Nueva Marca
                 </button>
@@ -118,6 +123,7 @@ export const MarcaModal: React.FC<MarcaModalProps> = ({
                 onChange={(e) => onMarcaNameChange(e.target.value)}
                 placeholder="Nombre de la marca"
                 className={styles.input}
+                disabled={isSaving}
                 onKeyPress={(e) => {
                   if (e.key === 'Enter') {
                     onSaveMarca()
@@ -128,15 +134,24 @@ export const MarcaModal: React.FC<MarcaModalProps> = ({
                 <button
                   type="button"
                   onClick={onSaveMarca}
-                  disabled={!marcaName.trim()}
+                  disabled={!marcaName.trim() || isSaving}
                   className={`${styles.button} ${styles.buttonPrimary} ${styles.modalButton}`}
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center', minWidth: '100px' }}
                 >
-                  {isEditing ? 'Actualizar' : 'Agregar'}
+                  {isSaving ? (
+                    <>
+                      <FaSpinner className={styles.spinner} />
+                      {isEditing ? 'Guardando...' : 'Agregando...'}
+                    </>
+                  ) : (
+                    isEditing ? 'Actualizar' : 'Agregar'
+                  )}
                 </button>
                 {isEditing && selectedMarcaId && (
                   <button
                     type="button"
                     onClick={onDeleteMarca}
+                    disabled={isSaving}
                     className={`${styles.button} ${styles.buttonDanger} ${styles.modalButton}`}
                   >
                     Eliminar

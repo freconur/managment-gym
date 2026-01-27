@@ -1,5 +1,7 @@
 .container {
     min-height: 100vh;
+    display: flex;
+    flex-direction: column;
     background-color: var(--bg-main);
     color: var(--text-primary);
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
@@ -63,9 +65,11 @@
 }
 
 .mainContent {
+    flex: 1;
     max-width: 1200px;
+    width: 100%;
     margin: -5rem auto 0;
-    padding: 0 2rem 4rem;
+    padding: 0 2rem 2rem;
     position: relative;
     z-index: 10;
 }
@@ -168,5 +172,175 @@
 
     .dashboardGrid {
         grid-template-columns: 1fr;
+    }
+}
+
+.footer {
+    width: 100%;
+    margin-top: 4rem;
+    background: var(--bg-card);
+    backdrop-filter: blur(20px);
+    border-top: 1px solid var(--border-glass);
+    position: relative;
+    padding-bottom: 2rem;
+}
+
+.footerDivider {
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent 0%, var(--border-glass) 50%, transparent 100%);
+    position: absolute;
+    top: 0;
+}
+
+.footerContent {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 3rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 3rem;
+    flex-wrap: wrap;
+}
+
+.developerInfo {
+    flex: 1;
+    min-width: 280px;
+    text-align: left;
+}
+
+.devHeader {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.devPhoto {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid var(--accent-primary);
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+}
+
+.devBadge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.8rem;
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    border-radius: 2rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--accent-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 1rem;
+}
+
+.devIcon {
+    font-size: 0.9rem;
+}
+
+.developerName {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin: 0 0 0.5rem 0;
+}
+
+.footerTagline {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.contactGrid {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    min-width: 250px;
+}
+
+.contactItem {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 0.95rem;
+    transition: all 0.2s;
+    font-weight: 500;
+}
+
+.contactItem:hover {
+    color: var(--accent-primary);
+    transform: translateX(5px);
+}
+
+.contactIcon {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-glass);
+    border-radius: 0.75rem;
+    color: var(--accent-primary);
+    font-size: 1rem;
+    padding: 8px;
+}
+
+.contactItem:hover .contactIcon {
+    background: var(--accent-primary);
+    color: white;
+    border-color: var(--accent-primary);
+}
+
+.footerBottom {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+    border-top: 1px solid var(--border-glass);
+    text-align: center;
+}
+
+.footerBottom p {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin: 0;
+    opacity: 0.7;
+}
+
+@media (max-width: 768px) {
+    .footerContent {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        padding: 2rem 1.5rem;
+        gap: 2rem;
+    }
+
+    .developerInfo {
+        text-align: center;
+    }
+
+    .devHeader {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .contactGrid {
+        align-items: center;
+    }
+
+    .contactItem:hover {
+        transform: none;
     }
 }

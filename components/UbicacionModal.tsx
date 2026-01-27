@@ -1,5 +1,5 @@
 import React from 'react'
-import { FaTimes } from 'react-icons/fa'
+import { FaTimes, FaSpinner } from 'react-icons/fa'
 import styles from '@/styles/equipment.module.css'
 import { Ubicacion } from '@/features/hooks/useManagment'
 import { useSmartSearch } from '@/features/hooks/useSmartSearch'
@@ -16,6 +16,7 @@ interface UbicacionModalProps {
   onSaveUbicacion: () => void
   onDeleteUbicacion: () => void
   onUbicacionNameChange: (value: string) => void
+  isSaving?: boolean
 }
 
 export const UbicacionModal: React.FC<UbicacionModalProps> = ({
@@ -29,7 +30,8 @@ export const UbicacionModal: React.FC<UbicacionModalProps> = ({
   onNewUbicacion,
   onSaveUbicacion,
   onDeleteUbicacion,
-  onUbicacionNameChange
+  onUbicacionNameChange,
+  isSaving = false
 }) => {
   const ubicacionSearch = useSmartSearch({
     items: ubicaciones,
@@ -69,6 +71,7 @@ export const UbicacionModal: React.FC<UbicacionModalProps> = ({
               onChange={(e) => ubicacionSearch.setSearchTerm(e.target.value)}
               placeholder="Buscar ubicación por nombre..."
               className={styles.input}
+              disabled={isSaving}
             />
           </div>
           <div className={styles.modalSection}>
@@ -82,6 +85,7 @@ export const UbicacionModal: React.FC<UbicacionModalProps> = ({
                 onSelectUbicacion(e)
               }}
               className={styles.select}
+              disabled={isSaving}
             >
               <option value="">Seleccione una ubicación para editar o eliminar</option>
               {ubicacionSearch.filteredItems.length === 0 ? (
@@ -106,6 +110,7 @@ export const UbicacionModal: React.FC<UbicacionModalProps> = ({
                   type="button"
                   onClick={onNewUbicacion}
                   className={styles.buttonSecondary}
+                  disabled={isSaving}
                 >
                   Nueva Ubicación
                 </button>
@@ -118,6 +123,7 @@ export const UbicacionModal: React.FC<UbicacionModalProps> = ({
                 onChange={(e) => onUbicacionNameChange(e.target.value)}
                 placeholder="Nombre de la ubicación"
                 className={styles.input}
+                disabled={isSaving}
                 onKeyPress={(e) => {
                   if (e.key === 'Enter') {
                     onSaveUbicacion()
@@ -128,15 +134,24 @@ export const UbicacionModal: React.FC<UbicacionModalProps> = ({
                 <button
                   type="button"
                   onClick={onSaveUbicacion}
-                  disabled={!ubicacionName.trim()}
+                  disabled={!ubicacionName.trim() || isSaving}
                   className={`${styles.button} ${styles.buttonPrimary} ${styles.modalButton}`}
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center', minWidth: '100px' }}
                 >
-                  {isEditing ? 'Actualizar' : 'Agregar'}
+                  {isSaving ? (
+                    <>
+                      <FaSpinner className={styles.spinner} />
+                      {isEditing ? 'Guardando...' : 'Agregando...'}
+                    </>
+                  ) : (
+                    isEditing ? 'Actualizar' : 'Agregar'
+                  )}
                 </button>
                 {isEditing && selectedUbicacionId && (
                   <button
                     type="button"
                     onClick={onDeleteUbicacion}
+                    disabled={isSaving}
                     className={`${styles.button} ${styles.buttonDanger} ${styles.modalButton}`}
                   >
                     Eliminar
