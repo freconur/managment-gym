@@ -154,6 +154,7 @@ export type ChecklistItemStatus = 'pending' | 'ok' | 'incidencia';
 export interface Checklist {
   id?: string;
   date: string; // YYYY-MM-DD
+  gym?: string;
   status: ChecklistStatus;
   totalCount: number;
   completedCount: number;

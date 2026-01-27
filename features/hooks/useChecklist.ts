@@ -93,7 +93,7 @@ export const useChecklist = () => {
         return unsubscribe;
     }, []);
 
-    const startDailyChecklist = async (count: number, user: any, dateStr?: string) => {
+    const startDailyChecklist = async (count: number, user: any, dateStr?: string, gym?: string) => {
         // Use provided date or local YYYY-MM-DD
         let today: string;
         if (dateStr) {
@@ -103,7 +103,12 @@ export const useChecklist = () => {
             today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
         }
 
-        const q = query(collection(db, 'checklists'), where('date', '==', today));
+        const qParams = [where('date', '==', today)];
+        if (gym) {
+            qParams.push(where('gym', '==', gym));
+        }
+
+        const q = query(collection(db, 'checklists'), ...qParams);
         const snapshot = await getDocs(q);
 
         let checklistId: string;
@@ -112,6 +117,7 @@ export const useChecklist = () => {
         } else {
             const newChecklist: Omit<Checklist, 'id'> = {
                 date: today,
+                gym: gym || '',
                 status: 'in_progress',
                 totalCount: count,
                 completedCount: 0,
@@ -327,13 +333,12 @@ export const useChecklist = () => {
         }
     };
 
-    const getChecklistAssignment = async (date: string) => {
+    const getChecklistAssignment = async (date: string, gym?: string) => {
         // date format YYYY-MM-DD
         const pathRef = collection(db, 'checklist_assignments');
-        // Simple query: where startDate <= date.
-        // But Firestore range queries are tricky. We can query all and filter, or cleaner if we assume usage is "fetch assignments covering X date".
-        // Let's try: startDate <= date and then client filter endDate >= date.
 
+        // Use a simple query by startDate to avoid composite index requirements
+        // and filter by gym/endDate on the client side.
         const q = query(
             pathRef,
             where('startDate', '<=', date),
@@ -342,11 +347,19 @@ export const useChecklist = () => {
 
         const snapshot = await getDocs(q);
 
-        // Find first match where endDate >= date
-        for (const doc of snapshot.docs) {
-            const data = doc.data() as ChecklistAssignment;
+        // Find first match where endDate >= date AND (gym matches OR assignment is global)
+        for (const docRef of snapshot.docs) {
+            const data = docRef.data() as ChecklistAssignment;
             if (data.endDate >= date) {
-                return { id: doc.id, ...data };
+                // If a specific gym is requested, check for match or global
+                if (gym) {
+                    if (data.gym === gym) {
+                        return { id: docRef.id, ...data };
+                    }
+                } else {
+                    // If no gym requested (backward compatibility), return the first match
+                    return { id: docRef.id, ...data };
+                }
             }
         }
         return null;
