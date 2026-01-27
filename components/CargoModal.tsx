@@ -97,7 +97,7 @@ const CargoModal = ({ isOpen, onClose, db }: CargoModalProps) => {
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
-            zIndex: 50
+            zIndex: 1100
         }}>
             <div style={{
                 backgroundColor: 'white',
