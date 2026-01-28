@@ -13,7 +13,8 @@ import {
     updateDoc,
     where,
     Timestamp,
-    getDocs
+    getDocs,
+    getDoc
 } from 'firebase/firestore';
 import { app } from '@/firebase/firebase.config';
 import styles from './RecentAccessFeed.module.css';
@@ -55,6 +56,7 @@ export const RecentAccessFeed: React.FC = () => {
     const [isPinModalOpen, setIsPinModalOpen] = useState(false);
     const [pinAction, setPinAction] = useState<PinAction | null>(null);
     const [unlockedTowelIds, setUnlockedTowelIds] = useState<string[]>([]);
+    const [latestMemberPhotos, setLatestMemberPhotos] = useState<Record<string, string>>({});
 
     // Filters
     const [selectedDate, setSelectedDate] = useState<string>(() => {
@@ -117,6 +119,43 @@ export const RecentAccessFeed: React.FC = () => {
 
         return () => unsubscribe();
     }, [selectedDate]);
+
+    // Fetch latest member photos
+    useEffect(() => {
+        const fetchPhotos = async () => {
+            const memberIdsToFetch = new Set<string>();
+            recentAccesses.forEach(record => {
+                if (record.memberId && !latestMemberPhotos[record.memberId]) {
+                    memberIdsToFetch.add(record.memberId);
+                }
+            });
+
+            if (memberIdsToFetch.size === 0) return;
+
+            const newPhotos: Record<string, string> = {};
+            await Promise.all(Array.from(memberIdsToFetch).map(async (memberId) => {
+                try {
+                    const memberDoc = await getDoc(doc(db, 'members', memberId));
+                    if (memberDoc.exists()) {
+                        const data = memberDoc.data();
+                        if (data.fotoUrl) {
+                            newPhotos[memberId] = data.fotoUrl;
+                        }
+                    }
+                } catch (error) {
+                    console.error(`Error fetching photo for member ${memberId}:`, error);
+                }
+            }));
+
+            if (Object.keys(newPhotos).length > 0) {
+                setLatestMemberPhotos(prev => ({ ...prev, ...newPhotos }));
+            }
+        };
+
+        if (recentAccesses.length > 0) {
+            fetchPhotos();
+        }
+    }, [recentAccesses, latestMemberPhotos]);
 
     // Filtered list
     const filteredAccesses = recentAccesses.filter(record => {
@@ -236,9 +275,9 @@ export const RecentAccessFeed: React.FC = () => {
                 ) : (
                     filteredAccesses.map((record) => (
                         <div key={record.id} className={styles.activityItem}>
-                            {record.fotoUrl ? (
+                            {(latestMemberPhotos[record.memberId] || record.fotoUrl) ? (
                                 <NextImage
-                                    src={record.fotoUrl}
+                                    src={latestMemberPhotos[record.memberId] || record.fotoUrl || ''}
                                     alt=""
                                     width={40}
                                     height={40}
