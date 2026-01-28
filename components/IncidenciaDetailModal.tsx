@@ -593,6 +593,9 @@ export const IncidenciaDetailModal: React.FC<IncidenciaDetailModalProps> = ({
                     </label>
                     <input
                       type="password"
+                      name="incident_pin_delete"
+                      autoComplete="new-password"
+                      data-lpignore="true"
                       inputMode="numeric"
                       pattern="[0-9]*"
                       value={pin}

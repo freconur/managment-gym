@@ -75,7 +75,7 @@ const Home: NextPage = () => {
         </div>
       </main>
 
-      <footer className={styles.footer}>
+      {/* <footer className={styles.footer}>
         <div className={styles.footerDivider} />
         <div className={styles.footerContent}>
           <div className={styles.developerInfo}>
@@ -107,7 +107,7 @@ const Home: NextPage = () => {
         <div className={styles.footerBottom}>
           <p>© {new Date().getFullYear()} Management Gym. Desarrollado con ❤️.</p>
         </div>
-      </footer>
+      </footer> */}
     </div>
   )
 }

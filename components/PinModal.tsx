@@ -133,6 +133,9 @@ const PinModal: React.FC<PinModalProps> = ({ isOpen, onClose, onSuccess, title =
                     <input
                         ref={inputRef}
                         type="password"
+                        name="pin_security_code"
+                        autoComplete="new-password"
+                        data-lpignore="true"
                         value={pin}
                         onChange={(e) => handlePinChange(e.target.value)}
                         placeholder="****"
