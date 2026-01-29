@@ -16,7 +16,7 @@ import {
 } from 'firebase/firestore';
 import { app } from '@/firebase/firebase.config';
 import styles from './AccessModal.module.css';
-import { SubEnvironment, Amenity } from '@/features/types/types';
+import { SubEnvironment, Amenity, AllowedCompany } from '@/features/types/types';
 import SubEnvironmentModal from './SubEnvironmentModal';
 import AmenityModal from './AmenityModal';
 
@@ -58,6 +58,9 @@ export const AccessModal: React.FC<AccessModalProps> = ({ isOpen, onClose, envir
     const [amenities, setAmenities] = useState<Amenity[]>([]);
     const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
     const [isAmenityModalOpen, setIsAmenityModalOpen] = useState(false);
+
+    // Authorization State
+    const [allowedCompaniesConfig, setAllowedCompaniesConfig] = useState<AllowedCompany[] | null>(null);
 
     const inputRef = useRef<HTMLInputElement>(null);
 
@@ -222,8 +225,10 @@ export const AccessModal: React.FC<AccessModalProps> = ({ isOpen, onClose, envir
                 if (!snapshot.empty) {
                     const data = snapshot.docs[0].data();
                     setHaveSubEnvironments(!!data.haveSubEnvironments);
+                    setAllowedCompaniesConfig(data.allowedCompanies || null);
                 } else {
                     setHaveSubEnvironments(false);
+                    setAllowedCompaniesConfig(null);
                 }
             } catch (error) {
                 console.error("Error fetching environment config:", error);
@@ -457,19 +462,98 @@ export const AccessModal: React.FC<AccessModalProps> = ({ isOpen, onClose, envir
                                 </div>
                             </div> */}
 
-                            <button
-                                onClick={handleRegister}
-                                disabled={registering}
-                                className={styles.confirmButton}
-                            >
-                                {registering ? (
-                                    <>
-                                        <FaSpinner className={styles.spinAnimation} /> Registrando...
-                                    </>
-                                ) : (
-                                    <><FaCheckCircle /> CONFIRMAR INGRESO</>
-                                )}
-                            </button>
+
+                            {(() => {
+                                // Access Validation Logic
+                                if (!allowedCompaniesConfig) return null; // Legacy or no config -> Allow
+
+                                const allowed = allowedCompaniesConfig.find(ac => ac.companyName === member.empresa);
+                                if (!allowed) {
+                                    return (
+                                        <div className={`${styles.statusMessage} ${styles.errorMessage}`} style={{ marginBottom: '1rem', textAlign: 'center' }}>
+                                            🚫 Acceso Denegado: La empresa &quot;<strong>{member.empresa}</strong>&quot; no tiene permiso en este ambiente.
+                                        </div>
+                                    );
+                                }
+
+                                if (allowed.haveSchedule) {
+                                    if (!allowed.schedules || allowed.schedules.length === 0) {
+                                        return (
+                                            <div className={`${styles.statusMessage} ${styles.errorMessage}`} style={{ marginBottom: '1rem', textAlign: 'center' }}>
+                                                🚫 Acceso Denegado: Restricción de horario activa pero sin configuración.
+                                            </div>
+                                        );
+                                    }
+                                    const now = new Date();
+                                    const current = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+                                    const isAllowedTime = allowed.schedules.some(s => current >= s.start && current <= s.end);
+
+                                    if (!isAllowedTime) {
+                                        const slots = allowed.schedules.map(s => `${s.start}-${s.end}`).join(', ');
+                                        return (
+                                            <div className={`${styles.statusMessage} ${styles.errorMessage}`} style={{ marginBottom: '1rem', textAlign: 'center' }}>
+                                                🕒 Acceso Denegado: Fuera de horario permitido.<br />
+                                                <span style={{ fontSize: '0.85rem' }}>Horarios: {slots}</span>
+                                            </div>
+                                        );
+                                    }
+                                }
+
+                                if (allowed.haveRoleRestriction) {
+                                    if (!allowed.allowedRoles || allowed.allowedRoles.length === 0) {
+                                        return (
+                                            <div className={`${styles.statusMessage} ${styles.errorMessage}`} style={{ marginBottom: '1rem', textAlign: 'center' }}>
+                                                🚫 Acceso Denegado: Restricción por cargo activa pero sin configuración.
+                                            </div>
+                                        );
+                                    }
+                                    if (!allowed.allowedRoles.includes(member.cargo || '')) {
+                                        return (
+                                            <div className={`${styles.statusMessage} ${styles.errorMessage}`} style={{ marginBottom: '1rem', textAlign: 'center' }}>
+                                                🚫 Acceso Denegado: Su cargo &quot;<strong>{member.cargo || 'N/A'}</strong>&quot; no tiene permiso en este ambiente.
+                                            </div>
+                                        );
+                                    }
+                                }
+                                return null;
+                            })()}
+
+                            {(() => {
+                                // Boolean helper to avoid type warnings and improve readability
+                                const isAuthorized = (() => {
+                                    if (!allowedCompaniesConfig) return true;
+                                    const allowed = allowedCompaniesConfig.find(ac => ac.companyName === member.empresa);
+                                    if (!allowed) return false;
+                                    if (allowed.haveSchedule) {
+                                        if (!allowed.schedules || allowed.schedules.length === 0) return false;
+                                        const now = new Date();
+                                        const current = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+                                        if (!allowed.schedules.some(s => current >= s.start && current <= s.end)) return false;
+                                    }
+                                    if (allowed.haveRoleRestriction) {
+                                        if (!allowed.allowedRoles || allowed.allowedRoles.length === 0) return false;
+                                        if (!allowed.allowedRoles.includes(member.cargo || '')) return false;
+                                    }
+                                    return true;
+                                })();
+
+                                return (
+                                    <button
+                                        onClick={handleRegister}
+                                        disabled={registering || !isAuthorized}
+                                        className={styles.confirmButton}
+                                        style={!isAuthorized ? { opacity: 0.5, cursor: 'not-allowed', backgroundColor: '#ef4444' } : {}}
+                                    >
+                                        {registering ? (
+                                            <>
+                                                <FaSpinner className={styles.spinAnimation} /> Registrando...
+                                            </>
+                                        ) : (
+                                            <><FaCheckCircle /> CONFIRMAR INGRESO</>
+                                        )}
+                                    </button>
+                                );
+                            })()}
                         </div>
                     )}
                 </div>
