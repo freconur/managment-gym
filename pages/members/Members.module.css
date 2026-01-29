@@ -474,3 +474,69 @@
         width: 100%;
     }
 }
+
+.ambienteSelectorContainer {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border-glass);
+    padding: 0.2rem 0.6rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+}
+
+.ambienteSelectorContainer:hover {
+    border-color: var(--accent-primary);
+}
+
+.ambienteSelect {
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    font-weight: 600;
+    padding: 0.4rem;
+    outline: none;
+    cursor: pointer;
+    min-width: 154px;
+    font-size: 0.95rem;
+}
+
+.ambienteSelect option {
+    background: var(--bg-card);
+    color: var(--text-primary);
+}
+
+.btnManageAmbiente {
+    background: transparent;
+    border: none;
+    color: var(--accent-primary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.4rem;
+    border-radius: 0.25rem;
+    transition: background 0.2s;
+}
+
+.btnManageAmbiente:hover {
+    background: rgba(59, 130, 246, 0.1);
+}
+
+.fadeIn {
+    animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}

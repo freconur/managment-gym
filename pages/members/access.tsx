@@ -1,6 +1,7 @@
 import type { NextPage } from 'next'
 import Head from 'next/head'
 import Link from 'next/link'
+import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { FaUserClock, FaArrowLeft } from 'react-icons/fa'
 import styles from './Access.module.css'
@@ -11,6 +12,9 @@ import { ThemeToggle } from '@/components/ThemeToggle'
 
 const AccessPage: NextPage = () => {
 	const [isModalOpen, setIsModalOpen] = useState(false)
+
+	const router = useRouter()
+	const { environment } = router.query
 
 	return (
 		<>
@@ -26,6 +30,14 @@ const AccessPage: NextPage = () => {
 						</Link>
 						<ThemeToggle />
 					</div>
+
+					{environment && (
+						<div className={styles.environmentTitleContainer} style={{ textAlign: 'center', margin: '2rem 0' }}>
+							<h2 style={{ fontSize: '2.5rem', fontWeight: '800', color: '#e5e7eb' }}>
+								Te encuentras en <span style={{ color: '#3b82f6', textTransform: 'uppercase' }}>{environment}</span>
+							</h2>
+						</div>
+					)}
 
 					<div className={styles.contentGrid}>
 
@@ -48,7 +60,7 @@ const AccessPage: NextPage = () => {
 
 						{/* Recent Access Feed */}
 						<div className={styles.feedSection}>
-							<RecentAccessFeed />
+							<RecentAccessFeed environment={typeof environment === 'string' ? environment : undefined} />
 						</div>
 
 					</div>
@@ -58,6 +70,7 @@ const AccessPage: NextPage = () => {
 			<AccessModal
 				isOpen={isModalOpen}
 				onClose={() => setIsModalOpen(false)}
+				environment={typeof environment === 'string' ? environment : undefined}
 			/>
 		</>
 	)

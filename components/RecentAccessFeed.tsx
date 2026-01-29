@@ -50,7 +50,11 @@ interface PinAction {
     payload: any;
 }
 
-export const RecentAccessFeed: React.FC = () => {
+interface RecentAccessFeedProps {
+    environment?: string;
+}
+
+export const RecentAccessFeed: React.FC<RecentAccessFeedProps> = ({ environment }) => {
     const [recentAccesses, setRecentAccesses] = useState<AccessRecord[]>([]);
     const [loadingRecent, setLoadingRecent] = useState(true);
     const [isPinModalOpen, setIsPinModalOpen] = useState(false);
@@ -90,6 +94,7 @@ export const RecentAccessFeed: React.FC = () => {
     // Fetch Accesses based on Date
     useEffect(() => {
         setLoadingRecent(true);
+        setRecentAccesses([]); // Clear old data to prevent stale state if query fails
 
         // Parse date manually to avoid UTC conversion issues
         const [year, month, day] = selectedDate.split('-').map(Number);
@@ -98,14 +103,22 @@ export const RecentAccessFeed: React.FC = () => {
         const startOfDay = new Date(year, month - 1, day, 0, 0, 0, 0);
         const endOfDay = new Date(year, month - 1, day, 23, 59, 59, 999);
 
-        const q = query(
-            collection(db, 'asistencias'),
+        const constraints: any[] = [];
+
+        if (environment) {
+            constraints.push(where('environment', '==', environment));
+        }
+
+        constraints.push(
             where('timestamp', '>=', startOfDay),
             where('timestamp', '<=', endOfDay),
-            orderBy('timestamp', 'desc')
+            orderBy('timestamp', 'desc'),
+            limit(50)
         );
 
-        const unsubscribe = onSnapshot(q, (snapshot) => {
+        const q = query(collection(db, 'asistencias'), ...constraints);
+
+        const unsubscribe = onSnapshot(q, { includeMetadataChanges: true }, (snapshot) => {
             const docs = snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
@@ -118,7 +131,7 @@ export const RecentAccessFeed: React.FC = () => {
         });
 
         return () => unsubscribe();
-    }, [selectedDate]);
+    }, [selectedDate, environment]);
 
     // Fetch latest member photos
     useEffect(() => {
@@ -156,6 +169,36 @@ export const RecentAccessFeed: React.FC = () => {
             fetchPhotos();
         }
     }, [recentAccesses, latestMemberPhotos]);
+
+    const [hasAmenities, setHasAmenities] = useState(false);
+
+    // Fetch Current Environment Configuration
+    useEffect(() => {
+        const fetchEnvironmentConfig = async () => {
+            if (!environment) {
+                setHasAmenities(false);
+                return;
+            }
+
+            try {
+                const q = query(collection(db, 'ubicaciones'), where('name', '==', environment));
+                const snapshot = await getDocs(q);
+                if (!snapshot.empty) {
+                    const data = snapshot.docs[0].data();
+                    setHasAmenities(!!data.haveAmenidades);
+                } else {
+                    setHasAmenities(false);
+                }
+            } catch (error) {
+                console.error("Error fetching environment config:", error);
+                setHasAmenities(false);
+            }
+        };
+
+        fetchEnvironmentConfig();
+    }, [environment]);
+
+    // ... (keep existing effects)
 
     // Filtered list
     const filteredAccesses = recentAccesses.filter(record => {
@@ -300,33 +343,35 @@ export const RecentAccessFeed: React.FC = () => {
                                 </div>
                             </div>
 
-                            <div className={styles.towelSection}>
-                                <label className={styles.towelCheckboxLabel}>
-                                    <input
-                                        type="checkbox"
-                                        checked={record.hasTowel || false}
-                                        onChange={() => handleTowelClick(record)}
-                                        className={styles.towelCheckbox}
-                                    />
-                                    <span className={styles.towelText}>Toalla</span>
-                                </label>
-                                {record.hasTowel && (
-                                    <input
-                                        type="number"
-                                        value={record.towelNumber || ''}
-                                        onChange={(e) => handleTowelNumberChange(record.id, e.target.value)}
-                                        className={styles.towelInput}
-                                        placeholder="#"
-                                        readOnly={!unlockedTowelIds.includes(record.id)}
-                                        onClick={() => handleTowelInputClick(record.id)}
-                                        onBlur={() => handleTowelInputBlur(record.id)}
-                                        style={{
-                                            opacity: !unlockedTowelIds.includes(record.id) ? 0.7 : 1,
-                                            cursor: !unlockedTowelIds.includes(record.id) ? 'pointer' : 'text'
-                                        }}
-                                    />
-                                )}
-                            </div>
+                            {hasAmenities && (
+                                <div className={styles.towelSection}>
+                                    <label className={styles.towelCheckboxLabel}>
+                                        <input
+                                            type="checkbox"
+                                            checked={record.hasTowel || false}
+                                            onChange={() => handleTowelClick(record)}
+                                            className={styles.towelCheckbox}
+                                        />
+                                        <span className={styles.towelText}>Toalla</span>
+                                    </label>
+                                    {record.hasTowel && (
+                                        <input
+                                            type="number"
+                                            value={record.towelNumber || ''}
+                                            onChange={(e) => handleTowelNumberChange(record.id, e.target.value)}
+                                            className={styles.towelInput}
+                                            placeholder="#"
+                                            readOnly={!unlockedTowelIds.includes(record.id)}
+                                            onClick={() => handleTowelInputClick(record.id)}
+                                            onBlur={() => handleTowelInputBlur(record.id)}
+                                            style={{
+                                                opacity: !unlockedTowelIds.includes(record.id) ? 0.7 : 1,
+                                                cursor: !unlockedTowelIds.includes(record.id) ? 'pointer' : 'text'
+                                            }}
+                                        />
+                                    )}
+                                </div>
+                            )}
 
                             <div className={styles.activityTimeContainer}>
                                 <p className={styles.activityTime}>

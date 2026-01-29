@@ -12,7 +12,7 @@ import {
 } from 'firebase/firestore'
 import { app } from '@/firebase/firebase.config'
 import { FaChartBar, FaArrowLeft, FaFilter, FaFilePdf } from 'react-icons/fa'
-import { SubEnvironment } from '@/features/types/types'
+import { SubEnvironment, Ubicacion } from '@/features/types/types'
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -143,6 +143,7 @@ interface AccessRecord {
     company: string;
     sexo?: string;
     subEnvironments?: string[];
+    environment?: string;
     timestamp: any;
 }
 
@@ -159,6 +160,8 @@ const ReportsPage: NextPage = () => {
     const [selectedSex, setSelectedSex] = useState<string>('all')
     const [subEnvironmentsList, setSubEnvironmentsList] = useState<SubEnvironment[]>([])
     const [selectedSubEnv, setSelectedSubEnv] = useState<string>('all')
+    const [locationsList, setLocationsList] = useState<Ubicacion[]>([])
+    const [selectedLocation, setSelectedLocation] = useState<string>('all')
 
     useEffect(() => {
         const fetchData = async () => {
@@ -192,6 +195,31 @@ const ReportsPage: NextPage = () => {
             setSubEnvironmentsList(data)
         }
         fetchSubEnvs()
+
+        // Fetch Locations (Environments)
+        const fetchLocations = async () => {
+            try {
+                // Fetch all locations without ordering to avoid missing-field exclusion
+                const q = query(collection(db, 'ubicaciones'));
+                const snapshot = await getDocs(q);
+                console.log("Locations snapshot size:", snapshot.size); // Debug log
+
+                const data = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                })) as Ubicacion[];
+
+                console.log("Locations data:", data); // Debug log
+
+                // Sort client-side by name
+                data.sort((a, b) => a.name.localeCompare(b.name));
+
+                setLocationsList(data);
+            } catch (error) {
+                console.error("Error fetching locations:", error);
+            }
+        }
+        fetchLocations()
     }, [])
 
     const filteredData = useMemo(() => {
@@ -241,8 +269,13 @@ const ReportsPage: NextPage = () => {
             )
         }
 
+        // Location (Environment) Filter
+        if (selectedLocation !== 'all') {
+            filtered = filtered.filter(item => item.environment === selectedLocation)
+        }
+
         return filtered
-    }, [accessData, dateRange, selectedCompany, selectedSex, customStart, customEnd, selectedSubEnv])
+    }, [accessData, dateRange, selectedCompany, selectedSex, customStart, customEnd, selectedSubEnv, selectedLocation])
 
     // Get unique companies for filter
     const companies = useMemo(() => {
@@ -520,6 +553,17 @@ const ReportsPage: NextPage = () => {
                                 <option value="all">Todos los Sub-ambientes</option>
                                 {subEnvironmentsList.map(env => (
                                     <option key={env.id} value={env.nombre}>{env.nombre}</option>
+                                ))}
+                            </select>
+
+                            <select
+                                value={selectedLocation}
+                                onChange={(e) => setSelectedLocation(e.target.value)}
+                                className={styles.select}
+                            >
+                                <option value="all">Todas las Ubicaciones</option>
+                                {locationsList.map(loc => (
+                                    <option key={loc.id} value={loc.name}>{loc.name}</option>
                                 ))}
                             </select>
                         </div>

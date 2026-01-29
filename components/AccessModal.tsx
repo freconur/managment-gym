@@ -37,11 +37,12 @@ interface Member {
 interface AccessModalProps {
     isOpen: boolean;
     onClose: () => void;
+    environment?: string;
 }
 
 import { useEscapeKey } from '@/features/hooks/useEscapeKey'
 
-export const AccessModal: React.FC<AccessModalProps> = ({ isOpen, onClose }) => {
+export const AccessModal: React.FC<AccessModalProps> = ({ isOpen, onClose, environment }) => {
     const [dni, setDni] = useState('');
     const [member, setMember] = useState<Member | null>(null);
     const [loading, setLoading] = useState(false);
@@ -206,10 +207,37 @@ export const AccessModal: React.FC<AccessModalProps> = ({ isOpen, onClose }) => 
         searchByDni(dni);
     };
 
+    const [haveSubEnvironments, setHaveSubEnvironments] = useState(false);
+
+    // Fetch environment config
+    useEffect(() => {
+        const fetchEnvironmentConfig = async () => {
+            if (!environment) {
+                setHaveSubEnvironments(false);
+                return;
+            }
+            try {
+                const q = query(collection(db, 'ubicaciones'), where('name', '==', environment));
+                const snapshot = await getDocs(q);
+                if (!snapshot.empty) {
+                    const data = snapshot.docs[0].data();
+                    setHaveSubEnvironments(!!data.haveSubEnvironments);
+                } else {
+                    setHaveSubEnvironments(false);
+                }
+            } catch (error) {
+                console.error("Error fetching environment config:", error);
+                setHaveSubEnvironments(false);
+            }
+        };
+        fetchEnvironmentConfig();
+    }, [environment]);
+
     const handleRegister = async () => {
         if (!member) return;
 
-        if (selectedSubEnvironments.length === 0) {
+        // Only validate if environment has sub-environments enabled
+        if (haveSubEnvironments && selectedSubEnvironments.length === 0) {
             setError('Debe seleccionar al menos un Sub-Ambiente de Acceso');
             return;
         }
@@ -224,11 +252,12 @@ export const AccessModal: React.FC<AccessModalProps> = ({ isOpen, onClose }) => 
                 area: member.area || null,
                 cargo: member.cargo || null,
                 sexo: member.sexo,
-                subEnvironments: selectedSubEnvironments,
+                subEnvironments: selectedSubEnvironments, // Will be empty array if !haveSubEnvironments
                 amenities: selectedAmenities,
                 amenitiesReturned: selectedAmenities.length > 0 ? false : true,
                 fotoUrl: member.fotoUrl || null,
-                timestamp: serverTimestamp()
+                environment: environment || null,
+                timestamp: new Date() // Use client-side time for immediate UI update (avoids serverTimestamp latency affecting queries)
             });
 
             // Update lastAccess for the member
@@ -368,34 +397,36 @@ export const AccessModal: React.FC<AccessModalProps> = ({ isOpen, onClose }) => 
                                 <span className={styles.userBadge}><strong>Sexo:</strong> {member.sexo}</span>
                             </div>
 
-                            <div className={styles.subEnvironmentsSection}>
-                                <div className={styles.subEnvHeader}>
-                                    <h4><FaMapMarkerAlt /> Sub ambientes de acceso</h4>
-                                    <button
-                                        onClick={() => setIsSubEnvModalOpen(true)}
-                                        className={styles.manageSubEnvBtn}
-                                        title="Gestionar Sub-ambientes"
-                                    >
-                                        <FaEdit />
-                                    </button>
+                            {haveSubEnvironments && (
+                                <div className={styles.subEnvironmentsSection}>
+                                    <div className={styles.subEnvHeader}>
+                                        <h4><FaMapMarkerAlt /> Sub ambientes de acceso</h4>
+                                        <button
+                                            onClick={() => setIsSubEnvModalOpen(true)}
+                                            className={styles.manageSubEnvBtn}
+                                            title="Gestionar Sub-ambientes"
+                                        >
+                                            <FaEdit />
+                                        </button>
+                                    </div>
+                                    <div className={styles.subEnvGrid}>
+                                        {subEnvironments.length === 0 ? (
+                                            <p className={styles.noDataText}>No hay sub-ambientes registrados.</p>
+                                        ) : (
+                                            subEnvironments.map(env => (
+                                                <label key={env.id} className={styles.checkboxLabel}>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedSubEnvironments.includes(env.nombre)}
+                                                        onChange={() => toggleSubEnvironment(env.nombre)}
+                                                    />
+                                                    <span>{env.nombre}</span>
+                                                </label>
+                                            ))
+                                        )}
+                                    </div>
                                 </div>
-                                <div className={styles.subEnvGrid}>
-                                    {subEnvironments.length === 0 ? (
-                                        <p className={styles.noDataText}>No hay sub-ambientes registrados.</p>
-                                    ) : (
-                                        subEnvironments.map(env => (
-                                            <label key={env.id} className={styles.checkboxLabel}>
-                                                <input
-                                                    type="checkbox"
-                                                    checked={selectedSubEnvironments.includes(env.nombre)}
-                                                    onChange={() => toggleSubEnvironment(env.nombre)}
-                                                />
-                                                <span>{env.nombre}</span>
-                                            </label>
-                                        ))
-                                    )}
-                                </div>
-                            </div>
+                            )}
 
                             {/*  <div className={styles.subEnvironmentsSection} style={{ marginTop: '1rem' }}>
                                 <div className={styles.subEnvHeader}>

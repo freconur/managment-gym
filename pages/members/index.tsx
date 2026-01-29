@@ -3,6 +3,7 @@ import Head from 'next/head'
 import Link from 'next/link'
 import NextImage from 'next/image'
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/router'
 import {
     getFirestore,
     collection,
@@ -27,8 +28,10 @@ import CargoModal from '@/components/CargoModal'
 import styles from './Members.module.css'
 import { MembersTable } from '@/components/MembersTable'
 import { MembersForm } from '@/components/MembersForm'
-import { Member, Company, Area, Cargo } from '@/features/types/types'
+import { Member, Company, Area, Cargo, Ubicacion } from '@/features/types/types'
 import { ThemeToggle } from '@/components/ThemeToggle'
+import UbicacionModal from '@/components/UbicacionModal'
+import PinModal from '@/components/PinModal'
 
 
 const db = getFirestore(app)
@@ -40,6 +43,7 @@ const db = getFirestore(app)
 
 
 const MembersPage: NextPage = () => {
+    const router = useRouter()
     const [members, setMembers] = useState<Member[]>([])
     const [formData, setFormData] = useState<Member>({
         nombre: '',
@@ -62,12 +66,19 @@ const MembersPage: NextPage = () => {
     const [empresas, setEmpresas] = useState<Company[]>([])
     const [areas, setAreas] = useState<Area[]>([])
     const [cargos, setCargos] = useState<Cargo[]>([])
+    const [ubicaciones, setUbicaciones] = useState<Ubicacion[]>([])
+    const [selectedUbicacion, setSelectedUbicacion] = useState('')
 
     const [isCompanyModalOpen, setIsCompanyModalOpen] = useState(false)
     const [isAreaModalOpen, setIsAreaModalOpen] = useState(false)
     const [isCargoModalOpen, setIsCargoModalOpen] = useState(false)
+    const [isUbicacionModalOpen, setIsUbicacionModalOpen] = useState(false)
 
     const [isModalOpen, setIsModalOpen] = useState(false)
+
+    // PIN Protection State
+    const [isPinModalOpen, setIsPinModalOpen] = useState(false);
+    const [pendingAction, setPendingAction] = useState<'new_member' | 'manage_environments' | null>(null);
 
 
     useEffect(() => {
@@ -115,6 +126,18 @@ const MembersPage: NextPage = () => {
                 ...doc.data()
             })) as Cargo[]
             setCargos(cargosData)
+        })
+        return () => unsubscribe()
+    }, [])
+
+    useEffect(() => {
+        const q = query(collection(db, 'ubicaciones'))
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const data = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            })) as Ubicacion[]
+            setUbicaciones(data)
         })
         return () => unsubscribe()
     }, [])
@@ -350,9 +373,25 @@ const MembersPage: NextPage = () => {
     }
 
     const openNewMemberModal = () => {
-        handleCancel(); // Ensure form is reset
-        setIsModalOpen(true);
+        setPendingAction('new_member');
+        setIsPinModalOpen(true);
     }
+
+    const openManageEnvironments = () => {
+        setPendingAction('manage_environments');
+        setIsPinModalOpen(true);
+    }
+
+    const handlePinSuccess = () => {
+        setIsPinModalOpen(false);
+        if (pendingAction === 'new_member') {
+            handleCancel(); // Ensure form is reset
+            setIsModalOpen(true);
+        } else if (pendingAction === 'manage_environments') {
+            setIsUbicacionModalOpen(true);
+        }
+        setPendingAction(null);
+    };
 
     return (
         <>
@@ -375,9 +414,37 @@ const MembersPage: NextPage = () => {
                         <button onClick={openNewMemberModal} className={`${styles.actionButton} ${styles.btnPremium} ${styles.mobileHidden}`}>
                             <FaUserPlus /> Nuevo Miembro
                         </button>
-                        <Link href="/members/access" className={`${styles.actionButton} ${styles.btnPremiumGreen}`}>
-                            <FaUserClock /> Registrar Ingreso
-                        </Link>
+                        <div className={styles.ambienteSelectorContainer}>
+                            <select
+                                value={selectedUbicacion}
+                                onChange={(e) => {
+                                    const value = e.target.value;
+                                    setSelectedUbicacion(value);
+                                    if (value) {
+                                        router.push({
+                                            pathname: '/members/access',
+                                            query: { environment: value }
+                                        });
+                                    }
+                                }}
+                                className={styles.ambienteSelect}
+                            >
+                                <option value="">Seleccionar Ambiente</option>
+                                {ubicaciones.map((u) => (
+                                    <option key={u.id} value={u.name}>
+                                        {u.name}
+                                    </option>
+                                ))}
+                            </select>
+                            <button
+                                onClick={openManageEnvironments}
+                                className={styles.btnManageAmbiente}
+                                title="Gestionar Ambientes"
+                            >
+                                <FaEdit />
+                            </button>
+                        </div>
+
                         <Link href="/members/reports" className={`${styles.actionButton} ${styles.btnPremiumIndigo}`}>
                             <FaChartBar /> Ver Reportes
                         </Link>
@@ -438,6 +505,22 @@ const MembersPage: NextPage = () => {
                 isOpen={isCargoModalOpen}
                 onClose={() => setIsCargoModalOpen(false)}
                 db={db}
+            />
+
+            <UbicacionModal
+                isOpen={isUbicacionModalOpen}
+                onClose={() => setIsUbicacionModalOpen(false)}
+                db={db}
+            />
+
+            <PinModal
+                isOpen={isPinModalOpen}
+                onClose={() => {
+                    setIsPinModalOpen(false);
+                    setPendingAction(null);
+                }}
+                onSuccess={handlePinSuccess}
+                title="Ingrese PIN de Seguridad"
             />
         </>
     )

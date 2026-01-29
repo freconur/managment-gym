@@ -142,6 +142,14 @@ export interface SubEnvironment {
   createdAt?: any;
 }
 
+export interface Ubicacion {
+  id: string;
+  name: string;
+  haveAmenidades?: boolean;
+  haveSubEnvironments?: boolean;
+  createdAt?: any;
+}
+
 export interface Amenity {
   id: string;
   nombre: string;

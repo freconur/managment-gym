@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import NextImage from 'next/image';
-import { FaEdit, FaTrash, FaSearch } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaSearch, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import styles from '@/pages/members/Members.module.css';
 
 import { Member, Company } from '@/features/types/types';
@@ -14,6 +14,8 @@ interface MembersTableProps {
     onDelete: (id: string) => void;
 }
 
+const ITEMS_PER_PAGE = 20;
+
 export const MembersTable: React.FC<MembersTableProps> = ({
     members,
     empresas,
@@ -23,10 +25,16 @@ export const MembersTable: React.FC<MembersTableProps> = ({
 }) => {
     const [filterEmpresa, setFilterEmpresa] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
 
     // PIN Security State
     const [isPinModalOpen, setIsPinModalOpen] = useState(false);
     const [pendingAction, setPendingAction] = useState<{ type: 'EDIT' | 'DELETE', payload: any } | null>(null);
+
+    // Reset page when filters change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [filterEmpresa, searchTerm]);
 
     const handleActionRequest = (type: 'EDIT' | 'DELETE', payload: any) => {
         setPendingAction({ type, payload });
@@ -43,8 +51,6 @@ export const MembersTable: React.FC<MembersTableProps> = ({
         }
 
         setPendingAction(null);
-        // Modal closes automatically via its own props usually, or we close it here if needed? 
-        // PinModal calls onClose after success, so just ensuring logic holds.
     };
 
     const filteredMembers = members.filter(member => {
@@ -53,10 +59,23 @@ export const MembersTable: React.FC<MembersTableProps> = ({
         const matchesSearch = searchTerm === '' ||
             member.nombre.toLowerCase().includes(searchLower) ||
             member.apellidos.toLowerCase().includes(searchLower) ||
-            member.dni.includes(searchTerm);
+            member.dni.includes(searchLower); // Fixed: ensure includes is used on string
 
         return matchesEmpresa && matchesSearch;
     });
+
+    // Pagination Logic
+    const totalPages = Math.ceil(filteredMembers.length / ITEMS_PER_PAGE);
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const paginatedMembers = filteredMembers.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+    const handlePrevPage = () => {
+        if (currentPage > 1) setCurrentPage(prev => prev - 1);
+    };
+
+    const handleNextPage = () => {
+        if (currentPage < totalPages) setCurrentPage(prev => prev + 1);
+    };
 
     return (
         <div className={styles.tableContainer}>
@@ -126,12 +145,12 @@ export const MembersTable: React.FC<MembersTableProps> = ({
                             <tr>
                                 <td colSpan={8} className={styles.emptyState}>Cargando usuarios...</td>
                             </tr>
-                        ) : members.length === 0 ? (
+                        ) : filteredMembers.length === 0 ? (
                             <tr>
                                 <td colSpan={8} className={styles.emptyState}>No hay usuarios registrados.</td>
                             </tr>
                         ) : (
-                            filteredMembers.map((member) => (
+                            paginatedMembers.map((member) => (
                                 <tr key={member.id} className={styles.tr}>
                                     <td className={styles.td}>
                                         {member.fotoUrl ? (
@@ -189,6 +208,58 @@ export const MembersTable: React.FC<MembersTableProps> = ({
                     </tbody>
                 </table>
             </div>
+
+            {/* Pagination Controls */}
+            {!isLoading && filteredMembers.length > 0 && (
+                <div className={styles.paginationContainer} style={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    gap: '1rem',
+                    padding: '1rem',
+                    borderTop: '1px solid var(--border-glass)'
+                }}>
+                    <button
+                        onClick={handlePrevPage}
+                        disabled={currentPage === 1}
+                        className={styles.paginationButton}
+                        style={{
+                            background: 'none',
+                            border: '1px solid var(--border-glass)',
+                            borderRadius: '0.5rem',
+                            padding: '0.5rem',
+                            color: 'var(--text-primary)',
+                            cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                            opacity: currentPage === 1 ? 0.5 : 1,
+                            display: 'flex',
+                            alignItems: 'center'
+                        }}
+                    >
+                        <FaChevronLeft />
+                    </button>
+                    <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                        Página {currentPage} de {totalPages} ({filteredMembers.length} registros)
+                    </span>
+                    <button
+                        onClick={handleNextPage}
+                        disabled={currentPage === totalPages}
+                        className={styles.paginationButton}
+                        style={{
+                            background: 'none',
+                            border: '1px solid var(--border-glass)',
+                            borderRadius: '0.5rem',
+                            padding: '0.5rem',
+                            color: 'var(--text-primary)',
+                            cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+                            opacity: currentPage === totalPages ? 0.5 : 1,
+                            display: 'flex',
+                            alignItems: 'center'
+                        }}
+                    >
+                        <FaChevronRight />
+                    </button>
+                </div>
+            )}
 
             <PinModal
                 isOpen={isPinModalOpen}
