@@ -12,6 +12,8 @@ import {
     doc,
     onSnapshot,
     query,
+    where,
+    getDocs,
     orderBy,
     serverTimestamp,
     setDoc
@@ -46,7 +48,8 @@ const MembersPage: NextPage = () => {
         empresa: '',
         area: '',
         cargo: '',
-        sexo: ''
+        sexo: '',
+        fotoUrl: ''
     })
     const [isEditing, setIsEditing] = useState(false)
     const [editingId, setEditingId] = useState<string | null>(null)
@@ -229,6 +232,46 @@ const MembersPage: NextPage = () => {
                     fotoUrl,
                     updatedAt: serverTimestamp()
                 })
+
+                // Sync with today's access records
+                try {
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const tomorrow = new Date(today);
+                    tomorrow.setDate(tomorrow.getDate() + 1);
+
+                    // Query ONLY by memberId to avoid composite index requirement
+                    const q = query(
+                        collection(db, 'asistencias'),
+                        where('memberId', '==', editingId)
+                    );
+
+                    const querySnapshot = await getDocs(q);
+
+                    // Filter by date in memory
+                    const todayRecords = querySnapshot.docs.filter(recordDoc => {
+                        const data = recordDoc.data();
+                        if (!data.timestamp) return false;
+                        const recordDate = data.timestamp.toDate();
+                        return recordDate >= today && recordDate < tomorrow;
+                    });
+
+                    const updatePromises = todayRecords.map(assistDoc =>
+                        updateDoc(assistDoc.ref, {
+                            memberName: `${formData.nombre} ${formData.apellidos}`,
+                            memberDni: formData.dni,
+                            company: formData.empresa,
+                            area: formData.area || null,
+                            cargo: formData.cargo || null,
+                            sexo: formData.sexo,
+                            fotoUrl: fotoUrl || null
+                        })
+                    );
+                    await Promise.all(updatePromises);
+                } catch (syncError) {
+                    console.error("Error syncing access records:", syncError);
+                }
+
                 setIsEditing(false)
                 setEditingId(null)
             } else {
