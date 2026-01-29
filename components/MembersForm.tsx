@@ -73,8 +73,15 @@ export const MembersForm: React.FC<MembersFormProps> = ({
                     </button>
                 </div>
                 <form onSubmit={onSubmit} className={styles.form}>
+                    <div className={styles.requiredWarning}>
+                        <FaUserPlus />
+                        <span>Todos los campos son obligatorios, excepto la foto.</span>
+                    </div>
+
                     <div>
-                        <label htmlFor="dni" className={styles.label}>DNI</label>
+                        <label htmlFor="dni" className={styles.label}>
+                            DNI <span className={styles.required}>*</span>
+                        </label>
                         <input
                             type="number"
                             id="dni"
@@ -129,7 +136,9 @@ export const MembersForm: React.FC<MembersFormProps> = ({
                     </div>
 
                     <div>
-                        <label htmlFor="nombre" className={styles.label}>Nombre</label>
+                        <label htmlFor="nombre" className={styles.label}>
+                            Nombre <span className={styles.required}>*</span>
+                        </label>
                         <input
                             type="text"
                             id="nombre"
@@ -141,7 +150,9 @@ export const MembersForm: React.FC<MembersFormProps> = ({
                         />
                     </div>
                     <div>
-                        <label htmlFor="apellidos" className={styles.label}>Apellidos</label>
+                        <label htmlFor="apellidos" className={styles.label}>
+                            Apellidos <span className={styles.required}>*</span>
+                        </label>
                         <input
                             type="text"
                             id="apellidos"
@@ -153,7 +164,9 @@ export const MembersForm: React.FC<MembersFormProps> = ({
                         />
                     </div>
                     <div>
-                        <label htmlFor="empresa" className={styles.label}>Empresa</label>
+                        <label htmlFor="empresa" className={styles.label}>
+                            Empresa <span className={styles.required}>*</span>
+                        </label>
                         <div className={styles.companySelectGroup}>
                             <SmartSelect
                                 options={empresas}
@@ -178,7 +191,9 @@ export const MembersForm: React.FC<MembersFormProps> = ({
                         </div>
                     </div>
                     <div>
-                        <label htmlFor="area" className={styles.label}>Área</label>
+                        <label htmlFor="area" className={styles.label}>
+                            Área <span className={styles.required}>*</span>
+                        </label>
                         <div className={styles.companySelectGroup}>
                             <SmartSelect
                                 options={areas}
@@ -189,6 +204,7 @@ export const MembersForm: React.FC<MembersFormProps> = ({
                                 name="area"
                                 placeholder="Buscar área..."
                                 className={`${styles.input} ${styles.companyInput}`}
+                                required
                             />
                             <button
                                 type="button"
@@ -201,7 +217,9 @@ export const MembersForm: React.FC<MembersFormProps> = ({
                         </div>
                     </div>
                     <div>
-                        <label htmlFor="cargo" className={styles.label}>Cargo</label>
+                        <label htmlFor="cargo" className={styles.label}>
+                            Cargo <span className={styles.required}>*</span>
+                        </label>
                         <div className={styles.companySelectGroup}>
                             <SmartSelect
                                 options={cargos}
@@ -212,6 +230,7 @@ export const MembersForm: React.FC<MembersFormProps> = ({
                                 name="cargo"
                                 placeholder="Buscar cargo..."
                                 className={`${styles.input} ${styles.companyInput}`}
+                                required
                             />
                             <button
                                 type="button"
@@ -224,7 +243,9 @@ export const MembersForm: React.FC<MembersFormProps> = ({
                         </div>
                     </div>
                     <div>
-                        <label htmlFor="sexo" className={styles.label}>Sexo</label>
+                        <label htmlFor="sexo" className={styles.label}>
+                            Sexo <span className={styles.required}>*</span>
+                        </label>
                         <select
                             id="sexo"
                             name="sexo"
