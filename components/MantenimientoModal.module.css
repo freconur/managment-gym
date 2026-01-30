@@ -184,6 +184,7 @@
     color: #1f2937;
     transition: border-color 0.15s, box-shadow 0.15s;
     outline: none;
+    text-transform: uppercase;
 }
 
 .input:focus,
@@ -428,6 +429,7 @@
     flex: 1;
     font-size: 0.9rem;
     color: #111827;
+    text-transform: uppercase;
 }
 
 .taskCompleted {

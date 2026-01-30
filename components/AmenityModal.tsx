@@ -141,7 +141,7 @@ const AmenityModal: React.FC<AmenityModalProps> = ({ isOpen, onClose, db }) => {
                                                     value={editingName}
                                                     onChange={(e) => setEditingName(e.target.value)}
                                                     className={styles.input}
-                                                    style={{ padding: '0.25rem 0.5rem' }}
+                                                    style={{ padding: '0.25rem 0.5rem', textTransform: 'uppercase' }}
                                                     autoFocus
                                                 />
                                                 <button onClick={handleUpdate} className={styles.iconButton} style={{ color: '#22c55e' }}>
@@ -153,7 +153,7 @@ const AmenityModal: React.FC<AmenityModalProps> = ({ isOpen, onClose, db }) => {
                                             </div>
                                         ) : (
                                             <>
-                                                <span style={{ fontWeight: 500, color: '#374151' }}>{item.nombre}</span>
+                                                <span style={{ fontWeight: 500, color: '#374151', textTransform: 'uppercase' }}>{item.nombre}</span>
                                                 <div style={{ display: 'flex', gap: '0.5rem' }}>
                                                     <button onClick={() => startUpdate(item)} className={styles.iconButton} style={{ color: '#3b82f6', background: 'none', border: 'none', cursor: 'pointer' }}>
                                                         <FaEdit />

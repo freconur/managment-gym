@@ -308,6 +308,7 @@
   border: 1px solid #d1d5db;
   border-radius: 0.5rem;
   font-size: 1rem;
+  text-transform: uppercase;
 }
 
 .select {
@@ -318,6 +319,7 @@
   font-size: 1rem;
   background-color: white;
   color: var(--text-primary);
+  text-transform: uppercase;
 }
 
 :global([data-theme='dark']) .select {
@@ -335,6 +337,7 @@
   font-size: 1rem;
   font-family: inherit;
   resize: vertical;
+  text-transform: uppercase;
 }
 
 /* Equipment list section */

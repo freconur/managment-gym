@@ -588,7 +588,8 @@ export const UsuarioActionsModal: React.FC<UsuarioActionsModalProps> = ({
                         padding: '0.5rem 0.75rem',
                         backgroundColor: 'white',
                         borderRadius: '0.375rem',
-                        border: '1px solid #e5e7eb'
+                        border: '1px solid #e5e7eb',
+                        textTransform: 'uppercase'
                       }}>
                         {usuario.dni || 'N/A'}
                       </div>
@@ -655,7 +656,8 @@ export const UsuarioActionsModal: React.FC<UsuarioActionsModalProps> = ({
                         padding: '0.5rem 0.75rem',
                         backgroundColor: 'white',
                         borderRadius: '0.375rem',
-                        border: '1px solid #e5e7eb'
+                        border: '1px solid #e5e7eb',
+                        textTransform: 'uppercase'
                       }}>
                         {usuario.nombres || 'N/A'}
                       </div>
@@ -682,7 +684,8 @@ export const UsuarioActionsModal: React.FC<UsuarioActionsModalProps> = ({
                         padding: '0.5rem 0.75rem',
                         backgroundColor: 'white',
                         borderRadius: '0.375rem',
-                        border: '1px solid #e5e7eb'
+                        border: '1px solid #e5e7eb',
+                        textTransform: 'uppercase'
                       }}>
                         {usuario.apellidos || 'N/A'}
                       </div>

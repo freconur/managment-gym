@@ -109,6 +109,7 @@ export const AssignUserModal: React.FC<AssignUserModalProps> = ({
                             <label className={styles.label}>Seleccionar Usuario</label>
                             <select
                                 className={styles.select}
+                                style={{ textTransform: 'uppercase' }}
                                 value={selectedUserId}
                                 onChange={(e) => setSelectedUserId(e.target.value)}
                                 required
@@ -116,7 +117,7 @@ export const AssignUserModal: React.FC<AssignUserModalProps> = ({
                                 <option value="">-- Seleccionar --</option>
                                 {usuarios.map(user => (
                                     <option key={user.dni} value={user.dni}>
-                                        {user.nombres} {user.apellidos}
+                                        {user.nombres?.toUpperCase()} {user.apellidos?.toUpperCase()}
                                     </option>
                                 ))}
                             </select>
@@ -130,6 +131,7 @@ export const AssignUserModal: React.FC<AssignUserModalProps> = ({
                                 </label>
                                 <select
                                     className={styles.select}
+                                    style={{ textTransform: 'uppercase' }}
                                     value={selectedGym}
                                     onChange={(e) => setSelectedGym(e.target.value)}
                                     required
@@ -222,7 +224,7 @@ export const AssignUserModal: React.FC<AssignUserModalProps> = ({
                                                     >
                                                         <option value="">Todos</option>
                                                         {ubicaciones.map(u => (
-                                                            <option key={u.id} value={u.name}>{u.name}</option>
+                                                            <option key={u.id} value={u.name}>{u.name?.toUpperCase()}</option>
                                                         ))}
                                                     </select>
                                                 </div>
@@ -240,15 +242,15 @@ export const AssignUserModal: React.FC<AssignUserModalProps> = ({
                                                 : b.startDate.localeCompare(a.startDate);
                                         }).map((assignment) => (
                                             <tr key={assignment.id} className={styles.tr}>
-                                                <td className={styles.td}>
-                                                    {assignment.user ? `${assignment.user.nombres} ${assignment.user.apellidos}` : 'Usuario desconocido'}
+                                                <td className={styles.td} style={{ textTransform: 'uppercase' }}>
+                                                    {assignment.user ? `${assignment.user.nombres?.toUpperCase()} ${assignment.user.apellidos?.toUpperCase()}` : 'USUARIO DESCONOCIDO'}
                                                 </td>
                                                 <td className={styles.td} style={{ fontSize: '0.85rem' }}>
                                                     {assignment.startDate.split('-').reverse().join('/')} - {assignment.endDate.split('-').reverse().join('/')}
                                                 </td>
                                                 {!defaultGym && (
                                                     <td className={styles.td}>
-                                                        {assignment.gym || '-'}
+                                                        {assignment.gym?.toUpperCase() || '-'}
                                                     </td>
                                                 )}
                                                 <td className={styles.td} style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>

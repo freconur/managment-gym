@@ -324,10 +324,10 @@ const ChecklistDetailPage: NextPage = () => {
                                             </div>
                                         </td>
                                         <td className={detailStyles.td}>
-                                            <span className={detailStyles.machineName}>{machine.name}</span>
+                                            <span className={detailStyles.machineName} style={{ textTransform: 'uppercase' }}>{machine.name}</span>
                                         </td>
                                         <td className={detailStyles.td}>
-                                            <span className={detailStyles.machineLocation}>{machine.location || '-'}</span>
+                                            <span className={detailStyles.machineLocation} style={{ textTransform: 'uppercase' }}>{machine.location || '-'}</span>
                                         </td>
                                         <td className={detailStyles.td}>
                                             {/* Restored Incident Chips Column */}
@@ -386,9 +386,9 @@ const ChecklistDetailPage: NextPage = () => {
                                     <div style={{ flex: 1 }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                             <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>#{index + 1}</span>
-                                            <span className={detailStyles.machineName}>{machine.name}</span>
+                                            <span className={detailStyles.machineName} style={{ textTransform: 'uppercase' }}>{machine.name}</span>
                                         </div>
-                                        <span className={detailStyles.machineLocation}>{machine.location || '-'}</span>
+                                        <span className={detailStyles.machineLocation} style={{ textTransform: 'uppercase' }}>{machine.location || '-'}</span>
                                         {/* Incidences Chips Mobile */}
                                         {hasIncidences && (
                                             <div className={detailStyles.incidencesList} style={{ marginTop: '0.5rem' }}>

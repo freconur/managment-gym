@@ -31,6 +31,7 @@
         opacity: 0;
         transform: translateY(20px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -115,6 +116,7 @@
     font-size: 0.875rem;
     color: #111827;
     font-weight: 500;
+    text-transform: uppercase;
 }
 
 /* Form Styles */
@@ -157,6 +159,7 @@
     color: #1f2937;
     transition: border-color 0.15s, box-shadow 0.15s;
     outline: none;
+    text-transform: uppercase;
 }
 
 .input:focus,
@@ -271,13 +274,15 @@
 }
 
 .btnSubmit {
-    background-color: #ef4444; /* Red-500 for Incidencia */
+    background-color: #ef4444;
+    /* Red-500 for Incidencia */
     color: white;
     box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
 }
 
 .btnSubmit:hover {
-    background-color: #dc2626; /* Red-600 */
+    background-color: #dc2626;
+    /* Red-600 */
     box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.2);
 }
 

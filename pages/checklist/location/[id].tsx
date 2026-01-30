@@ -292,7 +292,7 @@ const LocationChecklistPage: NextPage = () => {
             <header className={styles.header}>
                 <div className={styles.headerInner}>
                     <div className={styles.titleGroup}>
-                        <h1 className={styles.title}>
+                        <h1 className={styles.title} style={{ textTransform: 'uppercase' }}>
                             {locationName ? `Checklist: ${locationName}` : 'Cargando Ubicación...'}
                         </h1>
                         <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
@@ -404,7 +404,7 @@ const LocationChecklistPage: NextPage = () => {
                                                 {assignment.user?.nombres?.charAt(0) || 'U'}
                                             </div>
                                             <div>
-                                                <div className={styles.assignedUserName}>
+                                                <div className={styles.assignedUserName} style={{ textTransform: 'uppercase' }}>
                                                     {assignment.user?.nombres} {assignment.user?.apellidos}
                                                 </div>
                                                 <div className={styles.assignedUserDetails}>
@@ -432,6 +432,7 @@ const LocationChecklistPage: NextPage = () => {
                                 console.error("Error saving order:", error);
                             }
                         }}
+                        uppercaseItems={true}
                     />
 
                 </section>

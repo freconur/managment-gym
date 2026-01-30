@@ -112,7 +112,8 @@ const CompanyModal = ({ isOpen, onClose, db }: CompanyModalProps) => {
                 maxWidth: '500px',
                 maxHeight: '80vh',
                 overflowY: 'auto',
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                textTransform: 'uppercase'
             }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                     <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#1f2937' }}>Gestionar Empresas</h2>
@@ -132,7 +133,8 @@ const CompanyModal = ({ isOpen, onClose, db }: CompanyModalProps) => {
                             padding: '0.5rem',
                             border: '1px solid #d1d5db',
                             borderRadius: '0.375rem',
-                            outline: 'none'
+                            outline: 'none',
+                            textTransform: 'uppercase'
                         }}
                     />
                     <button
@@ -179,7 +181,8 @@ const CompanyModal = ({ isOpen, onClose, db }: CompanyModalProps) => {
                                                 flex: 1,
                                                 padding: '0.25rem 0.5rem',
                                                 border: '1px solid #d1d5db',
-                                                borderRadius: '0.25rem'
+                                                borderRadius: '0.25rem',
+                                                textTransform: 'uppercase'
                                             }}
                                             autoFocus
                                         />

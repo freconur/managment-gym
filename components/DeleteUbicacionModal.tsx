@@ -37,7 +37,7 @@ export const DeleteUbicacionModal: React.FC<DeleteUbicacionModalProps> = ({
         <div className={styles.modalBody}>
           <p className={styles.deleteMessage}>
             ¿Está seguro de que desea eliminar la ubicación{' '}
-            <strong>{ubicacionName}</strong>?
+            <strong style={{ textTransform: 'uppercase' }}>{ubicacionName}</strong>?
           </p>
           <p className={styles.deleteWarning}>
             Esta acción no se puede deshacer.

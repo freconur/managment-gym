@@ -124,7 +124,7 @@ const PinModal: React.FC<PinModalProps> = ({ isOpen, onClose, onSuccess, title =
                 maxWidth: '400px',
                 textAlign: 'center'
             }}>
-                <h3 style={{ margin: '0 0 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', color: '#1f2937' }}>
+                <h3 style={{ margin: '0 0 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', color: '#1f2937', textTransform: 'uppercase' }}>
                     <FaLock /> {title}
                 </h3>
 
@@ -172,7 +172,8 @@ const PinModal: React.FC<PinModalProps> = ({ isOpen, onClose, onSuccess, title =
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 gap: '0.5rem',
-                                color: '#4b5563'
+                                color: '#4b5563',
+                                textTransform: 'uppercase'
                             }}
                         >
                             <FaTimes /> Cancelar

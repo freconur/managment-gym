@@ -50,7 +50,7 @@ export const SelectGymModal: React.FC<SelectGymModalProps> = ({
                                         <FaBuilding size={20} />
                                     </div>
                                     <div className={styles.gymInfo}>
-                                        <div className={styles.gymName}>{gym.name}</div>
+                                        <div className={styles.gymName}>{gym.name?.toUpperCase() || ''}</div>
                                         <div className={styles.gymSubtitle}>Iniciar checklist para esta sede</div>
                                     </div>
                                     <FaChevronRight size={16} color="var(--text-secondary)" />

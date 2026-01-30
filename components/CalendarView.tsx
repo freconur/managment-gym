@@ -252,7 +252,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         color: '#fff',
         borderRadius: '4px',
         padding: '2px 4px',
-        fontSize: '12px'
+        fontSize: '12px',
+        textTransform: 'uppercase' as const
       }
     }
   }
@@ -579,12 +580,12 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                       </small>
                     </div>
 
-                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-primary)', fontSize: '1rem' }}>
+                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-primary)', fontSize: '1rem', textTransform: 'uppercase' }}>
                       {event.title}
                     </h4>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                      <span>📍 {event.incidencia.maquina?.location || 'General'}</span>
+                      <span style={{ textTransform: 'uppercase' }}>📍 {event.incidencia.maquina?.location || 'General'}</span>
                       <span>•</span>
                       <span style={{ textTransform: 'capitalize' }}>{event.resource.estado.replace('_', ' ')}</span>
                     </div>

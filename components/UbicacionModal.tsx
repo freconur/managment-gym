@@ -198,6 +198,7 @@ const UbicacionModal = ({ isOpen, onClose, db }: UbicacionModalProps) => {
         padding: '1.5rem',
         borderRadius: '0.5rem',
         width: '95%',
+        textTransform: 'uppercase',
         maxWidth: '800px',
         maxHeight: '95vh',
         overflowY: 'auto',

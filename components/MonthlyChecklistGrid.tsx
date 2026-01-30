@@ -29,6 +29,7 @@ interface MonthlyChecklistGridProps {
     onIncidenceClick?: (machineId: string, incId: string) => void;
     onDateClick?: (day: number) => void;
     onReorder?: (items: (Machine & { type?: string })[]) => void;
+    uppercaseItems?: boolean;
 }
 
 export const MonthlyChecklistGrid: React.FC<MonthlyChecklistGridProps> = ({
@@ -39,7 +40,8 @@ export const MonthlyChecklistGrid: React.FC<MonthlyChecklistGridProps> = ({
     onCellClick,
     onIncidenceClick,
     onDateClick,
-    onReorder
+    onReorder,
+    uppercaseItems = false
 }) => {
     const [items, setItems] = useState(machines);
     const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
@@ -130,10 +132,16 @@ export const MonthlyChecklistGrid: React.FC<MonthlyChecklistGridProps> = ({
                                             <td className={`${styles.td} ${styles.tdIndex}`}>
                                                 {items.indexOf(machine) + 1}
                                             </td>
-                                            <td className={`${styles.td} ${styles.tdSticky}`}>
+                                            <td
+                                                className={`${styles.td} ${styles.tdSticky}`}
+                                                style={{ textTransform: uppercaseItems ? 'uppercase' : 'none' }}
+                                            >
                                                 {machine.name}
                                             </td>
-                                            <td className={styles.td}>
+                                            <td
+                                                className={styles.td}
+                                                style={{ textTransform: uppercaseItems ? 'uppercase' : 'none' }}
+                                            >
                                                 {machine.location || '-'}
                                             </td>
                                             {daysArray.map(day => {

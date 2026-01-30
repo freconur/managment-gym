@@ -239,7 +239,7 @@ export const MachineDetailsModal: React.FC<MachineDetailsModalProps> = ({
                     <option value="">Seleccione una marca</option>
                     {marcas.map((marca) => (
                       <option key={marca.id} value={marca.name}>
-                        {marca.name}
+                        {marca.name?.toUpperCase() || ''}
                       </option>
                     ))}
                   </select>
@@ -295,7 +295,7 @@ export const MachineDetailsModal: React.FC<MachineDetailsModalProps> = ({
                     <option value="">Seleccione una ubicación</option>
                     {ubicaciones.map((ubicacion) => (
                       <option key={ubicacion.id} value={ubicacion.name}>
-                        {ubicacion.name}
+                        {ubicacion.name.toUpperCase()}
                       </option>
                     ))}
                   </select>
@@ -319,7 +319,7 @@ export const MachineDetailsModal: React.FC<MachineDetailsModalProps> = ({
                   >
                     {estadoDeMaquina.map((estado) => (
                       <option key={estado.id} value={estado.id}>
-                        {estado.name}
+                        {estado.name.toUpperCase()}
                       </option>
                     ))}
                   </select>

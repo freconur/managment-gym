@@ -183,7 +183,8 @@ const SelectEntryModal = ({ isOpen, onClose, db }: SelectEntryModalProps) => {
                                     textAlign: 'left',
                                     transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                                     outline: 'none',
-                                    color: 'var(--text-primary, #1f2937)'
+                                    color: 'var(--text-primary, #1f2937)',
+                                    textTransform: 'uppercase'
                                 }}
                                 onMouseOver={(e) => {
                                     e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.08)';

@@ -93,7 +93,7 @@ export const MarcaModal: React.FC<MarcaModalProps> = ({
               ) : (
                 marcaSearch.filteredItems.map((marca) => (
                   <option key={marca.id} value={marca.id}>
-                    {marca.name}
+                    {marca.name?.toUpperCase() || ''}
                   </option>
                 ))
               )}

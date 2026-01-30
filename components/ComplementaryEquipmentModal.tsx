@@ -159,15 +159,15 @@ export const ComplementaryEquipmentModal: React.FC<ComplementaryEquipmentModalPr
                                         <tbody>
                                             {equipment.map((item) => (
                                                 <tr key={item.id}>
-                                                    <td style={{ fontWeight: 500 }}>{item.name}</td>
+                                                    <td style={{ fontWeight: 500 }}>{item.name.toUpperCase()}</td>
                                                     <td style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                                                        {item.location || 'Sin ubicación'}
+                                                        {(item.location || 'Sin ubicación').toUpperCase()}
                                                     </td>
                                                     <td>{item.quantity}</td>
                                                     <td>
                                                         <span className={`${styles.statusBadge} ${item.status === 'active' ? styles.statusActive : styles.statusInactive
                                                             }`}>
-                                                            {item.status === 'active' ? 'Activo' : 'Inactivo'}
+                                                            {item.status === 'active' ? 'ACTIVO' : 'INACTIVO'}
                                                         </span>
                                                     </td>
                                                     <td>
@@ -223,7 +223,7 @@ export const ComplementaryEquipmentModal: React.FC<ComplementaryEquipmentModalPr
                                             <option value="">Seleccione una ubicación</option>
                                             {ubicaciones.map((u) => (
                                                 <option key={u.id} value={u.name}>
-                                                    {u.name}
+                                                    {u.name.toUpperCase()}
                                                 </option>
                                             ))}
                                         </select>
@@ -247,8 +247,8 @@ export const ComplementaryEquipmentModal: React.FC<ComplementaryEquipmentModalPr
                                             onChange={(e) => setFormData({ ...formData, status: e.target.value as 'active' | 'inactive' })}
                                             disabled={isSubmitting}
                                         >
-                                            <option value="active">Activo</option>
-                                            <option value="inactive">Inactivo</option>
+                                            <option value="active">ACTIVO</option>
+                                            <option value="inactive">INACTIVO</option>
                                         </select>
                                     </div>
                                 </div>
@@ -294,6 +294,6 @@ export const ComplementaryEquipmentModal: React.FC<ComplementaryEquipmentModalPr
                     )}
                 </div>
             </div>
-        </div>
+        </div >
     );
 };

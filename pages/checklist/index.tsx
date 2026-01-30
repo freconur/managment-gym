@@ -368,8 +368,9 @@ const ChecklistPage: NextPage = () => {
                                 value={locationFilter}
                                 onChange={(e) => setLocationFilter(e.target.value)}
                                 className={styles.locationFilterSelect}
+                                style={{ textTransform: 'uppercase' }}
                             >
-                                <option value="">Todas las ubicaciones</option>
+                                <option value="">TODAS LAS UBICACIONES</option>
                                 {ubicaciones.map(u => (
                                     <option key={u.id} value={u.name}>
                                         {u.name}
@@ -466,6 +467,7 @@ const ChecklistPage: NextPage = () => {
                                 alert("Error al guardar el orden.");
                             }
                         }}
+                        uppercaseItems={true}
                     />
                 </section>
             </main>

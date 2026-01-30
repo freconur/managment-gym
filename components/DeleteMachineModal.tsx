@@ -37,7 +37,7 @@ export const DeleteMachineModal: React.FC<DeleteMachineModalProps> = ({
         <div className={styles.modalBody}>
           <p className={styles.deleteMessage}>
             ¿Está seguro de que desea eliminar el equipo{' '}
-            <strong>{machineName}</strong>?
+            <strong style={{ textTransform: 'uppercase' }}>{machineName}</strong>?
           </p>
           <p className={styles.deleteWarning}>
             Esta acción no se puede deshacer.

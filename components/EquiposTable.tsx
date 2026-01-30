@@ -124,7 +124,7 @@ export const EquiposTable = ({
                     <div style={{ display: 'flex', gap: '0.25rem' }}>
                       <input
                         type="text"
-                        placeholder="Buscar por nombre..."
+                        placeholder="BUSCAR POR NOMBRE..."
                         value={filtroNombre}
                         onChange={(e) => setFiltroNombre(e.target.value)}
                         style={{
@@ -135,7 +135,8 @@ export const EquiposTable = ({
                           backgroundColor: "rgba(255, 255, 255, 0.05)",
                           color: "var(--text-primary)",
                           flex: 1,
-                          minWidth: '150px'
+                          minWidth: '150px',
+                          textTransform: 'uppercase'
                         }}
                       />
                       <select
@@ -179,10 +180,11 @@ export const EquiposTable = ({
                         color: "var(--text-primary)",
                         cursor: "pointer",
                         minWidth: "150px",
-                        height: '34px'
+                        height: '34px',
+                        textTransform: 'uppercase'
                       }}
                     >
-                      <option value="">Todas</option>
+                      <option value="">TODAS</option>
                       {ubicaciones.map((ubicacion) => (
                         <option key={ubicacion.id} value={ubicacion.name}>
                           {ubicacion.name}
@@ -216,10 +218,10 @@ export const EquiposTable = ({
                         height: '34px'
                       }}
                     >
-                      <option value="">Todos</option>
-                      <option value="active">Activo</option>
-                      <option value="maintenance">Mantenimiento</option>
-                      <option value="inactive">Inactivo</option>
+                      <option value="">TODOS</option>
+                      <option value="active">ACTIVO</option>
+                      <option value="maintenance">MANTENIMIENTO</option>
+                      <option value="inactive">INACTIVO</option>
                     </select>
                   </div>
                 </th>
@@ -247,6 +249,7 @@ export const EquiposTable = ({
                       <Link
                         href={`/maquina/${machine.id}${from ? `?from=${from}` : ''}`}
                         className={styles.tableCellLink}
+                        style={{ textTransform: 'uppercase' }}
                       >
                         {machine.name || "N/A"}
                       </Link>
@@ -255,6 +258,7 @@ export const EquiposTable = ({
                       <Link
                         href={`/maquina/${machine.id}${from ? `?from=${from}` : ''}`}
                         className={styles.tableCellLink}
+                        style={{ textTransform: 'uppercase' }}
                       >
                         {machine.location || "N/A"}
                       </Link>
@@ -273,6 +277,7 @@ export const EquiposTable = ({
                                 ? styles.statusInactive
                                 : ""
                             }`}
+                          style={{ textTransform: 'uppercase' }}
                         >
                           {machine.status === "active"
                             ? "Activo"

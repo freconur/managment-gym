@@ -37,7 +37,7 @@ export const DeleteMarcaModal: React.FC<DeleteMarcaModalProps> = ({
         <div className={styles.modalBody}>
           <p className={styles.deleteMessage}>
             ¿Está seguro de que desea eliminar la marca{' '}
-            <strong>{marcaName}</strong>?
+            <strong style={{ textTransform: 'uppercase' }}>{marcaName}</strong>?
           </p>
           <p className={styles.deleteWarning}>
             Esta acción no se puede deshacer.
