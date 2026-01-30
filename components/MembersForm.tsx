@@ -5,10 +5,9 @@ import styles from './MembersForm.module.css';
 import { Member, Company, Area, Cargo } from '@/features/types/types';
 import { SmartSelect } from './SmartSelect';
 import { read, utils } from 'xlsx';
-import { getFirestore, writeBatch, doc, serverTimestamp } from 'firebase/firestore';
-import { app } from '@/firebase/firebase.config';
+import { writeBatch, doc, serverTimestamp, collection } from 'firebase/firestore';
+import { db } from '@/firebase/firebase.config';
 
-const db = getFirestore(app);
 
 interface MembersFormProps {
     isOpen: boolean;
@@ -27,6 +26,7 @@ interface MembersFormProps {
     onOpenCompanyModal: () => void;
     onOpenAreaModal: () => void;
     onOpenCargoModal: () => void;
+    locationId?: string;
 }
 
 export const MembersForm: React.FC<MembersFormProps> = ({
@@ -45,7 +45,8 @@ export const MembersForm: React.FC<MembersFormProps> = ({
     onOpenAreaModal,
     onOpenCargoModal,
     isOpen,
-    onClose
+    onClose,
+    locationId
 }) => {
     const [isImporting, setIsImporting] = React.useState(false);
 
@@ -80,7 +81,10 @@ export const MembersForm: React.FC<MembersFormProps> = ({
                 }
 
                 const dniStr = String(row.dni).trim();
-                const docRef = doc(db, 'members', dniStr);
+                const membersCol = locationId
+                    ? collection(db, 'ubicaciones', locationId, 'members')
+                    : collection(db, 'members');
+                const docRef = doc(membersCol, dniStr);
 
                 batch.set(docRef, {
                     dni: dniStr,

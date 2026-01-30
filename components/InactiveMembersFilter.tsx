@@ -1,17 +1,27 @@
 import React, { useState } from 'react';
-import { getFirestore, collection, query, where, getDocs, orderBy, Timestamp, deleteDoc, doc, writeBatch } from 'firebase/firestore';
-import { app } from '@/firebase/firebase.config';
+import { collection, query, where, getDocs, orderBy, Timestamp, deleteDoc, doc, writeBatch } from 'firebase/firestore';
+import { db } from '@/firebase/firebase.config';
 import { Member } from '@/features/types/types';
 import styles from './InactiveMembersFilter.module.css';
 import { FaUserClock, FaSpinner, FaTrash, FaExclamationTriangle, FaBuilding, FaIdCard, FaUserTag } from 'react-icons/fa';
 
-const db = getFirestore(app);
 
-export const InactiveMembersFilter: React.FC = () => {
+interface InactiveMembersFilterProps {
+    locationId?: string;
+}
+
+export const InactiveMembersFilter: React.FC<InactiveMembersFilterProps> = ({ locationId }) => {
     const [inactivePeriod, setInactivePeriod] = useState<number | null>(null); // 1, 2, or 3 months
     const [members, setMembers] = useState<Member[]>([]);
     const [loading, setLoading] = useState(false);
     const [deleting, setDeleting] = useState(false);
+
+    const getCollectionPath = () => {
+        if (locationId) {
+            return collection(db, 'ubicaciones', locationId, 'members');
+        }
+        return collection(db, 'members');
+    };
 
     const fetchInactiveMembers = async (months: number) => {
         setLoading(true);
@@ -26,9 +36,9 @@ export const InactiveMembersFilter: React.FC = () => {
             thresholdDate.setHours(0, 0, 0, 0);
 
             const q = query(
-                collection(db, 'members'),
+                getCollectionPath(),
                 where('lastAccess', '<', Timestamp.fromDate(thresholdDate)),
-                orderBy('lastAccess', 'desc') // Show most recently active (but still inactive) first? Or oldest? 'desc' means closer to threshold.
+                orderBy('lastAccess', 'desc')
             );
 
             const snapshot = await getDocs(q);
@@ -54,7 +64,7 @@ export const InactiveMembersFilter: React.FC = () => {
         if (!confirm(`¿Estás seguro de eliminar a ${name}? Esta acción no se puede deshacer.`)) return;
 
         try {
-            await deleteDoc(doc(db, 'members', id));
+            await deleteDoc(doc(getCollectionPath(), id));
             setMembers(prev => prev.filter(m => m.id !== id));
         } catch (error) {
             console.error("Error deleting member:", error);
@@ -86,7 +96,7 @@ export const InactiveMembersFilter: React.FC = () => {
                 const batch = writeBatch(db);
                 chunk.forEach(member => {
                     if (member.id) {
-                        const ref = doc(db, 'members', member.id);
+                        const ref = doc(getCollectionPath(), member.id);
                         batch.delete(ref);
                     }
                 });
@@ -111,18 +121,6 @@ export const InactiveMembersFilter: React.FC = () => {
             </div>
 
             <div className={styles.buttons}>
-                <button
-                    className={`${styles.filterBtn} ${inactivePeriod === 1 ? styles.active : ''}`}
-                    onClick={() => fetchInactiveMembers(1)}
-                >
-                    1 Mes
-                </button>
-                <button
-                    className={`${styles.filterBtn} ${inactivePeriod === 2 ? styles.active : ''}`}
-                    onClick={() => fetchInactiveMembers(2)}
-                >
-                    2 Meses
-                </button>
                 <button
                     className={`${styles.filterBtn} ${inactivePeriod === 3 ? styles.active : ''}`}
                     onClick={() => fetchInactiveMembers(3)}

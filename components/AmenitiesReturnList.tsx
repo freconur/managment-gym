@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FaConciergeBell, FaCheck, FaSpinner, FaUndo } from 'react-icons/fa';
 import {
-    getFirestore,
     collection,
     query,
     where,
@@ -11,10 +10,9 @@ import {
     updateDoc,
     doc
 } from 'firebase/firestore';
-import { app } from '@/firebase/firebase.config';
+import { db } from '@/firebase/firebase.config';
 import styles from './AmenitiesReturnList.module.css';
 
-const db = getFirestore(app);
 
 interface AccessRecord {
     id: string;

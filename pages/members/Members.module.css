@@ -91,6 +91,32 @@
     transform: translateY(0);
 }
 
+.btnPremiumSecondary {
+    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+    color: white;
+    border: none;
+    box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.4), 0 2px 4px -1px rgba(99, 102, 241, 0.2);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    padding: 0.6rem 1.2rem;
+    font-size: 0.95rem;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+}
+
+.btnPremiumSecondary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 12px -1px rgba(99, 102, 241, 0.5), 0 4px 6px -1px rgba(99, 102, 241, 0.3);
+    filter: brightness(1.1);
+}
+
+.btnPremiumSecondary:active {
+    transform: translateY(0);
+}
+
 .btnPremiumGreen {
     background: linear-gradient(135deg, #10b981 0%, #059669 100%);
     color: white;
@@ -469,7 +495,8 @@
         flex-direction: column;
     }
 
-    .responsiveHeaderActions a {
+    .responsiveHeaderActions a,
+    .responsiveHeaderActions button {
         justify-content: center;
         width: 100%;
     }

@@ -1,7 +1,6 @@
 import React, { useState } from 'react'
 import { FaCog, FaCloudUploadAlt, FaSpinner, FaCamera } from 'react-icons/fa'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
-import { storage } from '@/firebase/firebase.config'
 import styles from '@/styles/equipment.module.css'
 import { estadoDeMaquina } from '@/utils/data'
 import { compressImage } from '@/utils/imageUtils'
@@ -12,10 +11,8 @@ import { MarcaModal } from './MarcaModal'
 import { DeleteMarcaModal } from './DeleteMarcaModal'
 import UbicacionModal from './UbicacionModal'
 import { AuthModal } from './AuthModal'
-import { getFirestore } from 'firebase/firestore'
-import { app } from '@/firebase/firebase.config'
+import { db, storage } from '@/firebase/firebase.config'
 
-const db = getFirestore(app)
 
 interface EquipmentFormProps {
   formData: Omit<Machine, 'id'>;

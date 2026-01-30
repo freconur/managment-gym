@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import NextImage from 'next/image';
 import { FaHistory, FaSpinner, FaTrash } from 'react-icons/fa';
 import {
-    getFirestore,
     collection,
     query,
     orderBy,
@@ -16,11 +15,10 @@ import {
     getDocs,
     getDoc
 } from 'firebase/firestore';
-import { app } from '@/firebase/firebase.config';
+import { db } from '@/firebase/firebase.config';
 import styles from './RecentAccessFeed.module.css';
 import PinModal from './PinModal';
 
-const db = getFirestore(app);
 
 // ... AccessRecord interface
 interface AccessRecord {
@@ -52,15 +50,24 @@ interface PinAction {
 
 interface RecentAccessFeedProps {
     environment?: string;
+    locationId?: string;
 }
 
-export const RecentAccessFeed: React.FC<RecentAccessFeedProps> = ({ environment }) => {
+export const RecentAccessFeed: React.FC<RecentAccessFeedProps> = ({ environment, locationId: propLocationId }) => {
     const [recentAccesses, setRecentAccesses] = useState<AccessRecord[]>([]);
     const [loadingRecent, setLoadingRecent] = useState(true);
     const [isPinModalOpen, setIsPinModalOpen] = useState(false);
     const [pinAction, setPinAction] = useState<PinAction | null>(null);
     const [unlockedTowelIds, setUnlockedTowelIds] = useState<string[]>([]);
     const [latestMemberPhotos, setLatestMemberPhotos] = useState<Record<string, string>>({});
+    const [locationId, setLocationId] = useState<string | null>(propLocationId || null);
+
+    // Sync propLocationId to internal locationId state
+    useEffect(() => {
+        if (propLocationId) {
+            setLocationId(propLocationId);
+        }
+    }, [propLocationId]);
 
     // Filters
     const [selectedDate, setSelectedDate] = useState<string>(() => {
@@ -116,7 +123,11 @@ export const RecentAccessFeed: React.FC<RecentAccessFeedProps> = ({ environment 
             limit(50)
         );
 
-        const q = query(collection(db, 'asistencias'), ...constraints);
+        const asistenciasCol = locationId
+            ? collection(db, 'ubicaciones', locationId, 'asistencias')
+            : collection(db, 'asistencias');
+
+        const q = query(asistenciasCol, ...constraints);
 
         const unsubscribe = onSnapshot(q, { includeMetadataChanges: true }, (snapshot) => {
             const docs = snapshot.docs.map(doc => ({
@@ -148,7 +159,11 @@ export const RecentAccessFeed: React.FC<RecentAccessFeedProps> = ({ environment 
             const newPhotos: Record<string, string> = {};
             await Promise.all(Array.from(memberIdsToFetch).map(async (memberId) => {
                 try {
-                    const memberDoc = await getDoc(doc(db, 'members', memberId));
+                    const membersCol = locationId
+                        ? collection(db, 'ubicaciones', locationId, 'members')
+                        : collection(db, 'members');
+
+                    const memberDoc = await getDoc(doc(membersCol, memberId));
                     if (memberDoc.exists()) {
                         const data = memberDoc.data();
                         if (data.fotoUrl) {
@@ -184,9 +199,12 @@ export const RecentAccessFeed: React.FC<RecentAccessFeedProps> = ({ environment 
                 const q = query(collection(db, 'ubicaciones'), where('name', '==', environment));
                 const snapshot = await getDocs(q);
                 if (!snapshot.empty) {
-                    const data = snapshot.docs[0].data();
+                    const docSnap = snapshot.docs[0];
+                    const data = docSnap.data();
+                    setLocationId(docSnap.id);
                     setHasAmenities(!!data.haveAmenidades);
                 } else {
+                    setLocationId(null);
                     setHasAmenities(false);
                 }
             } catch (error) {
@@ -235,7 +253,11 @@ export const RecentAccessFeed: React.FC<RecentAccessFeedProps> = ({ environment 
         if (value.length > 2) return;
 
         try {
-            await updateDoc(doc(db, 'asistencias', id), { towelNumber: value });
+            const asistenciasCol = locationId
+                ? collection(db, 'ubicaciones', locationId, 'asistencias')
+                : collection(db, 'asistencias');
+
+            await updateDoc(doc(asistenciasCol, id), { towelNumber: value });
         } catch (error) {
             console.error("Error updating towel number:", error);
         }
@@ -245,16 +267,20 @@ export const RecentAccessFeed: React.FC<RecentAccessFeedProps> = ({ environment 
         if (!pinAction) return;
 
         try {
+            const asistenciasCol = locationId
+                ? collection(db, 'ubicaciones', locationId, 'asistencias')
+                : collection(db, 'asistencias');
+
             if (pinAction.type === 'DELETE') {
-                await deleteDoc(doc(db, 'asistencias', pinAction.payload));
+                await deleteDoc(doc(asistenciasCol, pinAction.payload));
             } else if (pinAction.type === 'TOGGLE_TOWEL') {
                 const { id, enable } = pinAction.payload;
                 if (enable) {
-                    await updateDoc(doc(db, 'asistencias', id), { hasTowel: true });
+                    await updateDoc(doc(asistenciasCol, id), { hasTowel: true });
                     // Automatically unlock the newly enabled towel for input
                     setUnlockedTowelIds(prev => [...prev, id]);
                 } else {
-                    await updateDoc(doc(db, 'asistencias', id), { hasTowel: false, towelNumber: null });
+                    await updateDoc(doc(asistenciasCol, id), { hasTowel: false, towelNumber: null });
                     setUnlockedTowelIds(prev => prev.filter(uid => uid !== id));
                 }
             } else if (pinAction.type === 'UNLOCK_TOWEL') {

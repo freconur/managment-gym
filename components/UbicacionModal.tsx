@@ -294,10 +294,10 @@ const UbicacionModal = ({ isOpen, onClose, db }: UbicacionModalProps) => {
                       Sub-ambientes
                     </label>
                     {/* Company Access Configuration */}
-                    <div style={{ marginTop: '0.8rem', width: '100%', borderTop: '1px solid #e5e7eb', paddingTop: '0.8rem' }}>
+                    {/* <div style={{ marginTop: '0.8rem', width: '100%', borderTop: '1px solid #e5e7eb', paddingTop: '0.8rem' }}>
                       <p style={{ fontSize: '0.85rem', fontWeight: 'bold', marginBottom: '0.5rem', color: '#1f2937' }}>Empresas con Acceso:</p>
 
-                      {/* Company Selector */}
+                     
                       <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.8rem' }}>
                         <select
                           value={selectedCompanyIdToAdd}
@@ -442,7 +442,7 @@ const UbicacionModal = ({ isOpen, onClose, db }: UbicacionModalProps) => {
                                     </div>
                                   )}
 
-                                  {/* Role Restriction Checkbox */}
+                                 
                                   <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: '#1f2937', cursor: 'pointer', marginTop: '0.2rem' }}>
                                     <input
                                       type="checkbox"
@@ -469,7 +469,7 @@ const UbicacionModal = ({ isOpen, onClose, db }: UbicacionModalProps) => {
                                         <p style={{ fontSize: '0.75rem', color: '#6b7280' }}>No se encontraron cargos para esta empresa.</p>
                                       ) : (
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                                          {/* Role Selector */}
+                                          
                                           <div style={{ display: 'flex', gap: '0.25rem' }}>
                                             <select
                                               value={selectedRoleToAdd[allowed.companyId] || ''}
@@ -522,7 +522,7 @@ const UbicacionModal = ({ isOpen, onClose, db }: UbicacionModalProps) => {
                                             </button>
                                           </div>
 
-                                          {/* Added Roles List */}
+                                          
                                           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
                                             {(allowed.allowedRoles || []).map(role => (
                                               <div key={role} style={{
@@ -565,7 +565,7 @@ const UbicacionModal = ({ isOpen, onClose, db }: UbicacionModalProps) => {
                           })}
                         </div>
                       )}
-                    </div>
+                    </div> */}
                     <div style={{ display: 'flex', gap: '0.25rem', marginTop: '0.5rem', justifyContent: 'flex-end' }}>
                       <button
                         onClick={() => handleUpdate(u.id)}

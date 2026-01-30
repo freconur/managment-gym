@@ -1,16 +1,19 @@
 import type { NextPage } from 'next'
 import Head from 'next/head'
 import Link from 'next/link'
+import { useRouter } from 'next/router'
 import { useState, useEffect, useMemo, useRef } from 'react'
 import {
     collection,
     query,
     orderBy,
     getDocs,
+    doc,
+    getDoc,
     Timestamp
 } from 'firebase/firestore'
 import { db } from '@/firebase/firebase.config'
-import { FaChartBar, FaArrowLeft, FaFilter, FaFilePdf } from 'react-icons/fa'
+import { FaChartBar, FaArrowLeft, FaFilter, FaFilePdf, FaSpinner } from 'react-icons/fa'
 import { SubEnvironment, Ubicacion } from '@/features/types/types'
 import {
     Chart as ChartJS,
@@ -25,7 +28,7 @@ import {
     LineElement,
 } from 'chart.js'
 import { Bar, Doughnut, Line } from 'react-chartjs-2'
-import styles from './Reports.module.css'
+import styles from '../Reports.module.css'
 import { InactiveMembersFilter } from '@/components/InactiveMembersFilter'
 import {
     Document,
@@ -38,7 +41,6 @@ import {
     Font
 } from '@react-pdf/renderer'
 import { ThemeToggle } from '@/components/ThemeToggle'
-
 
 ChartJS.register(
     CategoryScale,
@@ -82,12 +84,13 @@ interface MembersReportPDFProps {
         totalIngresos: number;
         empresasActivas: number;
     };
+    locationName: string;
 }
 
-const MembersReportPDF = ({ data, charts, stats }: MembersReportPDFProps) => (
+const MembersReportPDF = ({ data, charts, stats, locationName }: MembersReportPDFProps) => (
     <Document>
         <Page size="A4" style={pdfStyles.page}>
-            <Text style={pdfStyles.title}>Reporte de Ingresos de Miembros</Text>
+            <Text style={pdfStyles.title}>Reporte de Ingresos - {locationName}</Text>
             <Text style={pdfStyles.subtitle}>Management Gym - Generado el {new Date().toLocaleDateString()}</Text>
 
             <View style={pdfStyles.section}>
@@ -128,7 +131,7 @@ const MembersReportPDF = ({ data, charts, stats }: MembersReportPDFProps) => (
 
             <View style={pdfStyles.footer}>
                 <Text style={pdfStyles.footerText}>
-                    Este reporte contiene información consolidada de los registros de asistencia en el periodo seleccionado.
+                    Este reporte contiene información consolidada de los registros de asistencia en {locationName}.
                 </Text>
             </View>
         </Page>
@@ -145,7 +148,10 @@ interface AccessRecord {
     timestamp: any;
 }
 
-const ReportsPage: NextPage = () => {
+const DynamicReportsPage: NextPage = () => {
+    const router = useRouter()
+    const { id } = router.query
+
     const [accessData, setAccessData] = useState<AccessRecord[]>([])
     const [loading, setLoading] = useState(true)
     const [dateRange, setDateRange] = useState('this_month')
@@ -158,16 +164,25 @@ const ReportsPage: NextPage = () => {
     const [selectedSex, setSelectedSex] = useState<string>('all')
     const [subEnvironmentsList, setSubEnvironmentsList] = useState<SubEnvironment[]>([])
     const [selectedSubEnv, setSelectedSubEnv] = useState<string>('all')
-    const [locationsList, setLocationsList] = useState<Ubicacion[]>([])
-    const [selectedLocation, setSelectedLocation] = useState<string>('all')
+    const [location, setLocation] = useState<Ubicacion | null>(null)
 
     useEffect(() => {
+        if (!id) return
+
         const fetchData = async () => {
             setLoading(true)
             try {
-                // Fetch all data and filter client-side for flexibility
-                // In a production app with huge data, we would add date range constraints to the query
-                const q = query(collection(db, 'asistencias'), orderBy('timestamp', 'desc'))
+                // Fetch location metadata
+                const locDoc = await getDoc(doc(db, 'ubicaciones', id as string))
+                if (locDoc.exists()) {
+                    setLocation({ id: locDoc.id, ...locDoc.data() } as Ubicacion)
+                }
+
+                // Fetch data from location-specific subcollection
+                const q = query(
+                    collection(db, 'ubicaciones', id as string, 'asistencias'),
+                    orderBy('timestamp', 'desc')
+                )
                 const snapshot = await getDocs(q)
                 const data = snapshot.docs.map(doc => ({
                     id: doc.id,
@@ -193,32 +208,7 @@ const ReportsPage: NextPage = () => {
             setSubEnvironmentsList(data)
         }
         fetchSubEnvs()
-
-        // Fetch Locations (Environments)
-        const fetchLocations = async () => {
-            try {
-                // Fetch all locations without ordering to avoid missing-field exclusion
-                const q = query(collection(db, 'ubicaciones'));
-                const snapshot = await getDocs(q);
-                console.log("Locations snapshot size:", snapshot.size); // Debug log
-
-                const data = snapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data()
-                })) as Ubicacion[];
-
-                console.log("Locations data:", data); // Debug log
-
-                // Sort client-side by name
-                data.sort((a, b) => a.name.localeCompare(b.name));
-
-                setLocationsList(data);
-            } catch (error) {
-                console.error("Error fetching locations:", error);
-            }
-        }
-        fetchLocations()
-    }, [])
+    }, [id])
 
     const filteredData = useMemo(() => {
         let filtered = accessData
@@ -233,14 +223,10 @@ const ReportsPage: NextPage = () => {
             const startOfDay = new Date(now.setHours(0, 0, 0, 0))
             filtered = filtered.filter(item => item.timestamp?.toDate() >= startOfDay)
         } else if (dateRange === 'custom' && customStart && customEnd) {
-            // Create dates and adjust for local timezone offset to ensure correct day comparison
             const start = new Date(customStart)
             start.setMinutes(start.getMinutes() + start.getTimezoneOffset())
-
             const end = new Date(customEnd)
             end.setMinutes(end.getMinutes() + end.getTimezoneOffset())
-
-            // Set end of day for the end date
             end.setHours(23, 59, 59, 999)
 
             filtered = filtered.filter(item => {
@@ -248,7 +234,6 @@ const ReportsPage: NextPage = () => {
                 return date >= start && date <= end
             })
         }
-
 
         // Company Filter
         if (selectedCompany !== 'all') {
@@ -267,30 +252,20 @@ const ReportsPage: NextPage = () => {
             )
         }
 
-        // Location (Environment) Filter
-        if (selectedLocation !== 'all') {
-            filtered = filtered.filter(item => item.environment === selectedLocation)
-        }
-
         return filtered
-    }, [accessData, dateRange, selectedCompany, selectedSex, customStart, customEnd, selectedSubEnv, selectedLocation])
+    }, [accessData, dateRange, selectedCompany, selectedSex, customStart, customEnd, selectedSubEnv])
 
-    // Get unique companies for filter
     const companies = useMemo(() => {
         const unique = new Set(accessData.map(item => item.company).filter(Boolean))
         return Array.from(unique).sort()
     }, [accessData])
 
-    // --- Chart Data Preparation ---
-
-    // 1. Bar Chart: Access by Company
     const companyChartData = useMemo(() => {
         const counts: Record<string, number> = {}
         filteredData.forEach(item => {
             const comp = item.company || 'Sin Empresa'
             counts[comp] = (counts[comp] || 0) + 1
         })
-
         return {
             labels: Object.keys(counts),
             datasets: [
@@ -305,39 +280,19 @@ const ReportsPage: NextPage = () => {
         }
     }, [filteredData])
 
-    // 2. Doughnut Chart: Access by Sex
-    // 2. Doughnut Chart: Access by Sex
     const sexChartData = useMemo(() => {
-        const counts = {
-            'Hombre': 0,
-            'Mujer': 0,
-            'Otro': 0
-        }
-
+        const counts = { 'Hombre': 0, 'Mujer': 0, 'Otro': 0 }
         filteredData.forEach(item => {
             const sex = item.sexo
             if (sex === 'Hombre') counts['Hombre'] += 1
             else if (sex === 'Mujer') counts['Mujer'] += 1
             else counts['Otro'] += 1
         })
-
-        // Remove 'Otro' if 0 to keep chart clean, or keep it if you prefer consistency
-        // Keeping buckets fixed ensures color consistency
         const labels = ['Hombre', 'Mujer', 'Otro']
         const data = [counts['Hombre'], counts['Mujer'], counts['Otro']]
-        const backgroundColor = [
-            'rgba(54, 162, 235, 0.6)', // Blue for Hombre
-            'rgba(255, 99, 132, 0.6)', // Pink for Mujer
-            'rgba(201, 203, 207, 0.6)' // Grey for Other
-        ]
-        const borderColor = [
-            'rgba(54, 162, 235, 1)',
-            'rgba(255, 99, 132, 1)',
-            'rgba(201, 203, 207, 1)'
-        ]
+        const backgroundColor = ['rgba(54, 162, 235, 0.6)', 'rgba(255, 99, 132, 0.6)', 'rgba(201, 203, 207, 0.6)']
+        const borderColor = ['rgba(54, 162, 235, 1)', 'rgba(255, 99, 132, 1)', 'rgba(201, 203, 207, 1)']
 
-        // Filter out zero values if desired, or keep as is. 
-        // Let's filter slightly for visual cleanliness but keep arrays aligned
         const finalLabels: string[] = []
         const finalData: number[] = []
         const finalBg: string[] = []
@@ -351,40 +306,25 @@ const ReportsPage: NextPage = () => {
                 finalBorder.push(borderColor[idx])
             }
         })
-
         return {
             labels: finalLabels,
-            datasets: [
-                {
-                    data: finalData,
-                    backgroundColor: finalBg,
-                    borderColor: finalBorder,
-                    borderWidth: 1,
-                },
-            ],
+            datasets: [{ data: finalData, backgroundColor: finalBg, borderColor: finalBorder, borderWidth: 1 }],
         }
     }, [filteredData])
 
-    // 3. Line Chart: Timeline (Last 7 days or filtered range distribution)
     const timelineChartData = useMemo(() => {
         const counts: Record<string, number> = {}
-
         filteredData.forEach(item => {
             if (!item.timestamp?.toDate) return
             const dateObj = item.timestamp.toDate()
-            // Use local date components to avoid UTC shifts
             const year = dateObj.getFullYear()
             const month = String(dateObj.getMonth() + 1).padStart(2, '0')
             const day = String(dateObj.getDate()).padStart(2, '0')
             const dateKey = `${year}-${month}-${day}`
             counts[dateKey] = (counts[dateKey] || 0) + 1
         })
-
-        // Sort keys chronologically (ISO strings sort naturally)
         const sortedKeys = Object.keys(counts).sort()
-
         return {
-            // Convert keys to "DD/MM(Count)" format for localized display
             labels: sortedKeys.map(key => {
                 const [year, month, day] = key.split('-');
                 const count = counts[key];
@@ -396,16 +336,14 @@ const ReportsPage: NextPage = () => {
                     data: sortedKeys.map(key => counts[key]),
                     borderColor: 'rgb(75, 192, 192)',
                     backgroundColor: 'rgba(75, 192, 192, 0.5)',
-                    tension: 0.3, // Smooth curve
+                    tension: 0.3,
                 },
             ],
         }
     }, [filteredData])
 
-
     const handleExportPDF = async () => {
         if (!reportRef.current) return
-
         setExporting(true)
         try {
             const getChartImage = (index: number): string => {
@@ -415,40 +353,31 @@ const ReportsPage: NextPage = () => {
                 }
                 return '';
             };
-
-            // Order of charts in the DOM:
-            // 0: Timeline (Line)
-            // 1: Company (Bar)
-            // 2: Sex (Doughnut)
-
             const charts = {
                 timeline: getChartImage(0),
                 company: getChartImage(1),
                 sex: getChartImage(2),
             };
-
             const stats = {
                 totalIngresos: filteredData.length,
                 empresasActivas: companyChartData.labels?.length || 0
             };
-
             const blob = await pdf(
                 <MembersReportPDF
                     data={filteredData}
                     charts={charts}
                     stats={stats}
+                    locationName={location?.name || ''}
                 />
             ).toBlob();
-
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
-            link.download = `reporte-ingresos-${new Date().toISOString().split('T')[0]}.pdf`;
+            link.download = `reporte-ingresos-${location?.name || 'ubicacion'}-${new Date().toISOString().split('T')[0]}.pdf`;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
             URL.revokeObjectURL(url);
-
         } catch (error) {
             console.error('Error generating PDF:', error);
             alert('Hubo un error al generar el PDF.');
@@ -457,21 +386,30 @@ const ReportsPage: NextPage = () => {
         }
     }
 
+    if (loading && !location) {
+        return (
+            <div className={styles.loadingContainer}>
+                <FaSpinner className={styles.spinAnimation} />
+                <p>Cargando reportes...</p>
+            </div>
+        )
+    }
+
     return (
         <>
             <Head>
-                <title>Reportes de Ingresos - Management Gym</title>
+                <title>Reportes {location?.name ? `- ${location.name}` : ''} - Management Gym</title>
             </Head>
             <div className={styles.container}>
                 <main className={styles.main}>
 
                     <div className={styles.header}>
                         <div className={styles.headerTitleGroup}>
-                            <Link href="/members" className={styles.backLink}>
-                                <FaArrowLeft /> Volver a Miembros
+                            <Link href={`/members/${id}`} className={styles.backLink}>
+                                <FaArrowLeft /> Volver a Gestión
                             </Link>
                             <h1 className={styles.title}>
-                                <FaChartBar className={styles.titleIcon} /> Reportes de Ingresos
+                                <FaChartBar className={styles.titleIcon} /> Reportes: <span style={{ color: '#3b82f6' }}>{location?.name}</span>
                             </h1>
                         </div>
                         {!loading && (
@@ -523,7 +461,6 @@ const ReportsPage: NextPage = () => {
                                 </div>
                             )}
 
-
                             <select
                                 value={selectedCompany}
                                 onChange={(e) => setSelectedCompany(e.target.value)}
@@ -543,37 +480,25 @@ const ReportsPage: NextPage = () => {
                                 <option value="Mujer">Mujer</option>
                             </select>
 
-                            <select
-                                value={selectedSubEnv}
-                                onChange={(e) => setSelectedSubEnv(e.target.value)}
-                                className={styles.select}
-                            >
-                                <option value="all">Todos los Sub-ambientes</option>
-                                {subEnvironmentsList.map(env => (
-                                    <option key={env.id} value={env.nombre}>{env.nombre}</option>
-                                ))}
-                            </select>
-
-                            <select
-                                value={selectedLocation}
-                                onChange={(e) => setSelectedLocation(e.target.value)}
-                                className={styles.select}
-                            >
-                                <option value="all">Todas las Ubicaciones</option>
-                                {locationsList.map(loc => (
-                                    <option key={loc.id} value={loc.name}>{loc.name}</option>
-                                ))}
-                            </select>
+                            {location?.haveSubEnvironments !== false && (
+                                <select
+                                    value={selectedSubEnv}
+                                    onChange={(e) => setSelectedSubEnv(e.target.value)}
+                                    className={styles.select}
+                                >
+                                    <option value="all">Todos los Sub-ambientes</option>
+                                    {subEnvironmentsList.map(env => (
+                                        <option key={env.id} value={env.nombre}>{env.nombre}</option>
+                                    ))}
+                                </select>
+                            )}
                         </div>
                     </div>
 
                     {loading ? (
                         <div className={styles.loading}>Cargando datos...</div>
                     ) : (
-
                         <div ref={reportRef} className={styles.chartsGrid}>
-
-                            {/* Line Chart - Timeline */}
                             <div className={`${styles.card} ${styles.cardFullWidth}`}>
                                 <h3 className={styles.cardTitle}>Tendencia de Ingresos</h3>
                                 <div className={styles.chartContainer}>
@@ -582,10 +507,7 @@ const ReportsPage: NextPage = () => {
                                         options={{
                                             responsive: true,
                                             maintainAspectRatio: false,
-                                            interaction: {
-                                                mode: 'index',
-                                                intersect: false,
-                                            },
+                                            interaction: { mode: 'index', intersect: false },
                                             plugins: {
                                                 legend: { position: 'top' as const },
                                                 tooltip: {
@@ -603,12 +525,8 @@ const ReportsPage: NextPage = () => {
                                                     grid: { display: false }
                                                 },
                                                 y: {
-                                                    // beginAtZero: true, // Removed to make it dynamic based on data range
                                                     ticks: { precision: 0 },
-                                                    grid: {
-                                                        tickLength: 8,
-                                                        color: 'rgba(0, 0, 0, 0.1)'
-                                                    }
+                                                    grid: { tickLength: 8, color: 'rgba(0, 0, 0, 0.1)' }
                                                 }
                                             }
                                         }}
@@ -616,7 +534,6 @@ const ReportsPage: NextPage = () => {
                                 </div>
                             </div>
 
-                            {/* Bar Chart - Company */}
                             <div className={styles.card}>
                                 <h3 className={styles.cardTitle}>Ingresos por Empresa</h3>
                                 <div className={styles.chartContainer}>
@@ -627,37 +544,24 @@ const ReportsPage: NextPage = () => {
                                             maintainAspectRatio: false,
                                             plugins: { legend: { display: false } },
                                             scales: {
-                                                x: {
-                                                    ticks: { autoSkip: true, maxTicksLimit: 8 }
-                                                },
-                                                y: {
-                                                    ticks: { precision: 0 },
-                                                    grid: {
-                                                        tickLength: 8,
-                                                        color: 'rgba(0, 0, 0, 0.1)'
-                                                    }
-                                                }
+                                                x: { ticks: { autoSkip: true, maxTicksLimit: 8 } },
+                                                y: { ticks: { precision: 0 }, grid: { tickLength: 8, color: 'rgba(0, 0, 0, 0.1)' } }
                                             }
                                         }}
                                     />
                                 </div>
                             </div>
 
-                            {/* Doughnut Chart - Sex */}
                             <div className={styles.card}>
                                 <h3 className={styles.cardTitle}>Distribución por Sexo</h3>
                                 <div className={`${styles.chartContainer} ${styles.doughnutContainer}`}>
                                     <Doughnut
                                         data={sexChartData}
-                                        options={{
-                                            responsive: true,
-                                            maintainAspectRatio: false,
-                                        }}
+                                        options={{ responsive: true, maintainAspectRatio: false }}
                                     />
                                 </div>
                             </div>
 
-                            {/* Summary Card */}
                             <div className={styles.card}>
                                 <h3 className={styles.cardTitle}>Resumen</h3>
                                 <div className={styles.summaryGrid}>
@@ -672,12 +576,10 @@ const ReportsPage: NextPage = () => {
                                 </div>
                             </div>
 
-                            {/* Inactive Members Section */}
                             <div className={`${styles.card} ${styles.cardFullWidth}`}>
-                                <InactiveMembersFilter />
+                                <InactiveMembersFilter locationId={id as string} />
                             </div>
                         </div>
-
                     )}
                 </main >
             </div >
@@ -685,4 +587,4 @@ const ReportsPage: NextPage = () => {
     )
 }
 
-export default ReportsPage
+export default DynamicReportsPage

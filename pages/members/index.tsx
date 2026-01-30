@@ -5,7 +5,6 @@ import NextImage from 'next/image'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import {
-    getFirestore,
     collection,
     addDoc,
     updateDoc,
@@ -20,7 +19,7 @@ import {
     setDoc
 } from 'firebase/firestore'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
-import { app, storage } from '@/firebase/firebase.config'
+import { db, storage } from '@/firebase/firebase.config'
 import { FaEdit, FaTrash, FaUserPlus, FaSave, FaTimes, FaCamera, FaSpinner, FaUserClock, FaChartBar } from 'react-icons/fa'
 import CompanyModal from '@/components/CompanyModal'
 import AreaModal from '@/components/AreaModal'
@@ -32,12 +31,6 @@ import { Member, Company, Area, Cargo, Ubicacion } from '@/features/types/types'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import UbicacionModal from '@/components/UbicacionModal'
 import PinModal from '@/components/PinModal'
-
-
-const db = getFirestore(app)
-
-
-
 
 
 

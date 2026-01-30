@@ -1,10 +1,9 @@
-import { app } from "@/firebase/firebase.config";
+import { db } from "@/firebase/firebase.config";
 import {
     addDoc,
     collection,
     deleteDoc,
     doc,
-    getFirestore,
     onSnapshot,
     orderBy,
     query,
@@ -13,8 +12,6 @@ import {
 } from "firebase/firestore";
 import { useState, useCallback } from "react";
 import { ComplementaryEquipment } from "../types/types";
-
-const db = getFirestore(app);
 
 export const useComplementaryEquipment = () => {
     const [equipment, setEquipment] = useState<ComplementaryEquipment[]>([]);

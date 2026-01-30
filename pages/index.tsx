@@ -2,10 +2,15 @@ import type { NextPage } from 'next'
 import Head from 'next/head'
 import Link from 'next/link'
 import { FaDumbbell, FaChartLine, FaUsers, FaArrowRight, FaPhone, FaEnvelope, FaCode } from 'react-icons/fa'
+import { useState } from 'react'
+import { db } from '@/firebase/firebase.config'
 import styles from './Home.module.css'
 import { ThemeToggle } from '@/components/ThemeToggle'
+import SelectEntryModal from '@/components/SelectEntryModal'
 
 const Home: NextPage = () => {
+  const [isSelectionModalOpen, setIsSelectionModalOpen] = useState(false)
+
   return (
     <div className={styles.container}>
       <Head>
@@ -58,7 +63,11 @@ const Home: NextPage = () => {
             </div>
           </Link>
 
-          <Link href="/members" className={styles.card}>
+          <div
+            onClick={() => setIsSelectionModalOpen(true)}
+            className={styles.card}
+            style={{ cursor: 'pointer' }}
+          >
             <div className={styles.cardIcon}>
               <FaUsers />
             </div>
@@ -69,11 +78,17 @@ const Home: NextPage = () => {
               </p>
             </div>
             <div className={styles.cardFooter}>
-              Gestionar Usuarios <FaArrowRight />
+              Registrar Ingreso <FaArrowRight />
             </div>
-          </Link>
+          </div>
         </div>
       </main>
+
+      <SelectEntryModal
+        isOpen={isSelectionModalOpen}
+        onClose={() => setIsSelectionModalOpen(false)}
+        db={db}
+      />
 
       {/* <footer className={styles.footer}>
         <div className={styles.footerDivider} />

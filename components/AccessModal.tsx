@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import NextImage from 'next/image';
 import { FaSearch, FaBarcode, FaCheckCircle, FaSpinner, FaUserClock, FaTimes, FaEdit, FaMapMarkerAlt, FaConciergeBell } from 'react-icons/fa';
 import {
-    getFirestore,
     collection,
     query,
     where,
@@ -14,13 +13,12 @@ import {
     doc,
     serverTimestamp
 } from 'firebase/firestore';
-import { app } from '@/firebase/firebase.config';
+import { db } from '@/firebase/firebase.config';
 import styles from './AccessModal.module.css';
 import { SubEnvironment, Amenity, AllowedCompany } from '@/features/types/types';
 import SubEnvironmentModal from './SubEnvironmentModal';
 import AmenityModal from './AmenityModal';
 
-const db = getFirestore(app);
 
 interface Member {
     id: string;
@@ -38,11 +36,12 @@ interface AccessModalProps {
     isOpen: boolean;
     onClose: () => void;
     environment?: string;
+    locationId?: string;
 }
 
 import { useEscapeKey } from '@/features/hooks/useEscapeKey'
 
-export const AccessModal: React.FC<AccessModalProps> = ({ isOpen, onClose, environment }) => {
+export const AccessModal: React.FC<AccessModalProps> = ({ isOpen, onClose, environment, locationId: propLocationId }) => {
     const [dni, setDni] = useState('');
     const [member, setMember] = useState<Member | null>(null);
     const [loading, setLoading] = useState(false);
@@ -61,6 +60,14 @@ export const AccessModal: React.FC<AccessModalProps> = ({ isOpen, onClose, envir
 
     // Authorization State
     const [allowedCompaniesConfig, setAllowedCompaniesConfig] = useState<AllowedCompany[] | null>(null);
+    const [locationId, setLocationId] = useState<string | null>(propLocationId || null);
+
+    // Sync propLocationId to internal locationId state
+    useEffect(() => {
+        if (propLocationId) {
+            setLocationId(propLocationId);
+        }
+    }, [propLocationId]);
 
     const inputRef = useRef<HTMLInputElement>(null);
 
@@ -189,7 +196,11 @@ export const AccessModal: React.FC<AccessModalProps> = ({ isOpen, onClose, envir
         setMember(null);
         setSuccessMsg('');
         try {
-            const q = query(collection(db, 'members'), where('dni', '==', dniVal.trim()));
+            const membersCol = locationId
+                ? collection(db, 'ubicaciones', locationId, 'members')
+                : collection(db, 'members');
+
+            const q = query(membersCol, where('dni', '==', dniVal.trim()));
             const querySnapshot = await getDocs(q);
             if (!querySnapshot.empty) {
                 const docData = querySnapshot.docs[0].data();
@@ -223,10 +234,13 @@ export const AccessModal: React.FC<AccessModalProps> = ({ isOpen, onClose, envir
                 const q = query(collection(db, 'ubicaciones'), where('name', '==', environment));
                 const snapshot = await getDocs(q);
                 if (!snapshot.empty) {
-                    const data = snapshot.docs[0].data();
+                    const docSnap = snapshot.docs[0];
+                    const data = docSnap.data();
+                    setLocationId(docSnap.id);
                     setHaveSubEnvironments(!!data.haveSubEnvironments);
                     setAllowedCompaniesConfig(data.allowedCompanies || null);
                 } else {
+                    setLocationId(null);
                     setHaveSubEnvironments(false);
                     setAllowedCompaniesConfig(null);
                 }
@@ -249,7 +263,11 @@ export const AccessModal: React.FC<AccessModalProps> = ({ isOpen, onClose, envir
 
         setRegistering(true);
         try {
-            await addDoc(collection(db, 'asistencias'), {
+            const asistenciasCol = locationId
+                ? collection(db, 'ubicaciones', locationId, 'asistencias')
+                : collection(db, 'asistencias');
+
+            await addDoc(asistenciasCol, {
                 memberId: member.id,
                 memberName: `${member.nombre} ${member.apellidos}`,
                 memberDni: member.dni,
@@ -266,7 +284,11 @@ export const AccessModal: React.FC<AccessModalProps> = ({ isOpen, onClose, envir
             });
 
             // Update lastAccess for the member
-            await updateDoc(doc(db, 'members', member.id), {
+            const membersCol = locationId
+                ? collection(db, 'ubicaciones', locationId, 'members')
+                : collection(db, 'members');
+
+            await updateDoc(doc(membersCol, member.id), {
                 lastAccess: serverTimestamp()
             });
 

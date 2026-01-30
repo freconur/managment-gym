@@ -1,6 +1,5 @@
-import { app } from "@/firebase/firebase.config";
+import { db } from "@/firebase/firebase.config";
 import {
-    getFirestore,
     collection,
     addDoc,
     updateDoc,
@@ -22,10 +21,7 @@ import {
 } from "firebase/firestore";
 import { useState, useCallback } from "react";
 import { Checklist, ChecklistItem, Machine, ChecklistItemStatus, ChecklistAssignment, Usuario } from "../types/types";
-import { ManagmentRegister } from "../actions/actionaManagment";
 import { useGlobalContextDispatch } from "../context/useGlobalContext";
-
-const db = getFirestore(app);
 
 export const useChecklist = () => {
     const dispatch = useGlobalContextDispatch();
@@ -130,9 +126,6 @@ export const useChecklist = () => {
             checklistId = docRef.id;
         }
 
-        // REMOVED: Eager item initialization loop to fix performance bottleneck.
-        // The system now supports lazy creation of items.
-
         return checklistId;
     };
 
@@ -146,16 +139,13 @@ export const useChecklist = () => {
         const itemRef = doc(db, `checklists/${checklistId}/items`, machineId);
         const checklistRef = doc(db, 'checklists', checklistId);
 
-        // Fetch the date from the checklist to ensure consistency in mapping
-        // Optimization: Pass date as arg or context context? For now fetching is safe but adds read.
-        // We can optimize this further if needed, but the bottleneck was the loop.
         const checklistSnap = await getDoc(checklistRef);
         const checklistDate = checklistSnap.data()?.date;
 
         const updateData: any = {
             status,
             updatedAt: serverTimestamp(),
-            date: checklistDate, // Crucial for collectionGroup mapping
+            date: checklistDate,
         };
         if (incidenciaId) updateData.incidenciaId = incidenciaId;
         if (notes) updateData.notas = notes;
@@ -179,45 +169,38 @@ export const useChecklist = () => {
     const saveChecklistBatch = async (
         checklistId: string,
         items: Record<string, { status: ChecklistItemStatus; incidenciaIds?: string[]; notes?: string }>,
-        pendingIncidences: Record<string, any> = {}, // Map tempID -> IncidenceData
-        user?: any // The user performing the checklist
+        pendingIncidences: Record<string, any> = {},
+        user?: any
     ) => {
         const batch = writeBatch(db);
         const checklistRef = doc(db, 'checklists', checklistId);
 
-        // Get current date for consistency
         const checklistSnap = await getDoc(checklistRef);
         const checklistDate = checklistSnap.data()?.date;
 
-        // 1. Process Pending Incidences
         const tempIdToRealId: Record<string, string> = {};
 
         for (const [tempId, incData] of Object.entries(pendingIncidences)) {
             const { machineId, ...data } = incData;
             const pathRef = collection(db, `maquinas/${machineId}/eventos/`);
 
-            // Generate ID
             const newDocRef = doc(pathRef);
             tempIdToRealId[tempId] = newDocRef.id;
 
-            // Ensure user is attached if not present in data
             const finalData = {
                 ...data,
                 id: newDocRef.id,
-                machineId, // Store machineId in event? schema says yes
+                machineId,
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
-                usuario: data.usuario || user // Fallback to provided user
+                usuario: data.usuario || user
             };
 
             batch.set(newDocRef, finalData);
 
-            // Update machine status if needed
             if (data.maquinaDejoFuncionar) {
                 batch.update(doc(db, 'maquinas', machineId), { status: 'inactive' });
             } else {
-                // Should we enable it? Only if it was inactive? 
-                // Logic in createIncidencia suggests yes:
                 batch.update(doc(db, 'maquinas', machineId), { status: 'active' });
             }
         }
@@ -235,7 +218,6 @@ export const useChecklist = () => {
             if (data.status === 'incidencia') {
                 incidencesCount++;
                 if (data.incidenciaIds) {
-                    // Replace temp IDs with real IDs
                     finalIncidenciaIds = data.incidenciaIds.map(id => tempIdToRealId[id] || id);
                     allIncidenciaIds.push(...finalIncidenciaIds);
                 }
@@ -251,7 +233,6 @@ export const useChecklist = () => {
             }, { merge: true });
         });
 
-        // Update checklist summary
         batch.update(checklistRef, {
             status: 'completed',
             completedCount,
@@ -266,20 +247,16 @@ export const useChecklist = () => {
     const assignUserChecklist = async (userId: string, startDate: string, endDate: string, gym?: string, assignmentId?: string) => {
         const pathRef = collection(db, 'checklist_assignments');
 
-        // 1. Find potential overlaps
         const q = query(pathRef, where('startDate', '<=', endDate));
         const snapshot = await getDocs(q);
 
         const batch = writeBatch(db);
 
-        // 2. Check for conflicts
         snapshot.docs.forEach(doc => {
-            // Ignore the assignment we are currently editing
             if (assignmentId && doc.id === assignmentId) return;
 
             const data = doc.data() as ChecklistAssignment;
             if (data.endDate >= startDate) {
-                // Check if it's for the same gym
                 const sameGym = data.gym === gym;
 
                 if (sameGym) {
@@ -288,7 +265,6 @@ export const useChecklist = () => {
             }
         });
 
-        // 3. Add or Update assignment
         let userData: Usuario | undefined;
         try {
             const userDocRef = doc(db, 'usuarios', userId);
@@ -334,11 +310,8 @@ export const useChecklist = () => {
     };
 
     const getChecklistAssignment = async (date: string, gym?: string) => {
-        // date format YYYY-MM-DD
         const pathRef = collection(db, 'checklist_assignments');
 
-        // Use a simple query by startDate to avoid composite index requirements
-        // and filter by gym/endDate on the client side.
         const q = query(
             pathRef,
             where('startDate', '<=', date),
@@ -347,17 +320,14 @@ export const useChecklist = () => {
 
         const snapshot = await getDocs(q);
 
-        // Find first match where endDate >= date AND (gym matches OR assignment is global)
         for (const docRef of snapshot.docs) {
             const data = docRef.data() as ChecklistAssignment;
             if (data.endDate >= date) {
-                // If a specific gym is requested, check for match or global
                 if (gym) {
                     if (data.gym === gym) {
                         return { id: docRef.id, ...data };
                     }
                 } else {
-                    // If no gym requested (backward compatibility), return the first match
                     return { id: docRef.id, ...data };
                 }
             }
@@ -369,9 +339,6 @@ export const useChecklist = () => {
         const pathRef = collection(db, 'checklist_assignments');
         const rta = await getDocs(pathRef);
         setUsuarioChecklist(rta.docs[0].data())
-        /*  console.log('rta', rta.docs[0].data())
-         console.log('tt', rta.docs.map(doc => doc.data() as ChecklistAssignment))
-         return rta.docs.map(doc => doc.data() as ChecklistAssignment); */
     }
     const clearUsuarioChecklist = () => {
         setUsuarioChecklist({});
@@ -391,7 +358,6 @@ export const useChecklist = () => {
     }, []);
 
     const getMonthlyAssignments = useCallback((month: number, year: number) => {
-        // Calculate start and end of the month
         const startOfMonth = new Date(year, month, 1);
         const endOfMonth = new Date(year, month + 1, 0);
 
@@ -400,9 +366,6 @@ export const useChecklist = () => {
 
         const pathRef = collection(db, 'checklist_assignments');
 
-        // Query assignments that start before the end of the month
-        // We will filter client-side for those that end after the start of the month to handle overlaps completely
-        // Since querying 'startDate' <= endStr is simple.
         const q = query(
             pathRef,
             where('startDate', '<=', endStr),
@@ -415,7 +378,6 @@ export const useChecklist = () => {
                 ...doc.data()
             })) as ChecklistAssignment[];
 
-            // Client-side filter: End Date must be >= Start of Month
             const filtered = data.filter(a => a.endDate >= startStr);
 
             setAssignments(filtered);

@@ -1,5 +1,4 @@
-import { app } from "@/firebase/firebase.config";
-import { initializeApp } from "firebase/app";
+import { db } from "@/firebase/firebase.config";
 import {
   OrderByDirection,
   QuerySnapshot,
@@ -12,7 +11,6 @@ import {
   endBefore,
   getDoc,
   getDocs,
-  getFirestore,
   increment,
   limit,
   onSnapshot,
@@ -28,9 +26,6 @@ import {
 } from "firebase/firestore";
 import { useState, useCallback } from "react";
 import { Machine, Marca, Incidencia, Mantenimiento, Usuario, ReusableTask } from "../types/types";
-
-const db = getFirestore(app);
-
 
 export type Ubicacion = {
   id?: string;
@@ -48,6 +43,7 @@ export const useManagment = () => {
   const [usuariosValidate, setUsuariosValidate] = useState<Usuario>({});
   const [eventos, setEventos] = useState<Incidencia[]>([]);
   const [reusableTasks, setReusableTasks] = useState<ReusableTask[]>([]);
+
   const getUbicaciones = useCallback(() => {
     const pathRef = collection(db, 'ubicaciones');
     const q = query(pathRef, orderBy('name', 'asc'));
@@ -60,8 +56,6 @@ export const useManagment = () => {
     });
     return unsubscribe;
   }, [])
-
-
 
   //////////////////////////USUARIOS//////////////////////////
 
@@ -128,7 +122,8 @@ export const useManagment = () => {
     const docRef = doc(db, 'usuarios', id);
     await deleteDoc(docRef);
   }
-  //////////////////////////USUARIOS//////////////////////////
+
+  //////////////////////////MAQUINAS//////////////////////////
   const agregarMaquina = async (maquina: Machine) => {
     const pathref = collection(db, 'maquinas');
     const newMachine = {
@@ -141,7 +136,7 @@ export const useManagment = () => {
   }
   const getMaquinas = useCallback(() => {
     const pathRef = collection(db, 'maquinas');
-    const q = query(pathRef, orderBy('name', 'asc')); // Order by 'name' (order handled client-side)
+    const q = query(pathRef, orderBy('name', 'asc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const maquinas = snapshot.docs.map(doc => ({
         id: doc.id,
@@ -196,8 +191,6 @@ export const useManagment = () => {
     await deleteDoc(docRef);
   }
 
-  ///////////////////////MARCAS///////////////////////
-
   ///////////////////////UBICACIONES///////////////////////
   const createUbicaciones = async (ubicacion: Omit<Ubicacion, 'id'>) => {
     const pathRef = collection(db, "ubicaciones");
@@ -213,10 +206,6 @@ export const useManagment = () => {
     const docRef = doc(db, "ubicaciones", id);
     await deleteDoc(docRef);
   }
-  ///////////////////////UBICACIONES///////////////////////
-
-
-  //////////////////////MAQUINAS//////////////////////////
 
   const updateMaquinas = async (id: string, updateMaquina: Partial<Machine>) => {
     const docRef = doc(db, "maquinas", id);
@@ -240,7 +229,6 @@ export const useManagment = () => {
         setMaquina({ id: docSnap.id, ...docSnap.data() } as Machine);
       } else {
         setMaquina(null);
-        // Optional: Handle "not found" state explicitly if needed, but null signifies that.
       }
     }, (error) => {
       console.error('Error en getMaquina:', error);
@@ -249,15 +237,12 @@ export const useManagment = () => {
 
     return unsubscribe;
   }, [])
-  //////////////////////MAQUINAS//////////////////////////
-
 
   //////////////////////INCIDENCIAS//////////////////////////
   const getIncidencias = useCallback((machineId: string) => {
     if (!machineId) return () => { };
 
     const pathRef = collection(db, `maquinas/${machineId}/eventos/`);
-    /*  const q = query(pathRef, orderBy('fechaReporte', 'desc')); */
     const unsubscribe = onSnapshot(pathRef, (snapshot) => {
       const incidencias = snapshot.docs.map(doc => ({
         id: doc.id,
@@ -303,19 +288,12 @@ export const useManagment = () => {
     const docRef = doc(db, `maquinas/${machineId}/eventos/`, id);
     await deleteDoc(docRef);
   }, [])
-  //////////////////////INCIDENCIAS//////////////////////////
-
-
-
-
 
   //////////////////////MANTENIMIENTOS//////////////////////////
-
 
   const createMantenimiento = useCallback(async (mantenimiento: Omit<Mantenimiento, 'id'>, maquina: Machine) => {
     const pathRef = collection(db, `maquinas/${maquina.id}/eventos/`);
 
-    // Construir el objeto base sin campos undefined
     const newMantenimiento: any = {
       machineId: mantenimiento.machineId,
       tipo: mantenimiento.tipo,
@@ -328,7 +306,6 @@ export const useManagment = () => {
       updatedAt: serverTimestamp()
     };
 
-    // Agregar campos opcionales solo si están definidos
     if (mantenimiento.subTipo !== undefined) {
       newMantenimiento.subTipo = mantenimiento.subTipo;
     }
@@ -354,14 +331,12 @@ export const useManagment = () => {
       newMantenimiento.usuario = mantenimiento.usuario;
     }
 
-    // Solo agregar fechaProgramada si está definida
     if (mantenimiento.fechaProgramada !== undefined) {
       newMantenimiento.fechaProgramada = mantenimiento.fechaProgramada instanceof Date
         ? Timestamp.fromDate(mantenimiento.fechaProgramada)
         : mantenimiento.fechaProgramada;
     }
 
-    // Solo agregar fechaResolucion si está definida
     if (mantenimiento.fechaResolucion !== undefined) {
       newMantenimiento.fechaResolucion = mantenimiento.fechaResolucion instanceof Date
         ? serverTimestamp()
@@ -372,11 +347,6 @@ export const useManagment = () => {
     await updateDoc(docRef, { id: docRef.id });
     return docRef.id;
   }, [])
-
-  //////////////////////MANTENIMIENTOS//////////////////////////
-
-
-  ///////////////////////MAIN CALENDARVIEW///////////////////////
 
   const getUserByDni = async (dni: string): Promise<Usuario | null> => {
     const pathRef = collection(db, 'usuarios');
@@ -400,11 +370,9 @@ export const useManagment = () => {
     return unsubscribe;
   }, [])
 
-  ///////////////////////MAIN CALENDARVIEW///////////////////////
-
   //////////////////////REUSABLE TASKS//////////////////////////
   const getReusableTasks = useCallback(() => {
-    const pathRef = collection(db, 'reusable-taks') // Note: User specified 'reusable-taks'
+    const pathRef = collection(db, 'reusable-taks')
     const q = query(pathRef, orderBy('createdAt', 'desc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const tasks = snapshot.docs.map(doc => ({
@@ -418,8 +386,6 @@ export const useManagment = () => {
 
   const createReusableTask = async (descripcion: string) => {
     const pathRef = collection(db, 'reusable-taks');
-    // Verificar si ya existe una tarea con la misma descripción (opcional pero recomendado)
-    // Por ahora simple add
     const newTask = {
       descripcion,
       createdAt: serverTimestamp()
@@ -439,7 +405,6 @@ export const useManagment = () => {
     const docRef = doc(db, 'reusable-taks', id);
     await deleteDoc(docRef);
   }
-  //////////////////////REUSABLE TASKS//////////////////////////
 
   const getIncidencia = useCallback(async (machineId: string, id: string) => {
     if (!machineId || !id) return null;
