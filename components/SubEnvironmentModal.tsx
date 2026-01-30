@@ -171,7 +171,7 @@ const SubEnvironmentModal = ({ isOpen, onClose, db, locationId }: SubEnvironment
                     <input
                         type="text"
                         value={newEnvironment}
-                        onChange={(e) => setNewEnvironment(e.target.value)}
+                        onChange={(e) => setNewEnvironment(e.target.value.toLowerCase())}
                         placeholder="Nuevo sub-ambiente..."
                         style={{
                             flex: 1,
@@ -221,7 +221,7 @@ const SubEnvironmentModal = ({ isOpen, onClose, db, locationId }: SubEnvironment
                                         <input
                                             type="text"
                                             value={editName}
-                                            onChange={(e) => setEditName(e.target.value)}
+                                            onChange={(e) => setEditName(e.target.value.toLowerCase())}
                                             style={{
                                                 flex: 1,
                                                 padding: '0.25rem 0.5rem',

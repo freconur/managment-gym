@@ -252,7 +252,7 @@ export const IncidenciaModal: React.FC<IncidenciaModalProps> = ({
                   <input
                     type="text"
                     value={incidenciaForm.nombrePiezaRota}
-                    onChange={(e) => setIncidenciaForm(prev => ({ ...prev, nombrePiezaRota: e.target.value }))}
+                    onChange={(e) => setIncidenciaForm(prev => ({ ...prev, nombrePiezaRota: e.target.value.toLowerCase() }))}
                     className={styles.input}
                     required={incidenciaForm.piezaRota}
                     placeholder="Ej: Correa, Motor, Batería, etc."
@@ -357,7 +357,7 @@ export const IncidenciaModal: React.FC<IncidenciaModalProps> = ({
               <label className={styles.label}>Descripción adicional del problema</label>
               <textarea
                 value={incidenciaForm.descripcion}
-                onChange={(e) => setIncidenciaForm(prev => ({ ...prev, descripcion: e.target.value }))}
+                onChange={(e) => setIncidenciaForm(prev => ({ ...prev, descripcion: e.target.value.toLowerCase() }))}
                 className={styles.textarea}
                 rows={4}
                 placeholder="Describe detalladamente el problema, qué estaba haciendo cuando ocurrió, síntomas observados, etc..."

@@ -4,9 +4,9 @@ import { FaCamera, FaEdit, FaSave, FaSpinner, FaTimes, FaUserPlus, FaFileExcel }
 import styles from './MembersForm.module.css';
 import { Member, Company, Area, Cargo } from '@/features/types/types';
 import { SmartSelect } from './SmartSelect';
-import { read, utils } from 'xlsx';
 import { writeBatch, doc, serverTimestamp, collection } from 'firebase/firestore';
 import { db } from '@/firebase/firebase.config';
+import { ImportMembersModal } from './ImportMembersModal';
 
 
 interface MembersFormProps {
@@ -52,85 +52,7 @@ export const MembersForm: React.FC<MembersFormProps> = ({
 
     if (!isOpen) return null;
 
-    const handleExcelUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
 
-        setIsImporting(true);
-        try {
-            const data = await file.arrayBuffer();
-            const workbook = read(data);
-            const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-            const jsonData = utils.sheet_to_json(worksheet) as any[];
-
-            if (jsonData.length === 0) {
-                alert('El archivo Excel está vacío.');
-                setIsImporting(false);
-                return;
-            }
-
-            const batch = writeBatch(db);
-            let count = 0;
-            const errors: string[] = [];
-
-            jsonData.forEach((row, index) => {
-                // Validate required fields
-                if (!row.dni || !row.apellidos || !row.nombres || !row.empresa || !row.sexo) {
-                    errors.push(`Fila ${index + 2}: Faltan campos obligatorios (dni, apellidos, nombres, empresa, sexo)`);
-                    return;
-                }
-
-                const dniStr = String(row.dni).trim();
-                const membersCol = locationId
-                    ? collection(db, 'ubicaciones', locationId, 'members')
-                    : collection(db, 'members');
-                const docRef = doc(membersCol, dniStr);
-
-                batch.set(docRef, {
-                    dni: dniStr,
-                    apellidos: row.apellidos,
-                    nombre: row.nombres, // Map 'nombres' from excel to 'nombre' in db
-                    empresa: row.empresa,
-                    area: row.area || null,
-                    cargo: row.cargo || null,
-                    sexo: row.sexo,
-                    fotoUrl: null,
-                    createdAt: serverTimestamp(),
-                    updatedAt: serverTimestamp()
-                });
-                count++;
-            });
-
-            if (errors.length > 0) {
-                alert(`Errores encontrados:\n${errors.slice(0, 5).join('\n')}\n${errors.length > 5 ? '...' : ''}`);
-                if (count === 0) {
-                    setIsImporting(false);
-                    return; // Abort if nothing valid
-                }
-                const confirmPartial = window.confirm(`Se encontraron errores en ${errors.length} filas. ¿Desea proceder con la importación de ${count} registros válidos?`);
-                if (!confirmPartial) {
-                    setIsImporting(false);
-                    return;
-                }
-            }
-
-            if (count > 0) {
-                await batch.commit();
-                alert(`Se importaron ${count} usuarios exitosamente.`);
-                onClose(); // Close modal on success
-            } else {
-                alert('No se encontraron registros válidos para importar.');
-            }
-
-        } catch (error) {
-            console.error("Error importing excel:", error);
-            alert("Error al procesar el archivo Excel. Verifique el formato.");
-        } finally {
-            setIsImporting(false);
-            // Reset input
-            e.target.value = '';
-        }
-    };
 
     return (
         <div className={styles.overlay}>
@@ -148,28 +70,28 @@ export const MembersForm: React.FC<MembersFormProps> = ({
 
                     <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
                         {!isEditing && (
-                            <label className={styles.importButton} style={{
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '0.5rem',
-                                padding: '0.5rem 1rem',
-                                backgroundColor: '#10b981',
-                                color: 'white',
-                                borderRadius: '0.5rem',
-                                fontSize: '0.9rem',
-                                fontWeight: '500'
-                            }}>
-                                {isImporting ? <FaSpinner className={styles.spinAnimation} /> : <FaFileExcel />}
-                                <span>{isImporting ? 'Importando...' : 'Importar Excel'}</span>
-                                <input
-                                    type="file"
-                                    accept=".xlsx, .xls"
-                                    onChange={handleExcelUpload}
-                                    style={{ display: 'none' }}
-                                    disabled={isImporting}
-                                />
-                            </label>
+                            <button
+                                type="button"
+                                onClick={() => setIsImporting(true)}
+                                className={styles.importBtn}
+                                style={{
+                                    border: 'none',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.5rem',
+                                    padding: '0.5rem 1rem',
+                                    backgroundColor: '#10b981',
+                                    color: 'white',
+                                    borderRadius: '0.5rem',
+                                    fontSize: '0.9rem',
+                                    fontWeight: '500',
+                                    cursor: 'pointer',
+                                    transition: 'background-color 0.2s'
+                                }}
+                            >
+                                <FaFileExcel />
+                                <span>Importar Excel</span>
+                            </button>
                         )}
 
                         <button onClick={onClose} style={{
@@ -188,6 +110,13 @@ export const MembersForm: React.FC<MembersFormProps> = ({
                         </button>
                     </div>
                 </div>
+                {isImporting && (
+                    <ImportMembersModal
+                        isOpen={isImporting}
+                        onClose={() => setIsImporting(false)}
+                        locationId={locationId}
+                    />
+                )}
                 <form onSubmit={onSubmit} className={styles.form}>
                     <div className={styles.requiredWarning}>
                         <FaUserPlus />

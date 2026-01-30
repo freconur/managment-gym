@@ -241,7 +241,7 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
               type="text"
               name="name"
               value={formData.name}
-              onChange={handleChange}
+              onChange={(e) => handleChange({ ...e, target: { ...e.target, name: e.target.name, value: e.target.value.toLowerCase() } })}
               required
               placeholder="Ej. Cinta de Correr Pro 2000"
               className={styles.equipmentInput}
@@ -358,7 +358,7 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
               type="text"
               name="model"
               value={formData.model}
-              onChange={handleChange}
+              onChange={(e) => handleChange({ ...e, target: { ...e.target, name: e.target.name, value: e.target.value.toLowerCase() } })}
               placeholder="Ej. XT-4500"
               className={styles.equipmentInput}
               autoComplete="off"
@@ -444,7 +444,7 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
             <textarea
               name="notes"
               value={formData.notes}
-              onChange={handleChange}
+              onChange={(e) => handleChange({ ...e, target: { ...e.target, name: e.target.name, value: e.target.value.toLowerCase() } })}
               rows={3}
               placeholder="Detalles adicionales sobre el estado o características del equipo..."
               className={styles.equipmentTextarea}

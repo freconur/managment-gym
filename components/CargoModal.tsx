@@ -121,7 +121,7 @@ const CargoModal = ({ isOpen, onClose, db }: CargoModalProps) => {
                     <input
                         type="text"
                         value={newCargo}
-                        onChange={(e) => setNewCargo(e.target.value)}
+                        onChange={(e) => setNewCargo(e.target.value.toLowerCase())}
                         placeholder="Nuevo cargo..."
                         style={{
                             flex: 1,
@@ -171,7 +171,7 @@ const CargoModal = ({ isOpen, onClose, db }: CargoModalProps) => {
                                         <input
                                             type="text"
                                             value={editName}
-                                            onChange={(e) => setEditName(e.target.value)}
+                                            onChange={(e) => setEditName(e.target.value.toLowerCase())}
                                             style={{
                                                 flex: 1,
                                                 padding: '0.25rem 0.5rem',

@@ -308,7 +308,7 @@
   border: 1px solid #d1d5db;
   border-radius: 0.5rem;
   font-size: 1rem;
-  text-transform: uppercase;
+  text-transform: uppercase !important;
 }
 
 .select {
@@ -337,7 +337,7 @@
   font-size: 1rem;
   font-family: inherit;
   resize: vertical;
-  text-transform: uppercase;
+  text-transform: uppercase !important;
 }
 
 /* Equipment list section */
@@ -2419,6 +2419,7 @@
   font-size: 1rem;
   transition: all 0.2s;
   background-color: #f9fafb;
+  text-transform: uppercase !important;
 }
 
 .userInput:focus {

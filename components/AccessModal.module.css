@@ -125,7 +125,7 @@
     color: #334155;
     /* Prevent zoom on mobile inputs */
     touch-action: manipulation;
-    text-transform: uppercase;
+    text-transform: uppercase !important;
 }
 
 .input:focus {

@@ -86,7 +86,7 @@
     font-size: 0.95rem;
     width: 100%;
     transition: all 0.2s;
-    text-transform: uppercase;
+    text-transform: uppercase !important;
 }
 
 .input:focus,

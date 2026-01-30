@@ -159,7 +159,7 @@
     color: #1f2937;
     transition: border-color 0.15s, box-shadow 0.15s;
     outline: none;
-    text-transform: uppercase;
+    text-transform: uppercase !important;
 }
 
 .input:focus,

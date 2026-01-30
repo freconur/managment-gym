@@ -380,7 +380,7 @@ export const MantenimientoModal: React.FC<MantenimientoModalProps> = ({
               <label className={styles.label}>Descripción</label>
               <textarea
                 value={mantenimientoForm.descripcion}
-                onChange={(e) => setMantenimientoForm(prev => ({ ...prev, descripcion: e.target.value }))}
+                onChange={(e) => setMantenimientoForm(prev => ({ ...prev, descripcion: e.target.value.toLowerCase() }))}
                 className={styles.textarea}
                 rows={3}
                 placeholder="Describe el mantenimiento a realizar..."
@@ -424,7 +424,7 @@ export const MantenimientoModal: React.FC<MantenimientoModalProps> = ({
                                 <input
                                   type="text"
                                   value={editingTaskText}
-                                  onChange={(e) => setEditingTaskText(e.target.value)}
+                                  onChange={(e) => setEditingTaskText(e.target.value.toLowerCase())}
                                   className={styles.input}
                                   style={{ padding: '0.25rem 0.5rem' }}
                                   autoFocus
@@ -509,7 +509,7 @@ export const MantenimientoModal: React.FC<MantenimientoModalProps> = ({
                     <input
                       type="text"
                       value={nuevaTarea}
-                      onChange={(e) => setNuevaTarea(e.target.value)}
+                      onChange={(e) => setNuevaTarea(e.target.value.toLowerCase())}
                       onKeyPress={(e) => {
                         if (e.key === 'Enter') {
                           e.preventDefault()
@@ -576,7 +576,7 @@ export const MantenimientoModal: React.FC<MantenimientoModalProps> = ({
               <label className={styles.label}>Notas Adicionales</label>
               <textarea
                 value={mantenimientoForm.notas}
-                onChange={(e) => setMantenimientoForm(prev => ({ ...prev, notas: e.target.value }))}
+                onChange={(e) => setMantenimientoForm(prev => ({ ...prev, notas: e.target.value.toLowerCase() }))}
                 className={styles.textarea}
                 rows={2}
                 placeholder="Notas adicionales sobre el mantenimiento..."

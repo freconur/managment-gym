@@ -121,7 +121,7 @@ const AreaModal = ({ isOpen, onClose, db }: AreaModalProps) => {
                     <input
                         type="text"
                         value={newArea}
-                        onChange={(e) => setNewArea(e.target.value)}
+                        onChange={(e) => setNewArea(e.target.value.toLowerCase())}
                         placeholder="Nueva área..."
                         style={{
                             flex: 1,
@@ -171,7 +171,7 @@ const AreaModal = ({ isOpen, onClose, db }: AreaModalProps) => {
                                         <input
                                             type="text"
                                             value={editName}
-                                            onChange={(e) => setEditName(e.target.value)}
+                                            onChange={(e) => setEditName(e.target.value.toLowerCase())}
                                             style={{
                                                 flex: 1,
                                                 padding: '0.25rem 0.5rem',

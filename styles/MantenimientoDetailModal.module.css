@@ -157,7 +157,7 @@
     color: #111827;
     background-color: #fff;
     transition: border-color 0.2s, box-shadow 0.2s;
-    text-transform: uppercase;
+    text-transform: uppercase !important;
 }
 
 .input:focus,

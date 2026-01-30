@@ -215,7 +215,7 @@ const UbicacionModal = ({ isOpen, onClose, db }: UbicacionModalProps) => {
           <input
             type="text"
             value={newUbicacion}
-            onChange={(e) => setNewUbicacion(e.target.value)}
+            onChange={(e) => setNewUbicacion(e.target.value.toLowerCase())}
             placeholder="Nuevo ambiente..."
             style={{
               flex: 1,
@@ -264,7 +264,7 @@ const UbicacionModal = ({ isOpen, onClose, db }: UbicacionModalProps) => {
                     <input
                       type="text"
                       value={editName}
-                      onChange={(e) => setEditName(e.target.value)}
+                      onChange={(e) => setEditName(e.target.value.toLowerCase())}
                       disabled
                       style={{
                         flex: 1,

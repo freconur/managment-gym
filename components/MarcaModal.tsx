@@ -120,7 +120,7 @@ export const MarcaModal: React.FC<MarcaModalProps> = ({
               <input
                 type="text"
                 value={marcaName}
-                onChange={(e) => onMarcaNameChange(e.target.value)}
+                onChange={(e) => onMarcaNameChange(e.target.value.toLowerCase())}
                 placeholder="Nombre de la marca"
                 className={styles.input}
                 disabled={isSaving}

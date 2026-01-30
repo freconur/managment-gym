@@ -206,7 +206,7 @@ export const ComplementaryEquipmentModal: React.FC<ComplementaryEquipmentModalPr
                                             type="text"
                                             className={styles.input}
                                             value={formData.name}
-                                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                            onChange={(e) => setFormData({ ...formData, name: e.target.value.toLowerCase() })}
                                             required
                                             placeholder="Ej. Mancuernas, Colchonetas..."
                                             disabled={isSubmitting}
@@ -257,7 +257,7 @@ export const ComplementaryEquipmentModal: React.FC<ComplementaryEquipmentModalPr
                                     <textarea
                                         className={styles.textarea}
                                         value={formData.notes}
-                                        onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                                        onChange={(e) => setFormData({ ...formData, notes: e.target.value.toLowerCase() })}
                                         rows={3}
                                         placeholder="Detalles adicionales..."
                                         disabled={isSubmitting}

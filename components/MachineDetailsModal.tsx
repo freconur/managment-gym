@@ -220,7 +220,7 @@ export const MachineDetailsModal: React.FC<MachineDetailsModalProps> = ({
                     type="text"
                     name="name"
                     value={editedMachine.name || ''}
-                    onChange={handleChange}
+                    onChange={(e) => handleChange({ ...e, target: { ...e.target, name: e.target.name, value: e.target.value.toLowerCase() } })}
                     className={styles.input}
                   />
                 ) : (
@@ -254,7 +254,7 @@ export const MachineDetailsModal: React.FC<MachineDetailsModalProps> = ({
                     type="text"
                     name="model"
                     value={editedMachine.model || ''}
-                    onChange={handleChange}
+                    onChange={(e) => handleChange({ ...e, target: { ...e.target, name: e.target.name, value: e.target.value.toLowerCase() } })}
                     className={styles.input}
                   />
                 ) : (
@@ -346,7 +346,7 @@ export const MachineDetailsModal: React.FC<MachineDetailsModalProps> = ({
               <textarea
                 name="notes"
                 value={editedMachine.notes || ''}
-                onChange={handleChange}
+                onChange={(e) => handleChange({ ...e, target: { ...e.target, name: e.target.name, value: e.target.value.toLowerCase() } })}
                 rows={3}
                 className={styles.textarea}
               />

@@ -126,7 +126,7 @@ const CompanyModal = ({ isOpen, onClose, db }: CompanyModalProps) => {
                     <input
                         type="text"
                         value={newCompany}
-                        onChange={(e) => setNewCompany(e.target.value)}
+                        onChange={(e) => setNewCompany(e.target.value.toLowerCase())}
                         placeholder="Nueva empresa..."
                         style={{
                             flex: 1,
@@ -176,7 +176,7 @@ const CompanyModal = ({ isOpen, onClose, db }: CompanyModalProps) => {
                                         <input
                                             type="text"
                                             value={editName}
-                                            onChange={(e) => setEditName(e.target.value)}
+                                            onChange={(e) => setEditName(e.target.value.toLowerCase())}
                                             style={{
                                                 flex: 1,
                                                 padding: '0.25rem 0.5rem',

@@ -92,7 +92,7 @@ export const NuevoUsuarioModal: React.FC<NuevoUsuarioModalProps> = ({
     } else {
       setFormData(prev => ({
         ...prev,
-        [name]: value
+        [name]: value.toLowerCase()
       }))
       // Limpiar error del campo cuando el usuario empieza a escribir
       if (errors[name as keyof typeof errors]) {
