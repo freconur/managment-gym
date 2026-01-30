@@ -9,7 +9,8 @@ import {
     orderBy,
     onSnapshot,
     serverTimestamp,
-    Firestore
+    Firestore,
+    getDoc
 } from 'firebase/firestore'
 import { FaEdit, FaTrash, FaPlus, FaTimes, FaSave } from 'react-icons/fa'
 import { SubEnvironment } from '@/features/types/types'
@@ -18,9 +19,10 @@ interface SubEnvironmentModalProps {
     isOpen: boolean;
     onClose: () => void;
     db: Firestore;
+    locationId?: string;
 }
 
-const SubEnvironmentModal = ({ isOpen, onClose, db }: SubEnvironmentModalProps) => {
+const SubEnvironmentModal = ({ isOpen, onClose, db, locationId }: SubEnvironmentModalProps) => {
     const [environments, setEnvironments] = useState<SubEnvironment[]>([])
     const [newEnvironment, setNewEnvironment] = useState('')
     const [editingId, setEditingId] = useState<string | null>(null)
@@ -30,27 +32,57 @@ const SubEnvironmentModal = ({ isOpen, onClose, db }: SubEnvironmentModalProps) 
     useEffect(() => {
         if (!isOpen) return;
 
-        const q = query(collection(db, 'sub_environments'), orderBy('createdAt', 'desc'))
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const data = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            })) as SubEnvironment[]
-            setEnvironments(data)
-            setIsLoading(false)
-        })
-        return () => unsubscribe()
-    }, [isOpen, db])
+        if (locationId) {
+            // Location specific sub-environments
+            const unsub = onSnapshot(doc(db, 'ubicaciones', locationId), (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    setEnvironments(data.subEnvironments || []);
+                } else {
+                    setEnvironments([]);
+                }
+                setIsLoading(false);
+            });
+            return () => unsub();
+        } else {
+            // Fallback to global collection (Maintenance or legacy?)
+            // Or render empty if we strictly want location based.
+            // Keeping legacy behavior for now if needed, or better, just empty since request is specific.
+            // But let's keep it safe for other parts of app if used elsewhere without locationId
+            const q = query(collection(db, 'sub_environments'), orderBy('createdAt', 'desc'))
+            const unsubscribe = onSnapshot(q, (snapshot) => {
+                const data = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                })) as SubEnvironment[]
+                setEnvironments(data)
+                setIsLoading(false)
+            })
+            return () => unsubscribe()
+        }
+    }, [isOpen, db, locationId])
 
     const handleAdd = async (e: React.FormEvent) => {
         e.preventDefault()
         if (!newEnvironment.trim()) return
 
         try {
-            await addDoc(collection(db, 'sub_environments'), {
-                nombre: newEnvironment.trim(),
-                createdAt: serverTimestamp()
-            })
+            if (locationId) {
+                const newSubEnv: SubEnvironment = {
+                    id: crypto.randomUUID(),
+                    nombre: newEnvironment.trim(),
+                    createdAt: new Date().toISOString() // Storing as string or timestamp, keeping consistent
+                };
+                const updatedEnvs = [...environments, newSubEnv];
+                await updateDoc(doc(db, 'ubicaciones', locationId), {
+                    subEnvironments: updatedEnvs
+                });
+            } else {
+                await addDoc(collection(db, 'sub_environments'), {
+                    nombre: newEnvironment.trim(),
+                    createdAt: serverTimestamp()
+                })
+            }
             setNewEnvironment('')
         } catch (error) {
             console.error("Error adding sub-environment:", error)
@@ -62,9 +94,18 @@ const SubEnvironmentModal = ({ isOpen, onClose, db }: SubEnvironmentModalProps) 
         if (!editName.trim()) return
 
         try {
-            await updateDoc(doc(db, 'sub_environments', id), {
-                nombre: editName.trim()
-            })
+            if (locationId) {
+                const updatedEnvs = environments.map(env =>
+                    env.id === id ? { ...env, nombre: editName.trim() } : env
+                );
+                await updateDoc(doc(db, 'ubicaciones', locationId), {
+                    subEnvironments: updatedEnvs
+                });
+            } else {
+                await updateDoc(doc(db, 'sub_environments', id), {
+                    nombre: editName.trim()
+                })
+            }
             setEditingId(null)
             setEditName('')
         } catch (error) {
@@ -76,7 +117,14 @@ const SubEnvironmentModal = ({ isOpen, onClose, db }: SubEnvironmentModalProps) 
     const handleDelete = async (id: string) => {
         if (window.confirm('¿Seguro que deseas eliminar este sub-ambiente?')) {
             try {
-                await deleteDoc(doc(db, 'sub_environments', id))
+                if (locationId) {
+                    const updatedEnvs = environments.filter(env => env.id !== id);
+                    await updateDoc(doc(db, 'ubicaciones', locationId), {
+                        subEnvironments: updatedEnvs
+                    });
+                } else {
+                    await deleteDoc(doc(db, 'sub_environments', id))
+                }
             } catch (error) {
                 console.error("Error deleting sub-environment:", error)
                 alert("Error al eliminar sub-ambiente")
@@ -110,7 +158,9 @@ const SubEnvironmentModal = ({ isOpen, onClose, db }: SubEnvironmentModalProps) 
                 boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
             }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                    <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#1f2937' }}>Gestionar Sub-ambientes</h2>
+                    <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#1f2937' }}>
+                        Gestionar Sub-ambientes {locationId ? '(Local)' : '(Global)'}
+                    </h2>
                     <button onClick={onClose} style={{ color: '#6b7280', border: 'none', background: 'none', cursor: 'pointer' }}>
                         <FaTimes size={20} />
                     </button>

@@ -161,6 +161,7 @@ export interface Ubicacion {
   name: string;
   haveAmenidades?: boolean;
   haveSubEnvironments?: boolean;
+  subEnvironments?: SubEnvironment[];
   allowedCompanies?: AllowedCompany[];
   createdAt?: any;
 }

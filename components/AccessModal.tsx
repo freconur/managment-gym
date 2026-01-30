@@ -105,20 +105,69 @@ export const AccessModal: React.FC<AccessModalProps> = ({ isOpen, onClose, envir
         return () => window.removeEventListener('resize', checkMobile);
     }, [isOpen]);
 
-    // Fetch SubEnvironments
+
+
+    const [haveSubEnvironments, setHaveSubEnvironments] = useState(false);
+
+
+    // Fetch SubEnvironments & Config from Location
     useEffect(() => {
         if (!isOpen) return;
-        const qSub = query(collection(db, 'sub_environments'), orderBy('createdAt', 'desc'));
-        const unsubSub = onSnapshot(qSub, (snapshot) => {
-            const data = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            })) as SubEnvironment[];
-            setSubEnvironments(data);
-        });
 
+        // If we don't have locationId yet but have environment name, we need to find it first
+        // But if we have locationId (from prop or found), we should listen to it.
+
+        let unsubLocation: () => void;
+        let unsubGlobalSub: () => void;
+        let unsubGlobalAm: () => void;
+
+        const setupLocationListener = (id: string) => {
+            unsubLocation = onSnapshot(doc(db, 'ubicaciones', id), (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    setHaveSubEnvironments(!!data.haveSubEnvironments);
+                    setAllowedCompaniesConfig(data.allowedCompanies || null);
+                    // Set sub-environments from the document
+                    if (data.subEnvironments) {
+                        setSubEnvironments(data.subEnvironments);
+                    } else {
+                        setSubEnvironments([]);
+                    }
+                } else {
+                    setHaveSubEnvironments(false);
+                    setAllowedCompaniesConfig(null);
+                    setSubEnvironments([]);
+                }
+            });
+        };
+
+        const resolveAndListen = async () => {
+            // 1. If we have a locationId in state (from prop), use it
+            if (locationId) {
+                setupLocationListener(locationId);
+            }
+            // 2. If no locationId but we have environment name, find the ID then listen
+            else if (environment) {
+                try {
+                    const q = query(collection(db, 'ubicaciones'), where('name', '==', environment));
+                    const snapshot = await getDocs(q);
+                    if (!snapshot.empty) {
+                        const foundId = snapshot.docs[0].id;
+                        setLocationId(foundId); // Update state
+                        setupLocationListener(foundId);
+                    }
+                } catch (e) {
+                    console.error("Error finding location by name:", e);
+                }
+            }
+        };
+
+        resolveAndListen();
+
+        // Keep Amenities global for now as per previous code, or ask? 
+        // User didn't specify changing amenities, so keeping global listener for amenities.
         const qAm = query(collection(db, 'amenities'), orderBy('createdAt', 'desc'));
-        const unsubAm = onSnapshot(qAm, (snapshot) => {
+        unsubGlobalAm = onSnapshot(qAm, (snapshot) => {
             const data = snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
@@ -127,10 +176,15 @@ export const AccessModal: React.FC<AccessModalProps> = ({ isOpen, onClose, envir
         });
 
         return () => {
-            unsubSub();
-            unsubAm();
+            if (unsubLocation) unsubLocation();
+            if (unsubGlobalAm) unsubGlobalAm();
         };
-    }, [isOpen]);
+    }, [isOpen, environment, locationId]); // Re-run if these change. Note: locationId might cause loop if not careful.
+
+    // We removed the separate useEffect for global sub_environments (lines 109-118 in original)
+    // We removed the separate useEffect for fetching environment config (lines 227-253 in original)
+    // because we combined them above.
+
 
     // Scanner Logic
     useEffect(() => {
@@ -220,37 +274,6 @@ export const AccessModal: React.FC<AccessModalProps> = ({ isOpen, onClose, envir
         if (e) e.preventDefault();
         searchByDni(dni);
     };
-
-    const [haveSubEnvironments, setHaveSubEnvironments] = useState(false);
-
-    // Fetch environment config
-    useEffect(() => {
-        const fetchEnvironmentConfig = async () => {
-            if (!environment) {
-                setHaveSubEnvironments(false);
-                return;
-            }
-            try {
-                const q = query(collection(db, 'ubicaciones'), where('name', '==', environment));
-                const snapshot = await getDocs(q);
-                if (!snapshot.empty) {
-                    const docSnap = snapshot.docs[0];
-                    const data = docSnap.data();
-                    setLocationId(docSnap.id);
-                    setHaveSubEnvironments(!!data.haveSubEnvironments);
-                    setAllowedCompaniesConfig(data.allowedCompanies || null);
-                } else {
-                    setLocationId(null);
-                    setHaveSubEnvironments(false);
-                    setAllowedCompaniesConfig(null);
-                }
-            } catch (error) {
-                console.error("Error fetching environment config:", error);
-                setHaveSubEnvironments(false);
-            }
-        };
-        fetchEnvironmentConfig();
-    }, [environment]);
 
     const handleRegister = async () => {
         if (!member) return;
@@ -599,6 +622,7 @@ export const AccessModal: React.FC<AccessModalProps> = ({ isOpen, onClose, envir
                 isOpen={isSubEnvModalOpen}
                 onClose={() => setIsSubEnvModalOpen(false)}
                 db={db}
+                locationId={locationId || undefined}
             />
             <AmenityModal
                 isOpen={isAmenityModalOpen}

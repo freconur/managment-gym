@@ -100,8 +100,7 @@ const UbicacionModal = ({ isOpen, onClose, db }: UbicacionModalProps) => {
       await updateDoc(doc(db, 'ubicaciones', id), {
         name: editName.trim(),
         haveAmenidades: editHaveAmenidades,
-        haveSubEnvironments: editHaveSubEnvironments,
-        allowedCompanies: editAllowedCompanies
+        haveSubEnvironments: editHaveSubEnvironments
       })
       setEditingId(null)
       setEditName('')
