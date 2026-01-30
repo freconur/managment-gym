@@ -45,8 +45,8 @@
 
 .th {
     padding: 0.75rem 0.5rem;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid var(--border-glass);
+    background: rgba(255, 255, 255, 0.03);
+    border-bottom: 1px solid var(--border-glass);
     color: var(--text-secondary);
     font-weight: 700;
     text-align: center;
@@ -67,9 +67,37 @@
 
 .td {
     padding: 0.5rem;
-    border: 1px solid var(--border-glass);
+    border: 1px solid rgba(255, 255, 255, 0.05); /* very subtle border */
     text-align: center;
     color: var(--text-primary);
+}
+
+.tableRow {
+    transition: background 0.1s ease;
+}
+
+.tableRow:nth-child(even) {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.tableRow:hover {
+    background: rgba(255, 255, 255, 0.05) !important;
+}
+
+.emptyDot {
+    display: block;
+    width: 4px;
+    height: 4px;
+    background: var(--border-glass);
+    border-radius: 50%;
+    margin: 0 auto;
+    opacity: 0.5;
+}
+
+.dayCell:hover .emptyDot {
+    background: var(--accent-primary);
+    opacity: 1;
+    transform: scale(1.5);
 }
 
 .tdSticky {

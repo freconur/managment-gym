@@ -44,13 +44,14 @@ export const useManagment = () => {
   const [eventos, setEventos] = useState<Incidencia[]>([]);
   const [reusableTasks, setReusableTasks] = useState<ReusableTask[]>([]);
 
+
   const getUbicaciones = useCallback(() => {
     const pathRef = collection(db, 'ubicaciones');
     const q = query(pathRef, orderBy('name', 'asc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const ubicaciones = snapshot.docs.map(doc => ({
         id: doc.id,
-        name: doc.data().name
+        name: doc.data().name?.toUpperCase() || ''
       }));
       setUbicaciones(ubicaciones);
     });
@@ -87,7 +88,13 @@ export const useManagment = () => {
     const q = query(pathRef, where('dni', '==', dni), where('pin', '==', Number(pin)));
     const snapshot = await getDocs(q);
     if (snapshot.docs.length > 0) {
-      return snapshot.docs[0].data() as Usuario;
+      const data = snapshot.docs[0].data() as Usuario;
+      return {
+        ...data,
+        nombres: data.nombres?.toUpperCase(),
+        apellidos: data.apellidos?.toUpperCase(),
+        dni: data.dni?.toUpperCase()
+      };
     }
     return null;
   }
@@ -96,10 +103,16 @@ export const useManagment = () => {
     const pathRef = collection(db, 'usuarios');
     const q = query(pathRef, orderBy('apellidos', 'asc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const usuarios = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Usuario[];
+      const usuarios = snapshot.docs.map(doc => {
+        const data = doc.data() as Usuario;
+        return {
+          id: doc.id,
+          ...data,
+          nombres: data.nombres?.toUpperCase(),
+          apellidos: data.apellidos?.toUpperCase(),
+          dni: data.dni?.toUpperCase()
+        };
+      }) as Usuario[];
       setUsuarios(usuarios);
       setLoadingUsuarios(false);
     });
@@ -138,10 +151,19 @@ export const useManagment = () => {
     const pathRef = collection(db, 'maquinas');
     const q = query(pathRef, orderBy('name', 'asc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const maquinas = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Machine[];
+      const maquinas = snapshot.docs.map(doc => {
+        const data = doc.data() as Machine;
+        return {
+          id: doc.id,
+          ...data,
+          name: data.name?.toUpperCase(),
+          location: data.location?.toUpperCase(),
+          brand: data.brand?.toUpperCase(),
+          model: data.model?.toUpperCase(),
+          serialNumber: data.serialNumber?.toUpperCase(),
+          notes: data.notes?.toUpperCase()
+        };
+      }) as Machine[];
       setMaquinas(maquinas);
     });
     return unsubscribe;
@@ -170,7 +192,7 @@ export const useManagment = () => {
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const marcas = snapshot.docs.map(doc => ({
         id: doc.id,
-        name: doc.data().name
+        name: doc.data().name?.toUpperCase() || ''
       }));
       setMarcas(marcas);
     });
@@ -226,7 +248,17 @@ export const useManagment = () => {
     const docRef = doc(db, "maquinas", id);
     const unsubscribe = onSnapshot(docRef, (docSnap) => {
       if (docSnap.exists()) {
-        setMaquina({ id: docSnap.id, ...docSnap.data() } as Machine);
+        const data = docSnap.data() as Machine;
+        setMaquina({
+          id: docSnap.id,
+          ...data,
+          name: data.name?.toUpperCase(),
+          location: data.location?.toUpperCase(),
+          brand: data.brand?.toUpperCase(),
+          model: data.model?.toUpperCase(),
+          serialNumber: data.serialNumber?.toUpperCase(),
+          notes: data.notes?.toUpperCase()
+        } as Machine);
       } else {
         setMaquina(null);
       }
@@ -244,10 +276,15 @@ export const useManagment = () => {
 
     const pathRef = collection(db, `maquinas/${machineId}/eventos/`);
     const unsubscribe = onSnapshot(pathRef, (snapshot) => {
-      const incidencias = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Incidencia[];
+      const incidencias = snapshot.docs.map(doc => {
+        const data = doc.data() as Incidencia;
+        return {
+          id: doc.id,
+          ...data,
+          descripcion: data.descripcion?.toUpperCase(),
+          notas: data.notas?.toUpperCase()
+        };
+      }) as Incidencia[];
       setIncidencias(incidencias);
     });
     return unsubscribe;
@@ -353,7 +390,13 @@ export const useManagment = () => {
     const q = query(pathRef, where('dni', '==', dni));
     const snapshot = await getDocs(q);
     if (snapshot.docs.length > 0) {
-      return snapshot.docs[0].data() as Usuario;
+      const data = snapshot.docs[0].data() as Usuario;
+      return {
+        ...data,
+        nombres: data.nombres?.toUpperCase(),
+        apellidos: data.apellidos?.toUpperCase(),
+        dni: data.dni?.toUpperCase()
+      };
     }
     return null;
   }
@@ -361,10 +404,15 @@ export const useManagment = () => {
   const getAllEventos = useCallback(() => {
     const q = query(collectionGroup(db, 'eventos'), orderBy('createdAt', 'desc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const eventos = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Incidencia[];
+      const eventos = snapshot.docs.map(doc => {
+        const data = doc.data() as Incidencia;
+        return {
+          id: doc.id,
+          ...data,
+          descripcion: data.descripcion?.toUpperCase(),
+          notas: data.notas?.toUpperCase()
+        };
+      }) as Incidencia[];
       setEventos(eventos);
     });
     return unsubscribe;
@@ -377,7 +425,8 @@ export const useManagment = () => {
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const tasks = snapshot.docs.map(doc => ({
         id: doc.id,
-        ...doc.data()
+        ...doc.data(),
+        descripcion: doc.data().descripcion?.toUpperCase()
       })) as ReusableTask[];
       setReusableTasks(tasks);
     });
@@ -411,7 +460,13 @@ export const useManagment = () => {
     const docRef = doc(db, `maquinas/${machineId}/eventos/`, id);
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
-      return { id: docSnap.id, ...docSnap.data() } as Incidencia;
+      const data = docSnap.data() as Incidencia;
+      return {
+        id: docSnap.id,
+        ...data,
+        descripcion: data.descripcion?.toUpperCase(),
+        notas: data.notas?.toUpperCase()
+      } as Incidencia;
     }
     return null;
   }, [])

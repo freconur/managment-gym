@@ -10,13 +10,15 @@ interface AssignUserModalProps {
     onClose: () => void;
     usuarios: Usuario[];
     onAssign: (userId: string, startDate: string, endDate: string, gym: string, assignmentId?: string) => Promise<void>;
+    defaultGym?: string;
 }
 
 export const AssignUserModal: React.FC<AssignUserModalProps> = ({
     isOpen,
     onClose,
     usuarios,
-    onAssign
+    onAssign,
+    defaultGym
 }) => {
     const [selectedUserId, setSelectedUserId] = useState('');
     const [selectedGym, setSelectedGym] = useState('');
@@ -42,7 +44,7 @@ export const AssignUserModal: React.FC<AssignUserModalProps> = ({
             // Reset state on close
             setEditingId(null);
             setSelectedUserId('');
-            setSelectedGym('');
+            setSelectedGym(defaultGym || '');
             // Reset dates to default
             const now = new Date();
             const year = now.getFullYear();
@@ -120,25 +122,27 @@ export const AssignUserModal: React.FC<AssignUserModalProps> = ({
                             </select>
                         </div>
 
-                        <div className={styles.formGroup}>
-                            <label className={styles.label}>
-                                <FaBuilding style={{ marginRight: '0.5rem' }} />
-                                Gym / Ubicación
-                            </label>
-                            <select
-                                className={styles.select}
-                                value={selectedGym}
-                                onChange={(e) => setSelectedGym(e.target.value)}
-                                required
-                            >
-                                <option value="">-- Seleccionar Gym --</option>
-                                {ubicaciones.map(u => (
-                                    <option key={u.id} value={u.name}>
-                                        {u.name}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
+                        {!defaultGym && (
+                            <div className={styles.formGroup}>
+                                <label className={styles.label}>
+                                    <FaBuilding style={{ marginRight: '0.5rem' }} />
+                                    Gym / Ubicación
+                                </label>
+                                <select
+                                    className={styles.select}
+                                    value={selectedGym}
+                                    onChange={(e) => setSelectedGym(e.target.value)}
+                                    required
+                                >
+                                    <option value="">-- Seleccionar Gym --</option>
+                                    {ubicaciones.map(u => (
+                                        <option key={u.id} value={u.name}>
+                                            {u.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
 
                         <div className={styles.dateRangeGrid}>
                             <div className={styles.formGroup}>
@@ -199,32 +203,37 @@ export const AssignUserModal: React.FC<AssignUserModalProps> = ({
                                             className={`${styles.th} ${styles.sortHeader}`}
                                             onClick={toggleSort}
                                             title="Click para ordenar"
+                                            style={{ whiteSpace: 'nowrap', width: '140px' }}
                                         >
-                                            Rango
-                                            {sortOrder === 'asc' ? <span style={{ fontSize: '0.7em' }}>▲</span> : <span style={{ fontSize: '0.7em' }}>▼</span>}
-                                        </th>
-                                        <th className={styles.th}>
-                                            <div className={styles.gymFilterContainer}>
-                                                Gym
-                                                <select
-                                                    value={filterGym}
-                                                    onChange={(e) => setFilterGym(e.target.value)}
-                                                    className={styles.gymFilterSelect}
-                                                    onClick={(e) => e.stopPropagation()}
-                                                >
-                                                    <option value="">Todos</option>
-                                                    {ubicaciones.map(u => (
-                                                        <option key={u.id} value={u.name}>{u.name}</option>
-                                                    ))}
-                                                </select>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                                Rango
+                                                {sortOrder === 'asc' ? <span style={{ fontSize: '0.7em' }}>▲</span> : <span style={{ fontSize: '0.7em' }}>▼</span>}
                                             </div>
                                         </th>
-                                        <th className={styles.th} style={{ textAlign: 'center' }}>Acciones</th>
+                                        {!defaultGym && (
+                                            <th className={styles.th}>
+                                                <div className={styles.gymFilterContainer}>
+                                                    Gym
+                                                    <select
+                                                        value={filterGym}
+                                                        onChange={(e) => setFilterGym(e.target.value)}
+                                                        className={styles.gymFilterSelect}
+                                                        onClick={(e) => e.stopPropagation()}
+                                                    >
+                                                        <option value="">Todos</option>
+                                                        {ubicaciones.map(u => (
+                                                            <option key={u.id} value={u.name}>{u.name}</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                            </th>
+                                        )}
+                                        <th className={styles.th} style={{ textAlign: 'center', width: '80px' }}>Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {[...assignments]
-                                        .filter(a => filterGym ? a.gym === filterGym : true)
+                                        .filter(a => defaultGym ? a.gym === defaultGym : (filterGym ? a.gym === filterGym : true))
                                         .sort((a, b) => {
                                             return sortOrder === 'asc'
                                                 ? a.startDate.localeCompare(b.startDate)
@@ -234,23 +243,24 @@ export const AssignUserModal: React.FC<AssignUserModalProps> = ({
                                                 <td className={styles.td}>
                                                     {assignment.user ? `${assignment.user.nombres} ${assignment.user.apellidos}` : 'Usuario desconocido'}
                                                 </td>
-                                                <td className={styles.td}>
-                                                    {assignment.startDate} - {assignment.endDate}
+                                                <td className={styles.td} style={{ fontSize: '0.85rem' }}>
+                                                    {assignment.startDate.split('-').reverse().join('/')} - {assignment.endDate.split('-').reverse().join('/')}
                                                 </td>
-                                                <td className={styles.td}>
-                                                    {assignment.gym || '-'}
-                                                </td>
+                                                {!defaultGym && (
+                                                    <td className={styles.td}>
+                                                        {assignment.gym || '-'}
+                                                    </td>
+                                                )}
                                                 <td className={styles.td} style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
                                                     <button
                                                         onClick={() => {
-
                                                             setSelectedUserId(assignment.userId);
                                                             setStartDate(assignment.startDate);
                                                             setEndDate(assignment.endDate);
                                                             setSelectedGym(assignment.gym || '');
                                                             setEditingId(assignment.id || null);
                                                         }}
-                                                        title="Editar (Cargar en formulario)"
+                                                        title="Editar"
                                                         style={{ background: 'none', border: 'none', color: '#60a5fa', cursor: 'pointer' }}
                                                     >
                                                         <FaUserCog />

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { FaQrcode, FaCog, FaHome } from "react-icons/fa";
+import { FaQrcode, FaCog, FaHome, FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import { Machine } from "@/features/types/types";
 import styles from "@/styles/equipment.module.css";
 import { useMemo, useState } from "react";
@@ -62,6 +62,21 @@ export const EquiposTable = ({
 
     return result;
   }, [maquinas, filtroNombre, filtroUbicacion, filtroEstado, ordenNombre]);
+
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = from === 'equipment' ? 10 : 20;
+
+  // Reset page when filters change
+  useMemo(() => {
+    setCurrentPage(1);
+  }, [filtroNombre, filtroUbicacion, filtroEstado]);
+
+  // Calculate pagination
+  const totalPages = Math.ceil(maquinasFiltradas.length / itemsPerPage);
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = maquinasFiltradas.slice(indexOfFirstItem, indexOfLastItem);
 
   return (
     <div>
@@ -212,7 +227,7 @@ export const EquiposTable = ({
               </tr>
             </thead>
             <tbody>
-              {maquinasFiltradas.length === 0 ? (
+              {currentItems.length === 0 ? (
                 <tr>
                   <td
                     colSpan={4}
@@ -226,7 +241,7 @@ export const EquiposTable = ({
                   </td>
                 </tr>
               ) : (
-                maquinasFiltradas.map((machine) => (
+                currentItems.map((machine) => (
                   <tr key={machine.id}>
                     <td className={styles.tableCellName}>
                       <Link
@@ -287,6 +302,51 @@ export const EquiposTable = ({
               )}
             </tbody>
           </table>
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '1rem', marginTop: '1rem', padding: '0.5rem' }}>
+              <span style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
+                Página {currentPage} de {totalPages}
+              </span>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button
+                  onClick={() => setCurrentPage(current => Math.max(1, current - 1))}
+                  disabled={currentPage === 1}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '0.5rem',
+                    border: '1px solid var(--border-glass)',
+                    borderRadius: '0.375rem',
+                    background: currentPage === 1 ? 'transparent' : 'var(--bg-card)',
+                    color: currentPage === 1 ? 'var(--text-disabled)' : 'var(--text-primary)',
+                    cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  <FaChevronLeft size={14} />
+                </button>
+                <button
+                  onClick={() => setCurrentPage(current => Math.min(totalPages, current + 1))}
+                  disabled={currentPage === totalPages}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '0.5rem',
+                    border: '1px solid var(--border-glass)',
+                    borderRadius: '0.375rem',
+                    background: currentPage === totalPages ? 'transparent' : 'var(--bg-card)',
+                    color: currentPage === totalPages ? 'var(--text-disabled)' : 'var(--text-primary)',
+                    cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  <FaChevronRight size={14} />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

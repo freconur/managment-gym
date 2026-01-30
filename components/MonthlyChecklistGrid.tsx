@@ -113,7 +113,7 @@ export const MonthlyChecklistGrid: React.FC<MonthlyChecklistGridProps> = ({
                                         {day}
                                     </th>
                                 ))}
-                                <th className={styles.th}>Total X Mes</th>
+
                                 <th className={styles.th}>Observación</th>
                             </tr>
                         </thead>
@@ -126,7 +126,7 @@ export const MonthlyChecklistGrid: React.FC<MonthlyChecklistGridProps> = ({
                                     const machineEntries = monthData[machine.id!] || {};
 
                                     return (
-                                        <SortableRow key={machine.id} id={machine.id!}>
+                                        <SortableRow key={machine.id} id={machine.id!} className={styles.tableRow}>
                                             <td className={`${styles.td} ${styles.tdIndex}`}>
                                                 {items.indexOf(machine) + 1}
                                             </td>
@@ -153,14 +153,12 @@ export const MonthlyChecklistGrid: React.FC<MonthlyChecklistGridProps> = ({
                                                                 <FaTimes className={styles.incIcon} />
                                                             )
                                                         ) : (
-                                                            <FaMinus className={styles.pendingIcon} />
+                                                            <span className={styles.emptyDot}></span>
                                                         )}
                                                     </td>
                                                 );
                                             })}
-                                            <td className={styles.td}>
-                                                {Object.values(machineEntries).filter(e => e.status === 'ok').length}
-                                            </td>
+
                                             <td className={`${styles.td} ${styles.observationCell}`}>
                                                 {(() => {
                                                     const allIncidences = Object.values(machineEntries).reduce((acc: string[], entry) => {

@@ -2,12 +2,13 @@ import type { NextPage } from "next";
 import Head from "next/head";
 import { useRouter } from "next/router";
 import { useEffect, useState, useMemo } from "react";
+import Image from "next/image";
 import { useChecklist } from "@/features/hooks/useChecklist";
 import { useManagment } from "@/features/hooks/useManagment";
 import { useComplementaryEquipment } from "@/features/hooks/useComplementaryEquipment";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { IncidenciaModal } from "@/components/IncidenciaModal";
-import { FaHome, FaCheck, FaExclamationTriangle, FaSave, FaSpinner } from "react-icons/fa";
+import { FaHome, FaCheck, FaExclamationTriangle, FaSave, FaSpinner, FaArrowLeft } from "react-icons/fa";
 import styles from "@/styles/EquipmentRedesign.module.css";
 import detailStyles from "./ChecklistDetail.module.css";
 import { ChecklistItemStatus, Usuario } from "@/features/types/types";
@@ -38,7 +39,7 @@ const ChecklistDetailPage: NextPage = () => {
         clearUsuarioChecklist
     } = useChecklist();
 
-    const { maquinas, getMaquinas, usuariosValidate, createIncidencia, getIncidencia, getUserByDni } = useManagment();
+    const { maquinas, getMaquinas, usuariosValidate, createIncidencia, getIncidencia, getUserByDni, getUbicaciones, ubicaciones } = useManagment();
     const { equipment: complementaryEquipment, getComplementaryEquipment } = useComplementaryEquipment();
 
     const assignedGym = useMemo(() => currentChecklist?.gym || null, [currentChecklist]);
@@ -52,11 +53,20 @@ const ChecklistDetailPage: NextPage = () => {
             .map(c => ({
                 id: c.id,
                 name: c.name,
+                image: undefined,
                 location: c.location || 'Complementarios',
-                type: 'complementary'
+                type: 'complementary',
+                order: c.order
             }));
 
         const combined = [...machineItems, ...compItems];
+
+        // Sort by order
+        combined.sort((a, b) => {
+            const orderA = a.order ?? 999999;
+            const orderB = b.order ?? 999999;
+            return orderA - orderB;
+        });
 
         if (assignedGym) {
             return combined.filter(item => item.location === assignedGym);
@@ -64,6 +74,31 @@ const ChecklistDetailPage: NextPage = () => {
 
         return combined;
     }, [maquinas, complementaryEquipment, assignedGym]);
+
+    // Resolve location ID for navigation
+    const locationId = useMemo(() => {
+        if (!assignedGym || ubicaciones.length === 0) return null;
+        const found = ubicaciones.find(u => u.name === assignedGym);
+        return found ? found.id : null;
+    }, [assignedGym, ubicaciones]);
+
+    // ... (rest of allItems logic)
+
+    useEffect(() => {
+        if (!id) return;
+        const sub1 = getChecklistById(id as string);
+        const sub2 = getMaquinas();
+        const sub3 = getChecklistItems(id as string);
+        const sub4 = getComplementaryEquipment();
+        const sub5 = getUbicaciones(); // Fetch locations
+        return () => {
+            sub1();
+            sub2();
+            sub3();
+            sub4();
+            sub5();
+        };
+    }, [id, getChecklistById, getMaquinas, getChecklistItems, getComplementaryEquipment, getUbicaciones]);
 
     // UI State
     const [localState, setLocalState] = useState<Record<string, LocalStatus>>({});
@@ -73,26 +108,6 @@ const ChecklistDetailPage: NextPage = () => {
     const [selectedMachineId, setSelectedMachineId] = useState<string | null>(null);
     const [isSaving, setIsSaving] = useState(false);
     const [isDirty, setIsDirty] = useState(false);
-
-    useEffect(() => {
-        getUsuarioCheckList()
-        return () => {
-            clearUsuarioChecklist()
-        }
-    }, [])
-    useEffect(() => {
-        if (!id) return;
-        const sub1 = getChecklistById(id as string);
-        const sub2 = getMaquinas();
-        const sub3 = getChecklistItems(id as string);
-        const sub4 = getComplementaryEquipment();
-        return () => {
-            sub1();
-            sub2();
-            sub3();
-            sub4();
-        };
-    }, [id, getChecklistById, getMaquinas, getChecklistItems, getComplementaryEquipment]);
 
     // Smart Hydration
     useEffect(() => {
@@ -244,23 +259,33 @@ const ChecklistDetailPage: NextPage = () => {
         }
     }
 
-    if (!currentChecklist) return <div className={styles.container}>Cargando...</div>;
-
     return (
         <div className={styles.container}>
             <Head>
-                <title>Revisión Diaria - {currentChecklist.date}</title>
+                <title>Revisión Diaria - {currentChecklist?.date}</title>
             </Head>
 
             <header className={styles.header}>
                 <div className={styles.headerInner}>
                     <div className={styles.titleGroup}>
-                        <h1 className={styles.title}>Revisión Diaria: {currentChecklist.date}</h1>
+                        <h1 className={styles.title}>Revisión Diaria: {currentChecklist?.date}</h1>
                     </div>
                     <div className={styles.headerButtons}>
                         <ThemeToggle />
-                        <button onClick={() => router.push('/checklist')} className={styles.actionButton}>
-                            <FaHome size={18} />
+                        <button
+                            onClick={() => {
+                                if (locationId) {
+                                    router.push(`/checklist/location/${locationId}`);
+                                } else {
+                                    router.push('/checklist');
+                                }
+                            }}
+                            className={styles.actionButton}
+                            title={locationId ? "Volver al Tablero" : "Volver"}
+                            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                        >
+                            <FaArrowLeft size={16} />
+                            <span>Volver</span>
                         </button>
                     </div>
                 </div>
@@ -335,6 +360,80 @@ const ChecklistDetailPage: NextPage = () => {
                             })}
                         </tbody>
                     </table>
+                </div>
+
+                {/* Mobile Card View */}
+                <div className={detailStyles.mobileContainer}>
+                    {allItems.map((machine, index) => {
+                        const state = localState[machine.id!] || { status: 'ok' };
+                        const isOk = state.status === 'ok';
+                        const hasIncidences = state.incidenciaIds && state.incidenciaIds.length > 0;
+
+                        return (
+                            <div key={machine.id} className={detailStyles.card}>
+                                <div className={detailStyles.cardHeader}>
+                                    {machine.image && (
+                                        <div className={detailStyles.machineImageWrapper}>
+                                            <Image
+                                                src={machine.image}
+                                                alt={machine.name || 'Machine'}
+                                                fill
+                                                className={detailStyles.machineImage}
+                                                sizes="(max-width: 768px) 100vw, 60px"
+                                            />
+                                        </div>
+                                    )}
+                                    <div style={{ flex: 1 }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>#{index + 1}</span>
+                                            <span className={detailStyles.machineName}>{machine.name}</span>
+                                        </div>
+                                        <span className={detailStyles.machineLocation}>{machine.location || '-'}</span>
+                                        {/* Incidences Chips Mobile */}
+                                        {hasIncidences && (
+                                            <div className={detailStyles.incidencesList} style={{ marginTop: '0.5rem' }}>
+                                                {state.incidenciaIds?.map((incId, idx) => (
+                                                    <span
+                                                        key={idx}
+                                                        className={detailStyles.incidenceChip}
+                                                        onClick={() => handleViewIncidencia(machine.id!, incId)}
+                                                    >
+                                                        <FaExclamationTriangle size={10} />
+                                                        {incId.slice(0, 6)}...
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className={detailStyles.cardBody}>
+                                    <div
+                                        className={detailStyles.checkboxWrapper}
+                                        onClick={() => !hasIncidences && handleCheckboxChange(machine.id!)}
+                                    >
+                                        <div className={`${detailStyles.customCheckbox} ${isOk ? detailStyles.checked : ''}`}>
+                                            {isOk && <FaCheck size={14} />}
+                                        </div>
+                                        <span style={{ fontSize: '0.9rem', color: isOk ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
+                                            {isOk ? 'Operativo' : 'Pendiente/Falla'}
+                                        </span>
+                                    </div>
+
+                                    <div className={detailStyles.cardActions}>
+                                        <button
+                                            className={detailStyles.btnReport}
+                                            onClick={() => handleReportIncidencia(machine.id!)}
+                                            title="Reportar Incidencia"
+                                            style={{ padding: '0.5rem' }}
+                                        >
+                                            <FaExclamationTriangle />
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })}
                 </div>
 
                 <div className={detailStyles.finishSection}>

@@ -11,7 +11,7 @@ interface SelectGymModalProps {
     isOpen: boolean;
     onClose: () => void;
     ubicaciones: Ubicacion[];
-    onSelect: (gymName: string) => void;
+    onSelect: (gymId: string, gymName: string) => void;
 }
 
 export const SelectGymModal: React.FC<SelectGymModalProps> = ({
@@ -28,7 +28,7 @@ export const SelectGymModal: React.FC<SelectGymModalProps> = ({
                 <div className={styles.modalHeader}>
                     <h3 className={styles.modalTitle}>
                         <FaBuilding />
-                        Seleccionar Sede
+                        Seleccionar Ambiente
                     </h3>
                     <button className={styles.modalCloseButton} onClick={onClose}>
                         <FaTimes size={20} />
@@ -44,7 +44,7 @@ export const SelectGymModal: React.FC<SelectGymModalProps> = ({
                                 <button
                                     key={gym.id}
                                     className={styles.gymCard}
-                                    onClick={() => onSelect(gym.name || '')}
+                                    onClick={() => onSelect(gym.id || '', gym.name || '')}
                                 >
                                     <div className={styles.gymIcon}>
                                         <FaBuilding size={20} />

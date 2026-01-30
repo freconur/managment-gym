@@ -18,6 +18,7 @@ import { MantenimientoDetailModal } from "@/components/MantenimientoDetailModal"
 import { QRReader } from "@/components/QRReader";
 import { EquiposTable } from "@/components/EquiposTable";
 import { AuthModal } from "@/components/AuthModal";
+import { SelectGymModal } from "@/components/SelectGymModal";
 import { FaUserPlus, FaTools, FaTimes, FaQrcode, FaDumbbell, FaPlus, FaHome, FaChartBar, FaUsers, FaChartLine, FaClipboardList } from "react-icons/fa";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Machine, Usuario, Incidencia, Tarea } from "@/features/types/types";
@@ -67,6 +68,16 @@ const Equipment: NextPage = () => {
   const [isUsuarioActionsModalOpen, setIsUsuarioActionsModalOpen] = useState(false);
   const [selectedUserForActions, setSelectedUserForActions] = useState<Usuario | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSelectGymModalOpen, setIsSelectGymModalOpen] = useState(false);
+
+  const handleGymSelected = (gymId: string, gymName: string) => {
+    setIsSelectGymModalOpen(false);
+    if (!gymId) {
+      alert("Error: Identificador de ubicación no válido");
+      return;
+    }
+    router.push(`/checklist/location/${gymId}`);
+  };
 
   // Handle escape for inline modal
   useEscapeKey(() => {
@@ -420,7 +431,7 @@ const Equipment: NextPage = () => {
               <FaChartBar size={18} />
             </button>
             <button
-              onClick={() => router.push('/checklist')}
+              onClick={() => setIsSelectGymModalOpen(true)}
               className={styles.actionButton}
               title="Checklist Diario"
             >
@@ -705,6 +716,13 @@ const Equipment: NextPage = () => {
       }
 
       {/* Modal de Autenticación */}
+      <SelectGymModal
+        isOpen={isSelectGymModalOpen}
+        onClose={() => setIsSelectGymModalOpen(false)}
+        ubicaciones={ubicaciones}
+        onSelect={handleGymSelected}
+      />
+
       <AuthModal
         isOpen={showAuthModal}
         onClose={handleCloseAuthModal}

@@ -341,41 +341,141 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     )
   }
 
+  const [viewMode, setViewMode] = useState<'calendar' | 'cards'>('calendar')
+
+  // Helper to filter events for the "Daily Cards" view
+  const dailyEvents = useMemo(() => {
+    return events.filter(event => {
+      const eventStart = moment(event.start);
+      // Check if event includes the selected currentDate
+      // Simple check: is start date same day as currentDate?
+      // Or does it span across? For simplicity in "Daily View", we usually show items *active* on that day.
+      // But user likely wants "What is scheduled for specific day".
+      return moment(currentDate).isSame(eventStart, 'day');
+    })
+  }, [events, currentDate])
+
   return (
     <div className={styles.calendarContainer}>
       <div className={styles.calendarHeader}>
-        <h3 className={styles.calendarTitle}>
-          <span>📅</span>
-          Calendario de Eventos
-        </h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', width: '100%' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <label style={{ fontSize: '0.875rem', fontWeight: '500', color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
-              Filtrar por ubicación:
-            </label>
-            <select
-              value={filtroUbicacion}
-              onChange={(e) => setFiltroUbicacion(e.target.value)}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', flexWrap: 'wrap', gap: '1rem' }}>
+          <h3 className={styles.calendarTitle}>
+            <span>📅</span>
+            Actividades
+          </h3>
+
+          {/* View Mode Tabs */}
+          <div style={{ display: 'flex', backgroundColor: 'var(--bg-input)', borderRadius: '0.5rem', padding: '0.25rem' }}>
+            <button
+              onClick={() => setViewMode('calendar')}
               style={{
-                padding: '0.5rem 0.75rem',
-                border: '1px solid var(--border-glass)',
+                padding: '0.5rem 1rem',
                 borderRadius: '0.375rem',
-                fontSize: '0.875rem',
-                backgroundColor: "rgba(255, 255, 255, 0.05)",
-                color: "var(--text-primary)",
+                border: 'none',
+                background: viewMode === 'calendar' ? 'var(--accent-primary)' : 'transparent',
+                color: viewMode === 'calendar' ? 'white' : 'var(--text-secondary)',
                 cursor: 'pointer',
-                minWidth: '200px'
+                fontWeight: 600,
+                transition: 'all 0.2s'
               }}
             >
-              <option value="">Todas las ubicaciones</option>
-              {ubicaciones.map((ubicacion) => (
-                <option key={ubicacion.id} value={ubicacion.name}>
-                  {ubicacion.name}
-                </option>
-              ))}
-            </select>
+              Calendario Completo
+            </button>
+            <button
+              onClick={() => setViewMode('cards')}
+              style={{
+                padding: '0.5rem 1rem',
+                borderRadius: '0.375rem',
+                border: 'none',
+                background: viewMode === 'cards' ? 'var(--accent-primary)' : 'transparent',
+                color: viewMode === 'cards' ? 'white' : 'var(--text-secondary)',
+                cursor: 'pointer',
+                fontWeight: 600,
+                transition: 'all 0.2s'
+              }}
+            >
+              Vista Diaria
+            </button>
           </div>
-          <div className={styles.calendarLegend}>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', width: '100%', marginTop: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', justifyContent: 'space-between', flexWrap: 'wrap' }}>
+            {/* Date Navigation for both views */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <button
+                onClick={() => {
+                  const newDate = new Date(currentDate);
+                  if (viewMode === 'cards') {
+                    newDate.setDate(newDate.getDate() - 1);
+                  } else {
+                    // Logic mimics BigCalendar's default navigation but we don't have direct access here easily without overriding toolbar completely.
+                    // Actually, BigCalendar handles its own state for 'date' usually, but here we control 'currentDate'.
+                    newDate.setMonth(newDate.getMonth() - 1);
+                    // Wait, moving month in calendar vs moving day in Day View?
+                    // Let's keep it simple: Toolbar inside Calendar handles Calendar nav.
+                    // THIS nav is extra? Or maybe only for Day View?
+                    // If we are in Cards mode, we need nav.
+                  }
+                  setCurrentDate(newDate);
+                }}
+                className={styles.calendarNavButton}
+                style={{ display: viewMode === 'cards' ? 'flex' : 'none' }} // Only show custom nav in cards mode, Calendar has its own
+              >
+                <FaChevronLeft />
+              </button>
+
+              {viewMode === 'cards' && (
+                <span style={{ fontWeight: 600, color: 'var(--text-primary)', minWidth: '150px', textAlign: 'center' }}>
+                  {moment(currentDate).format('D [de] MMMM, YYYY')}
+                </span>
+              )}
+
+              <button
+                onClick={() => {
+                  const newDate = new Date(currentDate);
+                  if (viewMode === 'cards') {
+                    newDate.setDate(newDate.getDate() + 1);
+                  }
+                  setCurrentDate(newDate);
+                }}
+                className={styles.calendarNavButton}
+                style={{ display: viewMode === 'cards' ? 'flex' : 'none' }}
+              >
+                <FaChevronRight />
+              </button>
+            </div>
+
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <label style={{ fontSize: '0.875rem', fontWeight: '500', color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
+                Filtrar:
+              </label>
+              <select
+                value={filtroUbicacion}
+                onChange={(e) => setFiltroUbicacion(e.target.value)}
+                style={{
+                  padding: '0.5rem 0.75rem',
+                  border: '1px solid var(--border-glass)',
+                  borderRadius: '0.375rem',
+                  fontSize: '0.875rem',
+                  backgroundColor: "rgba(255, 255, 255, 0.05)",
+                  color: "var(--text-primary)",
+                  cursor: 'pointer',
+                  minWidth: '200px'
+                }}
+              >
+                <option value="">Todas las ubicaciones</option>
+                {ubicaciones.map((ubicacion) => (
+                  <option key={ubicacion.id} value={ubicacion.name}>
+                    {ubicacion.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className={styles.calendarLegend} style={{ justifyContent: 'flex-start' }}>
             <div className={styles.legendItem}>
               <span className={styles.legendColor} style={{ backgroundColor: '#f97316' }}></span>
               <span>Incidencia</span>
@@ -399,36 +499,101 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           </div>
         </div>
       </div>
-      <div className={styles.calendarWrapper}>
-        <Calendar
-          localizer={localizer}
-          events={events}
-          startAccessor="start"
-          endAccessor="end"
-          style={{ height: 600 }}
-          view={currentView}
-          onView={setCurrentView}
-          date={currentDate}
-          onNavigate={setCurrentDate}
-          eventPropGetter={eventStyleGetter}
-          onSelectEvent={handleSelectEvent}
-          components={{
-            toolbar: CustomToolbar
-          }}
-          messages={{
-            next: 'Siguiente',
-            previous: 'Anterior',
-            today: 'Hoy',
-            month: 'Mes',
-            week: 'Semana',
-            day: 'Día',
-            agenda: 'Agenda',
-            date: 'Fecha',
-            time: 'Hora',
-            event: 'Evento',
-            noEventsInRange: 'No hay eventos en este rango'
-          }}
-        />
+
+      <div className={styles.calendarWrapper} style={{ minHeight: '400px' }}>
+        {viewMode === 'calendar' ? (
+          <Calendar
+            localizer={localizer}
+            events={events}
+            startAccessor="start"
+            endAccessor="end"
+            style={{ height: 600 }}
+            view={currentView}
+            onView={setCurrentView}
+            date={currentDate}
+            onNavigate={setCurrentDate}
+            eventPropGetter={eventStyleGetter}
+            onSelectEvent={handleSelectEvent}
+            components={{
+              toolbar: CustomToolbar
+            }}
+            messages={{
+              next: 'Siguiente',
+              previous: 'Anterior',
+              today: 'Hoy',
+              month: 'Mes',
+              week: 'Semana',
+              day: 'Día',
+              agenda: 'Agenda',
+              date: 'Fecha',
+              time: 'Hora',
+              event: 'Evento',
+              noEventsInRange: 'No hay eventos en este rango'
+            }}
+          />
+        ) : (
+          <div className={styles.dailyCardsContainer} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1rem', padding: '1rem' }}>
+            {dailyEvents.length === 0 ? (
+              <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>
+                <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📅</div>
+                <p>No hay eventos programados para este día.</p>
+              </div>
+            ) : (
+              dailyEvents.map((event, idx) => {
+                const { style } = eventStyleGetter(event);
+                const isIncidencia = event.resource.tipo === 'incidencia';
+
+                return (
+                  <div
+                    key={idx}
+                    onClick={() => handleSelectEvent(event)}
+                    style={{
+                      backgroundColor: 'var(--bg-card)',
+                      border: `1px solid ${style.borderColor}`,
+                      borderLeft: `5px solid ${style.borderColor}`,
+                      borderRadius: '0.5rem',
+                      padding: '1rem',
+                      cursor: 'pointer',
+                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                      transition: 'transform 0.2s',
+                      position: 'relative',
+                      overflow: 'hidden'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                    onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
+                      <span style={{
+                        fontSize: '0.75rem',
+                        fontWeight: 700,
+                        textTransform: 'uppercase',
+                        color: style.borderColor,
+                        backgroundColor: `${style.borderColor}20`,
+                        padding: '0.25rem 0.5rem',
+                        borderRadius: '0.25rem'
+                      }}>
+                        {event.resource.prioridad?.toUpperCase() || 'NORMAL'}
+                      </span>
+                      <small style={{ color: 'var(--text-secondary)' }}>
+                        {moment(event.start).format('HH:mm')}
+                      </small>
+                    </div>
+
+                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-primary)', fontSize: '1rem' }}>
+                      {event.title}
+                    </h4>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                      <span>📍 {event.incidencia.maquina?.location || 'General'}</span>
+                      <span>•</span>
+                      <span style={{ textTransform: 'capitalize' }}>{event.resource.estado.replace('_', ' ')}</span>
+                    </div>
+                  </div>
+                )
+              })
+            )}
+          </div>
+        )}
       </div>
     </div>
   )
