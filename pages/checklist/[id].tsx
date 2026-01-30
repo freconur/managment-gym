@@ -41,20 +41,7 @@ const ChecklistDetailPage: NextPage = () => {
     const { maquinas, getMaquinas, usuariosValidate, createIncidencia, getIncidencia, getUserByDni } = useManagment();
     const { equipment: complementaryEquipment, getComplementaryEquipment } = useComplementaryEquipment();
 
-    const [assignedGym, setAssignedGym] = useState<string | null>(null);
-
-    // Fetch assignment to filter gym
-    useEffect(() => {
-        if (currentChecklist?.date) {
-            getChecklistAssignment(currentChecklist.date).then(assignment => {
-                if (assignment && assignment.gym) {
-                    setAssignedGym(assignment.gym);
-                } else {
-                    setAssignedGym(null);
-                }
-            }).catch(console.error);
-        }
-    }, [currentChecklist, getChecklistAssignment]);
+    const assignedGym = useMemo(() => currentChecklist?.gym || null, [currentChecklist]);
 
     // Combined Items
     const allItems = useMemo(() => {

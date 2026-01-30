@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { FaLock, FaTimes, FaCheck } from 'react-icons/fa';
-import { getFirestore, collection, getDocs, query, where } from 'firebase/firestore';
-import { app } from '@/firebase/firebase.config';
+import { collection, getDocs, query, where } from 'firebase/firestore';
+import { db } from '@/firebase/firebase.config';
 
 interface PinModalProps {
     isOpen: boolean;
@@ -10,7 +10,6 @@ interface PinModalProps {
     title?: string;
 }
 
-const db = getFirestore(app);
 
 const PinModal: React.FC<PinModalProps> = ({ isOpen, onClose, onSuccess, title = "Ingrese PIN de Seguridad" }) => {
     const [pin, setPin] = useState('');
@@ -133,6 +132,9 @@ const PinModal: React.FC<PinModalProps> = ({ isOpen, onClose, onSuccess, title =
                     <input
                         ref={inputRef}
                         type="password"
+                        name="pin_security_code"
+                        autoComplete="new-password"
+                        data-lpignore="true"
                         value={pin}
                         onChange={(e) => handlePinChange(e.target.value)}
                         placeholder="****"

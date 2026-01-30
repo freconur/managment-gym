@@ -7,7 +7,7 @@ interface ChecklistPinModalProps {
     isOpen: boolean;
     onClose: () => void;
     assignedUser?: Usuario | null;
-    onSuccess: (user: Usuario) => void;
+    onSuccess: (user: Usuario) => Promise<void> | void;
     validateUser: (dni: string, pin: string) => Promise<Usuario | null>;
 }
 
@@ -40,9 +40,8 @@ export const ChecklistPinModal: React.FC<ChecklistPinModalProps> = ({
             setIsSubmitting(true);
             const user = await validateUser(targetDni, pin);
             if (user) {
-                // Check if user matches assigned user if strictness is needed, 
-                // but if we are here, validateUser returned a user matching the DNI.
-                onSuccess(user);
+                // Wait for the success callback to finish (e.g., checklist creation/navigation)
+                await Promise.resolve(onSuccess(user));
                 onClose();
             } else {
                 setError('Credenciales incorrectas');
@@ -101,9 +100,9 @@ export const ChecklistPinModal: React.FC<ChecklistPinModalProps> = ({
                                 placeholder="****"
                                 maxLength={4}
                                 autoFocus={!!assignedUser}
-                                name="pin_code_entry"
+                                name="pin_one_time_verify"
                                 id="pin_code_entry"
-                                autoComplete="one-time-code"
+                                autoComplete="new-password"
                                 data-lpignore="true"
                                 inputMode="numeric"
                                 pattern="[0-9]*"
@@ -126,7 +125,9 @@ export const ChecklistPinModal: React.FC<ChecklistPinModalProps> = ({
                             className={`${styles.button} ${styles.buttonSubmit}`}
                             disabled={isSubmitting || !pin}
                         >
-                            {isSubmitting ? 'Verificando...' : 'Continuar'}
+                            {isSubmitting ? (
+                                assignedUser ? 'Iniciando revisión...' : 'Verificando...'
+                            ) : 'Continuar'}
                         </button>
                     </div>
                 </form>

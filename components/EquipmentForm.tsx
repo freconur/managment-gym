@@ -1,7 +1,6 @@
 import React, { useState } from 'react'
 import { FaCog, FaCloudUploadAlt, FaSpinner, FaCamera } from 'react-icons/fa'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
-import { storage } from '@/firebase/firebase.config'
 import styles from '@/styles/equipment.module.css'
 import { estadoDeMaquina } from '@/utils/data'
 import { compressImage } from '@/utils/imageUtils'
@@ -10,9 +9,10 @@ import { Marca } from '@/features/types/types'
 import { Ubicacion, useManagment } from '@/features/hooks/useManagment'
 import { MarcaModal } from './MarcaModal'
 import { DeleteMarcaModal } from './DeleteMarcaModal'
-import { UbicacionModal } from './UbicacionModal'
-import { DeleteUbicacionModal } from './DeleteUbicacionModal'
+import UbicacionModal from './UbicacionModal'
 import { AuthModal } from './AuthModal'
+import { db, storage } from '@/firebase/firebase.config'
+
 
 interface EquipmentFormProps {
   formData: Omit<Machine, 'id'>;
@@ -42,28 +42,22 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
   const [isEditing, setIsEditing] = useState<boolean>(false)
   const [showAuthModal, setShowAuthModal] = useState(false)
   const [authError, setAuthError] = useState<string>('')
-  const [authType, setAuthType] = useState<'marca' | 'ubicacion' | 'editMarca' | 'editUbicacion'>('marca')
+  const [authType, setAuthType] = useState<'marca' | 'editMarca'>('marca')
   const [pendingMarcaData, setPendingMarcaData] = useState<{ id: string; name: string } | null>(null)
-  const [pendingUbicacionData, setPendingUbicacionData] = useState<{ id: string; name: string } | null>(null)
 
-  // Estados para Ubicaciones
-  const [isUbicacionModalOpen, setIsUbicacionModalOpen] = useState(false)
-  const [isDeleteUbicacionModalOpen, setIsDeleteUbicacionModalOpen] = useState(false)
-  const [selectedUbicacionId, setSelectedUbicacionId] = useState<string>('')
-  const [ubicacionName, setUbicacionName] = useState<string>('')
-  const [ubicacionToDelete, setUbicacionToDelete] = useState<{ id: string; name: string } | null>(null)
-  const [isEditingUbicacion, setIsEditingUbicacion] = useState<boolean>(false)
+
 
   // Estados para Imagen
   const [uploadingImage, setUploadingImage] = useState(false)
 
   // Estados de guardado
   const [isSavingMarca, setIsSavingMarca] = useState(false)
-  const [isSavingUbicacion, setIsSavingUbicacion] = useState(false)
   const [isDeletingMarca, setIsDeletingMarca] = useState(false)
-  const [isDeletingUbicacion, setIsDeletingUbicacion] = useState(false)
 
-  const { createMarcas, updateMarcas, deleteMarcas, createUbicaciones, updateUbicaciones, deleteUbicaciones } = useManagment()
+  // Estado para Ubicaciones modal (simple)
+  const [isUbicacionModalOpen, setIsUbicacionModalOpen] = useState(false)
+
+  const { createMarcas, updateMarcas, deleteMarcas } = useManagment()
 
   const handleSelectMarca = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const marcaId = e.target.value
@@ -139,19 +133,13 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
 
         if (authType === 'marca') {
           setIsDeleteModalOpen(true)
-        } else if (authType === 'ubicacion') {
-          setIsDeleteUbicacionModalOpen(true)
         } else if (authType === 'editMarca') {
           await performSaveMarca()
-        } else if (authType === 'editUbicacion') {
-          await performSaveUbicacion()
         }
       } else {
         let errorMessage = ''
         if (authType === 'marca' || authType === 'editMarca') {
           errorMessage = 'Acceso denegado. Solo administradores y desarrolladores pueden modificar marcas.'
-        } else if (authType === 'ubicacion' || authType === 'editUbicacion') {
-          errorMessage = 'Acceso denegado. Solo administradores y desarrolladores pueden modificar ubicaciones.'
         }
         setAuthError(errorMessage)
       }
@@ -166,12 +154,8 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
     setAuthError('')
     if (authType === 'marca') {
       setMarcaToDelete(null)
-    } else if (authType === 'ubicacion') {
-      setUbicacionToDelete(null)
     } else if (authType === 'editMarca') {
       setPendingMarcaData(null)
-    } else if (authType === 'editUbicacion') {
-      setPendingUbicacionData(null)
     }
   }
 
@@ -202,91 +186,7 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
     setMarcaToDelete(null)
   }
 
-  // Funciones para Ubicaciones
-  const handleSelectUbicacion = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const ubicacionId = e.target.value
-    setSelectedUbicacionId(ubicacionId)
-    if (ubicacionId) {
-      const ubicacion = ubicaciones.find(u => u.id === ubicacionId)
-      setUbicacionName(ubicacion?.name || '')
-      setIsEditingUbicacion(true)
-    } else {
-      setUbicacionName('')
-      setIsEditingUbicacion(false)
-    }
-  }
 
-  const handleNewUbicacion = () => {
-    setSelectedUbicacionId('')
-    setUbicacionName('')
-    setIsEditingUbicacion(false)
-  }
-
-  const handleSaveUbicacion = async () => {
-    if (!ubicacionName.trim() || isSavingUbicacion) return
-
-    try {
-      setIsSavingUbicacion(true)
-      if (isEditingUbicacion && selectedUbicacionId) {
-        await updateUbicaciones(selectedUbicacionId, { name: ubicacionName.trim() })
-      } else {
-        await createUbicaciones({ name: ubicacionName.trim() })
-      }
-      setUbicacionName('')
-      setSelectedUbicacionId('')
-      setIsEditingUbicacion(false)
-    } catch (error) {
-      console.error('Error al guardar ubicación:', error)
-      alert('Error al guardar la ubicación.')
-    } finally {
-      setIsSavingUbicacion(false)
-    }
-  }
-
-  const performSaveUbicacion = async () => {
-    if (!pendingUbicacionData) return
-    await updateUbicaciones(pendingUbicacionData.id, { name: pendingUbicacionData.name })
-    setUbicacionName('')
-    setSelectedUbicacionId('')
-    setIsEditingUbicacion(false)
-    setPendingUbicacionData(null)
-  }
-
-  const handleDeleteUbicacion = () => {
-    if (!selectedUbicacionId) return
-    const ubicacion = ubicaciones.find(u => u.id === selectedUbicacionId)
-    if (ubicacion) {
-      setUbicacionToDelete({ id: selectedUbicacionId, name: ubicacion.name || '' })
-      setIsDeleteUbicacionModalOpen(true)
-    }
-  }
-
-  const confirmDeleteUbicacion = async () => {
-    if (!ubicacionToDelete || isDeletingUbicacion) return
-
-    try {
-      setIsDeletingUbicacion(true)
-      await deleteUbicaciones(ubicacionToDelete.id)
-      setIsDeleteUbicacionModalOpen(false)
-      setUbicacionToDelete(null)
-      // Reset form if the deleted location was being edited
-      if (selectedUbicacionId === ubicacionToDelete.id) {
-        setUbicacionName('')
-        setSelectedUbicacionId('')
-        setIsEditingUbicacion(false)
-      }
-    } catch (error) {
-      console.error('Error al eliminar ubicación:', error)
-      alert('Error al eliminar la ubicación.')
-    } finally {
-      setIsDeletingUbicacion(false)
-    }
-  }
-
-  const cancelDeleteUbicacion = () => {
-    setIsDeleteUbicacionModalOpen(false)
-    setUbicacionToDelete(null)
-  }
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -596,25 +496,10 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
       <UbicacionModal
         isOpen={isUbicacionModalOpen}
         onClose={handleCloseUbicacionModal}
-        ubicaciones={ubicaciones}
-        selectedUbicacionId={selectedUbicacionId}
-        ubicacionName={ubicacionName}
-        isEditing={isEditingUbicacion}
-        onSelectUbicacion={handleSelectUbicacion}
-        onNewUbicacion={handleNewUbicacion}
-        onSaveUbicacion={handleSaveUbicacion}
-        onDeleteUbicacion={handleDeleteUbicacion}
-        onUbicacionNameChange={setUbicacionName}
-        isSaving={isSavingUbicacion}
+        db={db}
       />
 
-      <DeleteUbicacionModal
-        isOpen={isDeleteUbicacionModalOpen}
-        ubicacionName={ubicacionToDelete?.name || ''}
-        onConfirm={confirmDeleteUbicacion}
-        onCancel={cancelDeleteUbicacion}
-        isDeleting={isDeletingUbicacion}
-      />
+
 
       <AuthModal
         isOpen={showAuthModal}

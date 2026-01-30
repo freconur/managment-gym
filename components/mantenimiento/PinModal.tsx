@@ -74,6 +74,9 @@ const PinModal: React.FC<PinModalProps> = ({
                             </label>
                             <input
                                 type="password"
+                                name="maintenance_pin_verify"
+                                autoComplete="new-password"
+                                data-lpignore="true"
                                 inputMode="numeric"
                                 pattern="[0-9]*"
                                 value={pin}

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import NextImage from 'next/image';
 import { FaHistory, FaSpinner, FaTrash } from 'react-icons/fa';
 import {
-    getFirestore,
     collection,
     query,
     orderBy,
@@ -13,13 +12,13 @@ import {
     updateDoc,
     where,
     Timestamp,
-    getDocs
+    getDocs,
+    getDoc
 } from 'firebase/firestore';
-import { app } from '@/firebase/firebase.config';
+import { db } from '@/firebase/firebase.config';
 import styles from './RecentAccessFeed.module.css';
 import PinModal from './PinModal';
 
-const db = getFirestore(app);
 
 // ... AccessRecord interface
 interface AccessRecord {
@@ -49,12 +48,26 @@ interface PinAction {
     payload: any;
 }
 
-export const RecentAccessFeed: React.FC = () => {
+interface RecentAccessFeedProps {
+    environment?: string;
+    locationId?: string;
+}
+
+export const RecentAccessFeed: React.FC<RecentAccessFeedProps> = ({ environment, locationId: propLocationId }) => {
     const [recentAccesses, setRecentAccesses] = useState<AccessRecord[]>([]);
     const [loadingRecent, setLoadingRecent] = useState(true);
     const [isPinModalOpen, setIsPinModalOpen] = useState(false);
     const [pinAction, setPinAction] = useState<PinAction | null>(null);
     const [unlockedTowelIds, setUnlockedTowelIds] = useState<string[]>([]);
+    const [latestMemberPhotos, setLatestMemberPhotos] = useState<Record<string, string>>({});
+    const [locationId, setLocationId] = useState<string | null>(propLocationId || null);
+
+    // Sync propLocationId to internal locationId state
+    useEffect(() => {
+        if (propLocationId) {
+            setLocationId(propLocationId);
+        }
+    }, [propLocationId]);
 
     // Filters
     const [selectedDate, setSelectedDate] = useState<string>(() => {
@@ -88,6 +101,7 @@ export const RecentAccessFeed: React.FC = () => {
     // Fetch Accesses based on Date
     useEffect(() => {
         setLoadingRecent(true);
+        setRecentAccesses([]); // Clear old data to prevent stale state if query fails
 
         // Parse date manually to avoid UTC conversion issues
         const [year, month, day] = selectedDate.split('-').map(Number);
@@ -96,14 +110,26 @@ export const RecentAccessFeed: React.FC = () => {
         const startOfDay = new Date(year, month - 1, day, 0, 0, 0, 0);
         const endOfDay = new Date(year, month - 1, day, 23, 59, 59, 999);
 
-        const q = query(
-            collection(db, 'asistencias'),
+        const constraints: any[] = [];
+
+        if (environment) {
+            constraints.push(where('environment', '==', environment));
+        }
+
+        constraints.push(
             where('timestamp', '>=', startOfDay),
             where('timestamp', '<=', endOfDay),
-            orderBy('timestamp', 'desc')
+            orderBy('timestamp', 'desc'),
+            limit(50)
         );
 
-        const unsubscribe = onSnapshot(q, (snapshot) => {
+        const asistenciasCol = locationId
+            ? collection(db, 'ubicaciones', locationId, 'asistencias')
+            : collection(db, 'asistencias');
+
+        const q = query(asistenciasCol, ...constraints);
+
+        const unsubscribe = onSnapshot(q, { includeMetadataChanges: true }, (snapshot) => {
             const docs = snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
@@ -116,7 +142,81 @@ export const RecentAccessFeed: React.FC = () => {
         });
 
         return () => unsubscribe();
-    }, [selectedDate]);
+    }, [selectedDate, environment]);
+
+    // Fetch latest member photos
+    useEffect(() => {
+        const fetchPhotos = async () => {
+            const memberIdsToFetch = new Set<string>();
+            recentAccesses.forEach(record => {
+                if (record.memberId && !latestMemberPhotos[record.memberId]) {
+                    memberIdsToFetch.add(record.memberId);
+                }
+            });
+
+            if (memberIdsToFetch.size === 0) return;
+
+            const newPhotos: Record<string, string> = {};
+            await Promise.all(Array.from(memberIdsToFetch).map(async (memberId) => {
+                try {
+                    const membersCol = locationId
+                        ? collection(db, 'ubicaciones', locationId, 'members')
+                        : collection(db, 'members');
+
+                    const memberDoc = await getDoc(doc(membersCol, memberId));
+                    if (memberDoc.exists()) {
+                        const data = memberDoc.data();
+                        if (data.fotoUrl) {
+                            newPhotos[memberId] = data.fotoUrl;
+                        }
+                    }
+                } catch (error) {
+                    console.error(`Error fetching photo for member ${memberId}:`, error);
+                }
+            }));
+
+            if (Object.keys(newPhotos).length > 0) {
+                setLatestMemberPhotos(prev => ({ ...prev, ...newPhotos }));
+            }
+        };
+
+        if (recentAccesses.length > 0) {
+            fetchPhotos();
+        }
+    }, [recentAccesses, latestMemberPhotos]);
+
+    const [hasAmenities, setHasAmenities] = useState(false);
+
+    // Fetch Current Environment Configuration
+    useEffect(() => {
+        const fetchEnvironmentConfig = async () => {
+            if (!environment) {
+                setHasAmenities(false);
+                return;
+            }
+
+            try {
+                const q = query(collection(db, 'ubicaciones'), where('name', '==', environment));
+                const snapshot = await getDocs(q);
+                if (!snapshot.empty) {
+                    const docSnap = snapshot.docs[0];
+                    const data = docSnap.data();
+                    setLocationId(docSnap.id);
+                    setHasAmenities(!!data.haveAmenidades);
+                } else {
+                    setLocationId(null);
+                    setHasAmenities(false);
+                }
+            } catch (error) {
+                console.error("Error fetching environment config:", error);
+                setHasAmenities(false);
+            }
+        };
+
+        fetchEnvironmentConfig();
+    }, [environment]);
+
+    // ... (keep existing effects)
 
     // Filtered list
     const filteredAccesses = recentAccesses.filter(record => {
@@ -153,7 +253,11 @@ export const RecentAccessFeed: React.FC = () => {
         if (value.length > 2) return;
 
         try {
-            await updateDoc(doc(db, 'asistencias', id), { towelNumber: value });
+            const asistenciasCol = locationId
+                ? collection(db, 'ubicaciones', locationId, 'asistencias')
+                : collection(db, 'asistencias');
+
+            await updateDoc(doc(asistenciasCol, id), { towelNumber: value });
         } catch (error) {
             console.error("Error updating towel number:", error);
         }
@@ -163,16 +267,20 @@ export const RecentAccessFeed: React.FC = () => {
         if (!pinAction) return;
 
         try {
+            const asistenciasCol = locationId
+                ? collection(db, 'ubicaciones', locationId, 'asistencias')
+                : collection(db, 'asistencias');
+
             if (pinAction.type === 'DELETE') {
-                await deleteDoc(doc(db, 'asistencias', pinAction.payload));
+                await deleteDoc(doc(asistenciasCol, pinAction.payload));
             } else if (pinAction.type === 'TOGGLE_TOWEL') {
                 const { id, enable } = pinAction.payload;
                 if (enable) {
-                    await updateDoc(doc(db, 'asistencias', id), { hasTowel: true });
+                    await updateDoc(doc(asistenciasCol, id), { hasTowel: true });
                     // Automatically unlock the newly enabled towel for input
                     setUnlockedTowelIds(prev => [...prev, id]);
                 } else {
-                    await updateDoc(doc(db, 'asistencias', id), { hasTowel: false, towelNumber: null });
+                    await updateDoc(doc(asistenciasCol, id), { hasTowel: false, towelNumber: null });
                     setUnlockedTowelIds(prev => prev.filter(uid => uid !== id));
                 }
             } else if (pinAction.type === 'UNLOCK_TOWEL') {
@@ -236,9 +344,9 @@ export const RecentAccessFeed: React.FC = () => {
                 ) : (
                     filteredAccesses.map((record) => (
                         <div key={record.id} className={styles.activityItem}>
-                            {record.fotoUrl ? (
+                            {(latestMemberPhotos[record.memberId] || record.fotoUrl) ? (
                                 <NextImage
-                                    src={record.fotoUrl}
+                                    src={latestMemberPhotos[record.memberId] || record.fotoUrl || ''}
                                     alt=""
                                     width={40}
                                     height={40}
@@ -261,33 +369,35 @@ export const RecentAccessFeed: React.FC = () => {
                                 </div>
                             </div>
 
-                            <div className={styles.towelSection}>
-                                <label className={styles.towelCheckboxLabel}>
-                                    <input
-                                        type="checkbox"
-                                        checked={record.hasTowel || false}
-                                        onChange={() => handleTowelClick(record)}
-                                        className={styles.towelCheckbox}
-                                    />
-                                    <span className={styles.towelText}>Toalla</span>
-                                </label>
-                                {record.hasTowel && (
-                                    <input
-                                        type="number"
-                                        value={record.towelNumber || ''}
-                                        onChange={(e) => handleTowelNumberChange(record.id, e.target.value)}
-                                        className={styles.towelInput}
-                                        placeholder="#"
-                                        readOnly={!unlockedTowelIds.includes(record.id)}
-                                        onClick={() => handleTowelInputClick(record.id)}
-                                        onBlur={() => handleTowelInputBlur(record.id)}
-                                        style={{
-                                            opacity: !unlockedTowelIds.includes(record.id) ? 0.7 : 1,
-                                            cursor: !unlockedTowelIds.includes(record.id) ? 'pointer' : 'text'
-                                        }}
-                                    />
-                                )}
-                            </div>
+                            {hasAmenities && (
+                                <div className={styles.towelSection}>
+                                    <label className={styles.towelCheckboxLabel}>
+                                        <input
+                                            type="checkbox"
+                                            checked={record.hasTowel || false}
+                                            onChange={() => handleTowelClick(record)}
+                                            className={styles.towelCheckbox}
+                                        />
+                                        <span className={styles.towelText}>Toalla</span>
+                                    </label>
+                                    {record.hasTowel && (
+                                        <input
+                                            type="number"
+                                            value={record.towelNumber || ''}
+                                            onChange={(e) => handleTowelNumberChange(record.id, e.target.value)}
+                                            className={styles.towelInput}
+                                            placeholder="#"
+                                            readOnly={!unlockedTowelIds.includes(record.id)}
+                                            onClick={() => handleTowelInputClick(record.id)}
+                                            onBlur={() => handleTowelInputBlur(record.id)}
+                                            style={{
+                                                opacity: !unlockedTowelIds.includes(record.id) ? 0.7 : 1,
+                                                cursor: !unlockedTowelIds.includes(record.id) ? 'pointer' : 'text'
+                                            }}
+                                        />
+                                    )}
+                                </div>
+                            )}
 
                             <div className={styles.activityTimeContainer}>
                                 <p className={styles.activityTime}>

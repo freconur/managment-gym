@@ -142,6 +142,29 @@ export interface SubEnvironment {
   createdAt?: any;
 }
 
+export interface Schedule {
+  start: string;
+  end: string;
+}
+
+export interface AllowedCompany {
+  companyId: string;
+  companyName: string;
+  haveSchedule: boolean;
+  schedules?: Schedule[];
+  haveRoleRestriction?: boolean;
+  allowedRoles?: string[];
+}
+
+export interface Ubicacion {
+  id: string;
+  name: string;
+  haveAmenidades?: boolean;
+  haveSubEnvironments?: boolean;
+  allowedCompanies?: AllowedCompany[];
+  createdAt?: any;
+}
+
 export interface Amenity {
   id: string;
   nombre: string;
@@ -154,6 +177,7 @@ export type ChecklistItemStatus = 'pending' | 'ok' | 'incidencia';
 export interface Checklist {
   id?: string;
   date: string; // YYYY-MM-DD
+  gym?: string;
   status: ChecklistStatus;
   totalCount: number;
   completedCount: number;

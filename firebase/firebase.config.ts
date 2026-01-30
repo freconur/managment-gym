@@ -1,12 +1,13 @@
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-import { getStorage } from "firebase/storage";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
+import { initializeApp, getApps, getApp, FirebaseApp } from "firebase/app";
+import { getStorage, FirebaseStorage } from "firebase/storage";
+import {
+  getFirestore,
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
+  Firestore
+} from "firebase/firestore";
 
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
   apiKey: "AIzaSyB4hGAeFU5-o2deKdktNwoDKmYMJUZqBY4",
   authDomain: "gym-managment-10c42.firebaseapp.com",
@@ -18,6 +19,20 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-export const app = initializeApp(firebaseConfig);
-export const storage = getStorage(app);
-/* const analytics = getAnalytics(app); */
+const app: FirebaseApp = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+const storage: FirebaseStorage = getStorage(app);
+
+// Initialize Firestore with Persistent Local Cache (IndexedDB)
+let db: Firestore;
+try {
+  db = initializeFirestore(app, {
+    localCache: persistentLocalCache({
+      tabManager: persistentMultipleTabManager()
+    })
+  });
+} catch (error) {
+  // If already initialized (common in Next.js HMR), get the existing instance
+  db = getFirestore(app);
+}
+
+export { app, storage, db };

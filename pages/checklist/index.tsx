@@ -9,6 +9,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { AssignUserModal } from "@/components/AssignUserModal";
 import { AuthModal } from "@/components/AuthModal";
 import { ChecklistPinModal } from "@/components/ChecklistPinModal";
+import { SelectGymModal } from "@/components/SelectGymModal";
 
 
 
@@ -59,6 +60,10 @@ const ChecklistPage: NextPage = () => {
 
     // Complementary Equipment Modal State
     const [isComplementaryModalOpen, setIsComplementaryModalOpen] = useState(false);
+
+    // Select Gym Modal State
+    const [isSelectGymModalOpen, setIsSelectGymModalOpen] = useState(false);
+    const [selectedGymForChecklist, setSelectedGymForChecklist] = useState<string | null>(null);
 
     // Month Selector State
     const [viewDate, setViewDate] = useState(new Date());
@@ -124,26 +129,34 @@ const ChecklistPage: NextPage = () => {
         setViewDate(new Date(currentYear, currentMonth + 1, 1));
     };
 
-    const handleStartDailyClick = async () => {
+    const handleStartDailyClick = () => {
         if (allItems.length === 0) {
             alert("No hay ítems registrados para realizar el checklist.");
             return;
         }
+        setIsSelectGymModalOpen(true);
+    };
+
+    const handleGymSelected = async (gym: string) => {
+        setIsSelectGymModalOpen(false);
+        setSelectedGymForChecklist(gym);
+        setLocationFilter(gym); // Sync UI filter with selected gym
 
         try {
-            // Check for assignment
+            // Check for assignment for this specific gym
             const now = new Date();
             const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
-            const assignment = await getChecklistAssignment(todayStr);
+            const assignment = await getChecklistAssignment(todayStr, gym);
             if (assignment && assignment.userId) {
-                const assignedUser = usuarios.find(u => u.dni === assignment.userId || u.id === assignment.userId);
+                // Use the user directly from assignment if available, otherwise find in list
+                const assignedUser = assignment.user || usuarios.find(u => u.dni === assignment.userId || u.id === assignment.userId);
 
                 if (assignedUser) {
                     setAssignedUserForPin(assignedUser);
                     setIsPinModalOpen(true);
                 } else {
-                    alert("El usuario asignado para hoy no se encuentra en el sistema. Contacte al administrador.");
+                    alert(`El usuario asignado para ${gym} hoy no se encuentra en el sistema. Contacte al administrador.`);
                     return;
                 }
             } else {
@@ -194,7 +207,7 @@ const ChecklistPage: NextPage = () => {
     const onPinSuccess = async (user: Usuario) => {
         try {
             setIsCreating(true);
-            const checklistId = await startDailyChecklist(allItems.length, user);
+            const checklistId = await startDailyChecklist(allItems.length, user, undefined, selectedGymForChecklist || undefined);
             router.push(`/checklist/${checklistId}`);
         } catch (error) {
             console.error("Error starting checklist:", error);
@@ -300,7 +313,7 @@ const ChecklistPage: NextPage = () => {
                                     monthName={monthNames[currentMonth]}
                                     year={currentYear}
                                     machines={allItems} // allItems is already sorted by order
-                                    assignments={assignments.filter(a => !locationFilter || !a.gym || a.gym === locationFilter)}
+                                    assignments={assignments.filter(a => !locationFilter || a.gym === locationFilter)}
                                     monthData={monthData}
                                     daysInMonth={new Date(currentYear, currentMonth + 1, 0).getDate()}
                                     currentMonth={currentMonth}
@@ -400,14 +413,14 @@ const ChecklistPage: NextPage = () => {
                     </div>
 
                     {/* Assigned Users Section */}
-                    {assignments.filter(a => !locationFilter || !a.gym || a.gym === locationFilter).length > 0 && (
+                    {assignments.filter(a => !locationFilter || a.gym === locationFilter).length > 0 && (
                         <div className={styles.assignedUsersContainer}>
                             <h3 className={styles.assignedUsersTitle}>
                                 <FaUserCog size={14} /> Encargados del Mes
                             </h3>
                             <div className={styles.assignedUsersList}>
                                 {assignments
-                                    .filter(a => !locationFilter || !a.gym || a.gym === locationFilter)
+                                    .filter(a => !locationFilter || a.gym === locationFilter)
                                     .map(assignment => (
                                         <div key={assignment.id} className={styles.assignedUserCard}>
                                             <div className={styles.assignedUserAvatar}>
@@ -480,6 +493,13 @@ const ChecklistPage: NextPage = () => {
             <ComplementaryEquipmentModal
                 isOpen={isComplementaryModalOpen}
                 onClose={() => setIsComplementaryModalOpen(false)}
+            />
+
+            <SelectGymModal
+                isOpen={isSelectGymModalOpen}
+                onClose={() => setIsSelectGymModalOpen(false)}
+                ubicaciones={ubicaciones}
+                onSelect={handleGymSelected}
             />
 
             <AuthModal
@@ -570,6 +590,13 @@ const ChecklistPage: NextPage = () => {
                             </button>
                         </div>
                     </div>
+                </div>
+            )}
+
+            {isCreating && (
+                <div className={styles.loadingOverlay}>
+                    <div className={styles.loadingSpinner}></div>
+                    <div className={styles.loadingText}>Preparando ambiente de revisión...</div>
                 </div>
             )}
 
