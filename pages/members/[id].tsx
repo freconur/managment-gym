@@ -286,8 +286,17 @@ const DynamicMembersPage: NextPage = () => {
           fotoUrl,
           createdAt: serverTimestamp()
         })
+        alert("Usuario agregado correctamente")
+        setFormData({
+          nombre: '', dni: '', apellidos: '', empresa: '', area: '', cargo: '', sexo: '', fotoUrl: ''
+        })
+        setSelectedImage(null)
+        setPreviewUrl(null)
       }
-      handleCancel()
+
+      if (isEditing) {
+        handleCancel()
+      }
     } catch (error) {
       console.error("Error saving member:", error)
       alert("Error al guardar el usuario")
