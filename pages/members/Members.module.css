@@ -356,7 +356,7 @@
 .td {
     padding: 0.5rem 1rem;
     vertical-align: middle;
-    text-transform: capitalize;
+    text-transform: uppercase;
 }
 
 .tdDni {
@@ -370,7 +370,7 @@
     color: var(--text-primary);
     font-size: 0.875rem;
     font-weight: 600;
-    text-transform: capitalize;
+    text-transform: uppercase;
 }
 
 /* Badges */
@@ -382,14 +382,14 @@
     font-size: 0.7rem;
     font-weight: 600;
     line-height: 1;
-    text-transform: capitalize;
+    text-transform: uppercase;
 }
 
 .badgeCompany {
     background-color: #e0f2fe;
     color: #0369a1;
     border: 1px solid #bae6fd;
-    text-transform: capitalize;
+    text-transform: uppercase;
 }
 
 .badgeArea {

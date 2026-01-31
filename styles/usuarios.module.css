@@ -116,6 +116,7 @@
   padding: 1rem 1.25rem;
   color: var(--text-primary);
   vertical-align: middle;
+  text-transform: uppercase;
 }
 
 .tableCellDni {
@@ -144,7 +145,7 @@
   border-radius: 0.5rem;
   font-size: 0.75rem;
   font-weight: 600;
-  text-transform: capitalize;
+  text-transform: uppercase;
   letter-spacing: 0.025em;
 }
 

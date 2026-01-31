@@ -26,6 +26,7 @@
     font-size: 0.875rem;
     color: var(--text-primary);
     transition: background-color 0.15s;
+    text-transform: uppercase;
 }
 
 .optionItem:hover {
