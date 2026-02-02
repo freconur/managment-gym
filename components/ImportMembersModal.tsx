@@ -33,6 +33,8 @@ export const ImportMembersModal: React.FC<ImportMembersModalProps> = ({ isOpen, 
     const [invalidRecords, setInvalidRecords] = useState<InvalidRecord[]>([]);
     const [isProcessing, setIsProcessing] = useState(false);
 
+    const [importProgress, setImportProgress] = useState<{ current: number; total: number } | null>(null);
+
     if (!isOpen) return null;
 
     const resetState = () => {
@@ -40,6 +42,7 @@ export const ImportMembersModal: React.FC<ImportMembersModalProps> = ({ isOpen, 
         setValidRecords([]);
         setInvalidRecords([]);
         setIsProcessing(false);
+        setImportProgress(null);
     };
 
     const handleClose = () => {
@@ -124,28 +127,42 @@ export const ImportMembersModal: React.FC<ImportMembersModalProps> = ({ isOpen, 
         if (validRecords.length === 0) return;
 
         setStep('importing');
+        const BATCH_SIZE = 450;
+        const totalBatches = Math.ceil(validRecords.length / BATCH_SIZE);
+        setImportProgress({ current: 0, total: totalBatches });
+
         try {
-            const batch = writeBatch(db);
             const membersCol = locationId
                 ? collection(db, 'ubicaciones', locationId, 'members')
                 : collection(db, 'members');
 
-            validRecords.forEach(member => {
-                const docRef = doc(membersCol, member.dni);
-                batch.set(docRef, {
-                    ...member,
-                    fotoUrl: null,
-                    createdAt: serverTimestamp(),
-                    updatedAt: serverTimestamp()
-                });
-            });
+            for (let i = 0; i < totalBatches; i++) {
+                setImportProgress({ current: i + 1, total: totalBatches });
+                const batch = writeBatch(db);
+                const start = i * BATCH_SIZE;
+                const end = start + BATCH_SIZE;
+                const chunk = validRecords.slice(start, end);
 
-            await batch.commit();
+                chunk.forEach(member => {
+                    const docRef = doc(membersCol, member.dni);
+                    batch.set(docRef, {
+                        ...member,
+                        fotoUrl: null,
+                        createdAt: serverTimestamp(),
+                        updatedAt: serverTimestamp()
+                    });
+                });
+
+                await batch.commit();
+            }
+
             setStep('success');
         } catch (error) {
             console.error("Error importing to firestore:", error);
             alert("Ocurrió un error al guardar los datos.");
             setStep('preview');
+        } finally {
+            setImportProgress(null);
         }
     };
 
@@ -295,7 +312,11 @@ export const ImportMembersModal: React.FC<ImportMembersModalProps> = ({ isOpen, 
                     {step === 'importing' && (
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: '1.5rem' }}>
                             <FaSpinner size={64} className={styles.spinAnimation} color="#3b82f6" />
-                            <h3 style={{ fontSize: '1.5rem', color: '#1e293b' }}>Guardando usuarios...</h3>
+                            <h3 style={{ fontSize: '1.5rem', color: '#1e293b' }}>
+                                {importProgress
+                                    ? `Importando lote ${importProgress.current} de ${importProgress.total}...`
+                                    : 'Guardando usuarios...'}
+                            </h3>
                             <p style={{ color: '#64748b' }}>Esto puede tomar unos segundos.</p>
                         </div>
                     )}
