@@ -162,7 +162,7 @@ const DynamicReportsPage: NextPage = () => {
     const reportRef = useRef<HTMLDivElement>(null)
 
     const [selectedSex, setSelectedSex] = useState<string>('all')
-    const [subEnvironmentsList, setSubEnvironmentsList] = useState<SubEnvironment[]>([])
+
     const [selectedSubEnv, setSelectedSubEnv] = useState<string>('all')
     const [location, setLocation] = useState<Ubicacion | null>(null)
 
@@ -197,17 +197,6 @@ const DynamicReportsPage: NextPage = () => {
         }
         fetchData()
 
-        // Fetch SubEnvironments
-        const fetchSubEnvs = async () => {
-            const q = query(collection(db, 'sub_environments'), orderBy('createdAt', 'desc'))
-            const snapshot = await getDocs(q)
-            const data = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            })) as SubEnvironment[]
-            setSubEnvironmentsList(data)
-        }
-        fetchSubEnvs()
     }, [id])
 
     const filteredData = useMemo(() => {
@@ -480,14 +469,14 @@ const DynamicReportsPage: NextPage = () => {
                                 <option value="Mujer">Mujer</option>
                             </select>
 
-                            {location?.haveSubEnvironments !== false && (
+                            {location?.haveSubEnvironments && location.subEnvironments && location.subEnvironments.length > 0 && (
                                 <select
                                     value={selectedSubEnv}
                                     onChange={(e) => setSelectedSubEnv(e.target.value)}
                                     className={styles.select}
                                 >
                                     <option value="all">Todos los Sub-ambientes</option>
-                                    {subEnvironmentsList.map(env => (
+                                    {location.subEnvironments.map(env => (
                                         <option key={env.id} value={env.nombre}>{env.nombre}</option>
                                     ))}
                                 </select>
