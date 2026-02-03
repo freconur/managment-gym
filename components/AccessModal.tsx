@@ -57,6 +57,7 @@ export const AccessModal: React.FC<AccessModalProps> = ({ isOpen, onClose, envir
     const [amenities, setAmenities] = useState<Amenity[]>([]);
     const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
     const [isAmenityModalOpen, setIsAmenityModalOpen] = useState(false);
+    const [tableAssignments, setTableAssignments] = useState<Record<string, string>>({});
 
     // Authorization State
     const [allowedCompaniesConfig, setAllowedCompaniesConfig] = useState<AllowedCompany[] | null>(null);
@@ -284,6 +285,18 @@ export const AccessModal: React.FC<AccessModalProps> = ({ isOpen, onClose, envir
             return;
         }
 
+        if (haveSubEnvironments) {
+            const missingTables = selectedSubEnvironments.filter(name => {
+                const env = subEnvironments.find(e => e.nombre === name);
+                return env?.requireTableAssignment && (!tableAssignments[name] || !tableAssignments[name].trim());
+            });
+
+            if (missingTables.length > 0) {
+                setError(`Debe asignar mesa a: ${missingTables.join(', ')}`);
+                return;
+            }
+        }
+
         setRegistering(true);
         try {
             const asistenciasCol = locationId
@@ -299,6 +312,13 @@ export const AccessModal: React.FC<AccessModalProps> = ({ isOpen, onClose, envir
                 cargo: member.cargo || null,
                 sexo: member.sexo,
                 subEnvironments: selectedSubEnvironments, // Will be empty array if !haveSubEnvironments
+                subEnvironmentDetails: selectedSubEnvironments.map(name => {
+                    const env = subEnvironments.find(e => e.nombre === name);
+                    if (env?.requireTableAssignment) {
+                        return { name, tableNumber: tableAssignments[name] };
+                    }
+                    return { name };
+                }),
                 amenities: selectedAmenities,
                 amenitiesReturned: selectedAmenities.length > 0 ? false : true,
                 fotoUrl: member.fotoUrl || null,
@@ -320,6 +340,7 @@ export const AccessModal: React.FC<AccessModalProps> = ({ isOpen, onClose, envir
             setDni('');
             setMember(null);
             setSelectedSubEnvironments([]);
+            setTableAssignments({});
             setSelectedAmenities([]);
 
             // Auto-hide success message
@@ -344,6 +365,7 @@ export const AccessModal: React.FC<AccessModalProps> = ({ isOpen, onClose, envir
         setSuccessMsg('');
         setShowScanner(false);
         setSelectedSubEnvironments([]);
+        setTableAssignments({});
         setSelectedAmenities([]);
         onClose();
     };
@@ -464,14 +486,36 @@ export const AccessModal: React.FC<AccessModalProps> = ({ isOpen, onClose, envir
                                             <p className={styles.noDataText}>No hay sub-ambientes registrados.</p>
                                         ) : (
                                             subEnvironments.map(env => (
-                                                <label key={env.id} className={styles.checkboxLabel}>
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={selectedSubEnvironments.includes(env.nombre)}
-                                                        onChange={() => toggleSubEnvironment(env.nombre)}
-                                                    />
-                                                    <span>{env.nombre}</span>
-                                                </label>
+                                                <div key={env.id} className={styles.subEnvItem} style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                                                    <label className={styles.checkboxLabel}>
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={selectedSubEnvironments.includes(env.nombre)}
+                                                            onChange={() => toggleSubEnvironment(env.nombre)}
+                                                        />
+                                                        <span>{env.nombre}</span>
+                                                    </label>
+                                                    {selectedSubEnvironments.includes(env.nombre) && env.requireTableAssignment && (
+                                                        <input
+                                                            type="text"
+                                                            placeholder="Nº Mesa"
+                                                            value={tableAssignments[env.nombre] || ''}
+                                                            onChange={(e) => {
+                                                                const val = e.target.value;
+                                                                setTableAssignments(prev => ({ ...prev, [env.nombre]: val }));
+                                                            }}
+                                                            onClick={(e) => e.stopPropagation()}
+                                                            style={{
+                                                                padding: '4px 8px',
+                                                                borderRadius: '4px',
+                                                                border: '1px solid #ccc',
+                                                                fontSize: '0.9rem',
+                                                                width: '100%',
+                                                                marginTop: '2px'
+                                                            }}
+                                                        />
+                                                    )}
+                                                </div>
                                             ))
                                         )}
                                     </div>

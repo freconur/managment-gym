@@ -34,6 +34,7 @@ interface AccessRecord {
     hasTowel?: boolean;
     towelNumber?: string;
     subEnvironments?: string[];
+    subEnvironmentDetails?: { name: string; tableNumber?: string }[];
 }
 
 interface Company {
@@ -363,9 +364,15 @@ export const RecentAccessFeed: React.FC<RecentAccessFeedProps> = ({ environment,
                                     <span className={styles.tagCompany}>{record.company}</span>
                                     {record.area && <span className={styles.tagArea}>{record.area}</span>}
                                     {record.cargo && <span className={styles.tagCargo}>{record.cargo}</span>}
-                                    {record.subEnvironments && record.subEnvironments.map((sub, idx) => (
-                                        <span key={`${record.id}-sub-${idx}`} className={styles.tagSubEnvironment}>{sub}</span>
-                                    ))}
+
+
+                                    {record.subEnvironments && record.subEnvironments.map((sub, idx) => {
+                                        const detail = record.subEnvironmentDetails?.find(d => d.name === sub);
+                                        const label = detail?.tableNumber ? `${sub} (#${detail.tableNumber})` : sub;
+                                        return (
+                                            <span key={`${record.id}-sub-${idx}`} className={styles.tagSubEnvironment}>{label}</span>
+                                        );
+                                    })}
                                 </div>
                             </div>
 

@@ -25,8 +25,10 @@ interface SubEnvironmentModalProps {
 const SubEnvironmentModal = ({ isOpen, onClose, db, locationId }: SubEnvironmentModalProps) => {
     const [environments, setEnvironments] = useState<SubEnvironment[]>([])
     const [newEnvironment, setNewEnvironment] = useState('')
+    const [newRequireTable, setNewRequireTable] = useState(false)
     const [editingId, setEditingId] = useState<string | null>(null)
     const [editName, setEditName] = useState('')
+    const [editRequireTable, setEditRequireTable] = useState(false)
     const [isLoading, setIsLoading] = useState(true)
 
     useEffect(() => {
@@ -46,9 +48,6 @@ const SubEnvironmentModal = ({ isOpen, onClose, db, locationId }: SubEnvironment
             return () => unsub();
         } else {
             // Fallback to global collection (Maintenance or legacy?)
-            // Or render empty if we strictly want location based.
-            // Keeping legacy behavior for now if needed, or better, just empty since request is specific.
-            // But let's keep it safe for other parts of app if used elsewhere without locationId
             const q = query(collection(db, 'sub_environments'), orderBy('createdAt', 'desc'))
             const unsubscribe = onSnapshot(q, (snapshot) => {
                 const data = snapshot.docs.map(doc => ({
@@ -71,7 +70,8 @@ const SubEnvironmentModal = ({ isOpen, onClose, db, locationId }: SubEnvironment
                 const newSubEnv: SubEnvironment = {
                     id: crypto.randomUUID(),
                     nombre: newEnvironment.trim(),
-                    createdAt: new Date().toISOString() // Storing as string or timestamp, keeping consistent
+                    requireTableAssignment: newRequireTable,
+                    createdAt: new Date().toISOString()
                 };
                 const updatedEnvs = [...environments, newSubEnv];
                 await updateDoc(doc(db, 'ubicaciones', locationId), {
@@ -80,10 +80,12 @@ const SubEnvironmentModal = ({ isOpen, onClose, db, locationId }: SubEnvironment
             } else {
                 await addDoc(collection(db, 'sub_environments'), {
                     nombre: newEnvironment.trim(),
+                    requireTableAssignment: newRequireTable,
                     createdAt: serverTimestamp()
                 })
             }
             setNewEnvironment('')
+            setNewRequireTable(false)
         } catch (error) {
             console.error("Error adding sub-environment:", error)
             alert("Error al agregar sub-ambiente")
@@ -96,18 +98,20 @@ const SubEnvironmentModal = ({ isOpen, onClose, db, locationId }: SubEnvironment
         try {
             if (locationId) {
                 const updatedEnvs = environments.map(env =>
-                    env.id === id ? { ...env, nombre: editName.trim() } : env
+                    env.id === id ? { ...env, nombre: editName.trim(), requireTableAssignment: editRequireTable } : env
                 );
                 await updateDoc(doc(db, 'ubicaciones', locationId), {
                     subEnvironments: updatedEnvs
                 });
             } else {
                 await updateDoc(doc(db, 'sub_environments', id), {
-                    nombre: editName.trim()
+                    nombre: editName.trim(),
+                    requireTableAssignment: editRequireTable
                 })
             }
             setEditingId(null)
             setEditName('')
+            setEditRequireTable(false)
         } catch (error) {
             console.error("Error updating sub-environment:", error)
             alert("Error al actualizar sub-ambiente")
@@ -167,37 +171,48 @@ const SubEnvironmentModal = ({ isOpen, onClose, db, locationId }: SubEnvironment
                     </button>
                 </div>
 
-                <form onSubmit={handleAdd} style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
-                    <input
-                        type="text"
-                        value={newEnvironment}
-                        onChange={(e) => setNewEnvironment(e.target.value.toLowerCase())}
-                        placeholder="Nuevo sub-ambiente..."
-                        style={{
-                            flex: 1,
-                            padding: '0.5rem',
-                            border: '1px solid #d1d5db',
-                            borderRadius: '0.375rem',
-                            outline: 'none',
-                            textTransform: 'uppercase'
-                        }}
-                    />
-                    <button
-                        type="submit"
-                        style={{
-                            backgroundColor: '#10b981',
-                            color: 'white',
-                            padding: '0.5rem 1rem',
-                            borderRadius: '0.375rem',
-                            border: 'none',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '0.5rem'
-                        }}
-                    >
-                        <FaPlus /> Agregar
-                    </button>
+                <form onSubmit={handleAdd} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1.5rem' }}>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <input
+                            type="text"
+                            value={newEnvironment}
+                            onChange={(e) => setNewEnvironment(e.target.value.toLowerCase())}
+                            placeholder="Nuevo sub-ambiente..."
+                            style={{
+                                flex: 1,
+                                padding: '0.5rem',
+                                border: '1px solid #d1d5db',
+                                borderRadius: '0.375rem',
+                                outline: 'none',
+                                textTransform: 'uppercase'
+                            }}
+                        />
+                        <button
+                            type="submit"
+                            style={{
+                                backgroundColor: '#10b981',
+                                color: 'white',
+                                padding: '0.5rem 1rem',
+                                borderRadius: '0.375rem',
+                                border: 'none',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.5rem'
+                            }}
+                        >
+                            <FaPlus /> Agregar
+                        </button>
+                    </div>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: '#4b5563', cursor: 'pointer' }}>
+                        <input
+                            type="checkbox"
+                            checked={newRequireTable}
+                            onChange={(e) => setNewRequireTable(e.target.checked)}
+                            style={{ cursor: 'pointer' }}
+                        />
+                        ¿Requiere asignación de mesa/número?
+                    </label>
                 </form>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
@@ -217,41 +232,57 @@ const SubEnvironmentModal = ({ isOpen, onClose, db, locationId }: SubEnvironment
                                 border: '1px solid #e5e7eb'
                             }}>
                                 {editingId === env.id ? (
-                                    <div style={{ display: 'flex', gap: '0.5rem', flex: 1, marginRight: '0.5rem' }}>
-                                        <input
-                                            type="text"
-                                            value={editName}
-                                            onChange={(e) => setEditName(e.target.value.toLowerCase())}
-                                            style={{
-                                                flex: 1,
-                                                padding: '0.25rem 0.5rem',
-                                                border: '1px solid #d1d5db',
-                                                borderRadius: '0.25rem',
-                                                textTransform: 'uppercase'
-                                            }}
-                                            autoFocus
-                                        />
-                                        <button
-                                            onClick={() => handleUpdate(env.id)}
-                                            style={{ color: '#059669', background: 'none', border: 'none', cursor: 'pointer' }}
-                                        >
-                                            <FaSave />
-                                        </button>
-                                        <button
-                                            onClick={() => setEditingId(null)}
-                                            style={{ color: '#6b7280', background: 'none', border: 'none', cursor: 'pointer' }}
-                                        >
-                                            <FaTimes />
-                                        </button>
+                                    <div style={{ display: 'flex', flexDirection: 'column', width: '100%', gap: '0.5rem' }}>
+                                        <div style={{ display: 'flex', gap: '0.5rem', flex: 1 }}>
+                                            <input
+                                                type="text"
+                                                value={editName}
+                                                onChange={(e) => setEditName(e.target.value.toLowerCase())}
+                                                style={{
+                                                    flex: 1,
+                                                    padding: '0.25rem 0.5rem',
+                                                    border: '1px solid #d1d5db',
+                                                    borderRadius: '0.25rem',
+                                                    textTransform: 'uppercase'
+                                                }}
+                                                autoFocus
+                                            />
+                                            <button
+                                                onClick={() => handleUpdate(env.id)}
+                                                style={{ color: '#059669', background: 'none', border: 'none', cursor: 'pointer' }}
+                                            >
+                                                <FaSave />
+                                            </button>
+                                            <button
+                                                onClick={() => setEditingId(null)}
+                                                style={{ color: '#6b7280', background: 'none', border: 'none', cursor: 'pointer' }}
+                                            >
+                                                <FaTimes />
+                                            </button>
+                                        </div>
+                                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: '#4b5563' }}>
+                                            <input
+                                                type="checkbox"
+                                                checked={editRequireTable}
+                                                onChange={(e) => setEditRequireTable(e.target.checked)}
+                                            />
+                                            Requiere mesa
+                                        </label>
                                     </div>
                                 ) : (
                                     <>
-                                        <span style={{ color: '#374151' }}>{env.nombre}</span>
+                                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                            <span style={{ color: '#374151' }}>{env.nombre}</span>
+                                            {env.requireTableAssignment && (
+                                                <span style={{ fontSize: '0.75rem', color: '#2563eb', fontWeight: 'bold' }}>• Requiere Mesa</span>
+                                            )}
+                                        </div>
                                         <div style={{ display: 'flex', gap: '0.5rem' }}>
                                             <button
                                                 onClick={() => {
                                                     setEditingId(env.id)
                                                     setEditName(env.nombre)
+                                                    setEditRequireTable(!!env.requireTableAssignment)
                                                 }}
                                                 style={{ color: '#d97706', background: 'none', border: 'none', cursor: 'pointer' }}
                                             >

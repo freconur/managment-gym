@@ -139,7 +139,13 @@ export interface Cargo {
 export interface SubEnvironment {
   id: string;
   nombre: string;
+  requireTableAssignment?: boolean;
   createdAt?: any;
+}
+
+export interface SubEnvironmentAccess {
+  name: string;
+  tableNumber?: string;
 }
 
 export interface Schedule {
