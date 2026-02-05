@@ -117,22 +117,12 @@ export const MembersTable: React.FC<MembersTableProps> = ({
                                     <select
                                         value={filterEmpresa}
                                         onChange={(e) => setFilterEmpresa(e.target.value)}
-                                        style={{
-                                            padding: '4px 8px',
-                                            borderRadius: '6px',
-                                            border: '1px solid var(--border-glass)',
-                                            fontSize: '0.8rem',
-                                            color: 'var(--text-primary)',
-                                            backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                                            fontWeight: 'normal',
-                                            cursor: 'pointer',
-                                            outline: 'none'
-                                        }}
+                                        className={styles.filterSelect}
                                         onClick={(e) => e.stopPropagation()}
                                     >
-                                        <option value="" style={{ backgroundColor: 'var(--bg-card)' }}>Todas</option>
+                                        <option value="">Todas</option>
                                         {empresas.map(emp => (
-                                            <option key={emp.id} value={emp.nombre} style={{ backgroundColor: 'var(--bg-card)' }}>{emp.nombre}</option>
+                                            <option key={emp.id} value={emp.nombre}>{emp.nombre}</option>
                                         ))}
                                     </select>
                                 </div>
