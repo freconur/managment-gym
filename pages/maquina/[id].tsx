@@ -1,4 +1,5 @@
 import { useManagment } from '@/features/hooks/useManagment'
+import { useAuth } from '@/features/context/AuthContext'
 import { useRouter } from 'next/router'
 import React, { useEffect, useRef, useState } from 'react'
 import Head from 'next/head'
@@ -11,11 +12,12 @@ import { IncidenciaModal } from '@/components/IncidenciaModal'
 import { CalendarView } from '@/components/CalendarView'
 import { MantenimientoDetailModal } from '@/components/MantenimientoDetailModal'
 import { IncidenciaDetailModal } from '@/components/IncidenciaDetailModal'
-import { AuthModal } from '@/components/AuthModal'
+
 import { Machine, Incidencia, Usuario, Tarea } from '@/features/types/types'
 
 const MaquinaPAge = () => {
   const router = useRouter()
+  const { userProfile } = useAuth()
   const { id, from } = router.query
 
   // Determinar la ruta de retorno basada en el query parameter 'from'
@@ -33,7 +35,7 @@ const MaquinaPAge = () => {
     const fromParam = Array.isArray(from) ? from[0] : from
     return fromParam === 'mis-equipos' ? 'Volver a Mis Equipos' : 'Volver a Equipos'
   }
-  const { getMaquina, maquina, getIncidencias, incidencias, createIncidencia, createMantenimiento, updateIncidencia, deleteIncidencia, getUsuarios, usuarios, validateUsuario, usuariosValidate, validateSiEsAdmin, updateMaquinas } = useManagment()
+  const { getMaquina, maquina, getIncidencias, incidencias, createIncidencia, createMantenimiento, updateIncidencia, deleteIncidencia, getUsuarios, usuarios, updateMaquinas } = useManagment()
   const unsubscribeRef = useRef<(() => void) | null>(null)
   const selectedIncidenciaIdRef = useRef<string | null>(null)
 
@@ -42,11 +44,10 @@ const MaquinaPAge = () => {
   const [showIncidenciaModal, setShowIncidenciaModal] = useState(false)
   const [showEventoDetailModal, setShowEventoDetailModal] = useState(false)
   const [selectedIncidencia, setSelectedIncidencia] = useState<Incidencia | null>(null)
-  const [showAuthModal, setShowAuthModal] = useState(false)
-  const [authError, setAuthError] = useState<string>('')
+
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [pendingAction, setPendingAction] = useState<'incidencia' | 'mantenimiento' | null>(null)
+
 
   // const [pendingIncidenciaToAttend, setPendingIncidenciaToAttend] = useState<string | null>(null)
   const pendingIncidenciaToAttend = useRef<string | null>(null)
@@ -152,9 +153,7 @@ const MaquinaPAge = () => {
 
   // Handlers para los modales
   const handleOpenMantenimientoModal = () => {
-    setPendingAction('mantenimiento')
-    setShowAuthModal(true)
-    setAuthError('')
+    setShowMantenimientoModal(true)
   }
 
   const handleCloseMantenimientoModal = () => {
@@ -250,57 +249,14 @@ const MaquinaPAge = () => {
   }
 
   const handleOpenIncidenciaModal = () => {
-    setPendingAction('incidencia')
-    setShowAuthModal(true)
-    setAuthError('')
+    setShowIncidenciaModal(true)
   }
 
   const handleCloseIncidenciaModal = () => {
     setShowIncidenciaModal(false)
   }
 
-  const handleCloseAuthModal = () => {
-    setShowAuthModal(false)
-    setAuthError('')
-  }
 
-  const handleAuthAccept = async (dni: string, pin: string) => {
-    // Si es mantenimiento, requerimos permisos de administrador
-    if (pendingAction === 'mantenimiento') {
-      try {
-        const esAdmin = await validateSiEsAdmin(dni, pin);
-        if (esAdmin) {
-          setShowAuthModal(false);
-          setAuthError('');
-          setShowMantenimientoModal(true);
-        } else {
-          setAuthError('Acceso denegado. Solo administradores y desarrolladores pueden registrar mantenimientos.');
-        }
-      } catch (error) {
-        console.error('Error al validar administrador:', error);
-        setAuthError('Error al validar credenciales.');
-      }
-      setPendingAction(null);
-      return;
-    }
-
-    // Para incidencias u otras acciones, validación estándar de usuario
-    const usuarioValidado = await validateUsuario(dni, pin)
-
-    if (!usuarioValidado) {
-      setAuthError('DNI o PIN incorrecto')
-      return
-    }
-
-    setShowAuthModal(false)
-    setAuthError('')
-
-    if (pendingAction === 'incidencia') {
-      setShowIncidenciaModal(true)
-    }
-
-    setPendingAction(null)
-  }
 
   const handleSubmitIncidencia = async (data: {
     tipo: 'incidencia'
@@ -581,20 +537,19 @@ const MaquinaPAge = () => {
           onSubmit={handleSubmitMantenimiento}
         />
 
-        {/* Modal de Autenticación */}
-        <AuthModal
-          isOpen={showAuthModal}
-          onClose={handleCloseAuthModal}
-          onAccept={handleAuthAccept}
-          error={authError}
-        />
+
 
         {/* Modal de Incidencia */}
         <IncidenciaModal
           isOpen={showIncidenciaModal}
           onClose={handleCloseIncidenciaModal}
           onSubmit={handleSubmitIncidencia}
-          usuariosValidate={usuariosValidate}
+          usuariosValidate={userProfile ? {
+            id: userProfile.uid,
+            nombres: userProfile.name, // Assuming name contains full name or at least something useful
+            // If userProfile has separate fields (it should if it comes from firestore), we merge them
+            ...userProfile
+          } as any : undefined}
         />
 
         {/* Modal de Detalles del Mantenimiento */}
@@ -639,7 +594,7 @@ const MaquinaPAge = () => {
                 await updateIncidencia(maquina.id, selectedIncidencia.id, updateData)
               }
             }}
-            validateSiEsAdmin={validateSiEsAdmin}
+
             onDelete={async (id) => {
               if (selectedIncidencia?.id && maquina?.id) {
                 await deleteIncidencia(maquina.id, id)

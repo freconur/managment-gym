@@ -3,8 +3,8 @@ import { FaTimes, FaClock, FaCheckCircle, FaUser, FaDollarSign, FaTools, FaStick
 import styles from '@/styles/MantenimientoDetailModal.module.css'
 import { Incidencia, Tarea, Usuario, Machine } from '@/features/types/types'
 import { useEscapeKey } from '@/features/hooks/useEscapeKey'
-import PinModal from './mantenimiento/PinModal'
-import AdminAuthModal from './mantenimiento/AdminAuthModal'
+import { useAuth } from '@/features/context/AuthContext'
+
 import DeleteConfirmModal from './mantenimiento/DeleteConfirmModal'
 import MantenimientoInfo from './mantenimiento/MantenimientoInfo'
 import MantenimientoTareas from './mantenimiento/MantenimientoTareas'
@@ -22,7 +22,7 @@ interface MantenimientoDetailModalProps {
   onUpdateNotas?: (notas: string) => Promise<void>
   onUpdate?: (data: { tecnicoAsignado?: Usuario | {}, descripcion?: string, tareas?: Tarea[] }) => Promise<void>
   onDelete?: (id: string) => Promise<void>
-  validateSiEsAdmin?: (dni: string, pin: string) => Promise<boolean>
+
   onUpdateMachineStatus?: (status: string) => Promise<void>
   onUpdateFoto?: (fotoUrl: string) => Promise<void>
   maquinaRealTime?: Machine
@@ -37,7 +37,7 @@ export const MantenimientoDetailModal: React.FC<MantenimientoDetailModalProps> =
   onUpdateNotas,
   onUpdate,
   onDelete,
-  validateSiEsAdmin,
+
   onUpdateMachineStatus,
   onUpdateFoto,
   maquinaRealTime
@@ -45,7 +45,7 @@ export const MantenimientoDetailModal: React.FC<MantenimientoDetailModalProps> =
   const [tareas, setTareas] = useState<Tarea[]>([])
   const [isUpdating, setIsUpdating] = useState(false)
   const [hasStarted, setHasStarted] = useState(false)
-  const [showPinModal, setShowPinModal] = useState(false)
+
 
   const [isEditing, setIsEditing] = useState(false)
   const [descripcionEditada, setDescripcionEditada] = useState<string>('')
@@ -53,33 +53,25 @@ export const MantenimientoDetailModal: React.FC<MantenimientoDetailModalProps> =
   const [statusEditado, setStatusEditado] = useState<string>('')
   const [nuevaTarea, setNuevaTarea] = useState('')
   const [isSaving, setIsSaving] = useState(false)
-  const [showAdminAuthModal, setShowAdminAuthModal] = useState(false)
+
 
   const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false)
-  const [showDeleteAuthModal, setShowDeleteAuthModal] = useState(false)
+
 
   const [isDeleting, setIsDeleting] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
 
+  const { user } = useAuth();
+
 
 
   const handleEscape = () => {
-    if (showAdminAuthModal) {
-      setShowAdminAuthModal(false);
-      return;
-    }
-    if (showDeleteAuthModal) {
-      setShowDeleteAuthModal(false);
-      return;
-    }
+
     if (showDeleteConfirmModal) {
       setShowDeleteConfirmModal(false);
       return;
     }
-    if (showPinModal) {
-      setShowPinModal(false);
-      return;
-    }
+
     onClose();
   };
 
@@ -126,11 +118,8 @@ export const MantenimientoDetailModal: React.FC<MantenimientoDetailModalProps> =
   // Resetear estado solo cuando cambia el ID del mantenimiento
   useEffect(() => {
     setHasStarted(false)
-    setShowPinModal(false)
     setIsEditing(false)
-    setShowAdminAuthModal(false)
     setShowDeleteConfirmModal(false)
-    setShowDeleteAuthModal(false)
   }, [mantenimiento?.id])
 
   if (!isOpen || !mantenimiento) return null
@@ -241,23 +230,10 @@ export const MantenimientoDetailModal: React.FC<MantenimientoDetailModalProps> =
 
 
   const handleComenzar = () => {
-    if (!mantenimiento?.tecnicoAsignado) {
-      return
-    }
-    setShowPinModal(true)
+    setHasStarted(true)
   }
 
-  const validatePin = (pinIngresado: string) => {
-    if (!mantenimiento?.tecnicoAsignado?.pin) {
-      return 'No hay PIN configurado para el técnico'
-    }
-    // Convert both to string to be safe
-    const pinTecnico = String(mantenimiento.tecnicoAsignado.pin)
-    if (pinIngresado === pinTecnico) {
-      return true
-    }
-    return 'PIN incorrecto'
-  }
+
 
 
 
@@ -285,11 +261,7 @@ export const MantenimientoDetailModal: React.FC<MantenimientoDetailModalProps> =
   const handleSaveEdit = async () => {
     if (!onUpdate || isSaving) return
 
-    // Si hay función de validación, mostrar modal de autenticación primero
-    if (validateSiEsAdmin) {
-      setShowAdminAuthModal(true)
-      return
-    }
+
 
     // Si no hay validación, guardar directamente
     await performSave()
@@ -331,7 +303,7 @@ export const MantenimientoDetailModal: React.FC<MantenimientoDetailModalProps> =
       }
 
       setIsEditing(false)
-      setShowAdminAuthModal(false)
+      setIsEditing(false)
     } catch (error) {
       console.error('Error al guardar cambios:', error)
     } finally {
@@ -342,11 +314,7 @@ export const MantenimientoDetailModal: React.FC<MantenimientoDetailModalProps> =
 
 
   const handleDeleteClick = () => {
-    if (validateSiEsAdmin) {
-      setShowDeleteAuthModal(true)
-    } else {
-      setShowDeleteConfirmModal(true)
-    }
+    setShowDeleteConfirmModal(true)
   }
 
   const handleDeleteConfirm = async () => {
@@ -685,47 +653,34 @@ export const MantenimientoDetailModal: React.FC<MantenimientoDetailModalProps> =
             {/* Botón Comenzar - Solo se muestra si no se ha comenzado y no está en modo edición */}
             {!hasStarted && !isEditing && (
               <div className={styles.mantenimientoDetailStartButtonContainer}>
-                <button
-                  type="button"
-                  onClick={handleComenzar}
-                  className={`${styles.button} ${styles.mantenimientoDetailStartButton}`}
-                >
-                  <FaPlay size={14} />
-                  Comenzar
-                </button>
+                {user?.uid === (mantenimiento?.tecnicoAsignado as Usuario)?.id ? (
+                  <button
+                    type="button"
+                    onClick={handleComenzar}
+                    className={`${styles.button} ${styles.mantenimientoDetailStartButton}`}
+                  >
+                    <FaPlay size={14} />
+                    Comenzar
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    disabled
+                    className={`${styles.button} ${styles.mantenimientoDetailStartButton}`}
+                    style={{ opacity: 0.5, cursor: 'not-allowed', backgroundColor: '#9ca3af' }}
+                    title="Solo el responsable asignado puede comenzar este mantenimiento"
+                  >
+                    <FaLock size={14} />
+                    Comenzar (No Asignado)
+                  </button>
+                )}
               </div>
             )}
           </div>
         </div>
       </div>
 
-      <PinModal
-        isOpen={showPinModal}
-        onClose={() => setShowPinModal(false)}
-        onSuccess={() => {
-          setHasStarted(true)
-          setShowPinModal(false)
-        }}
-        validatePin={validatePin}
-      />
 
-      {validateSiEsAdmin && (
-        <>
-          <AdminAuthModal
-            isOpen={showAdminAuthModal}
-            onClose={() => setShowAdminAuthModal(false)}
-            onSuccess={performSave}
-            validateAdmin={validateSiEsAdmin}
-          />
-
-          <AdminAuthModal
-            isOpen={showDeleteAuthModal}
-            onClose={() => setShowDeleteAuthModal(false)}
-            onSuccess={() => setShowDeleteConfirmModal(true)}
-            validateAdmin={validateSiEsAdmin}
-          />
-        </>
-      )}
 
       <DeleteConfirmModal
         isOpen={showDeleteConfirmModal}

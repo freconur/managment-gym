@@ -17,7 +17,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/firebase/firebase.config';
 import styles from './RecentAccessFeed.module.css';
-import PinModal from './PinModal';
+
 
 
 // ... AccessRecord interface
@@ -44,10 +44,7 @@ interface Company {
 
 type PinActionType = 'DELETE' | 'TOGGLE_TOWEL' | 'UNLOCK_TOWEL';
 
-interface PinAction {
-    type: PinActionType;
-    payload: any;
-}
+
 
 interface RecentAccessFeedProps {
     environment?: string;
@@ -57,8 +54,7 @@ interface RecentAccessFeedProps {
 export const RecentAccessFeed: React.FC<RecentAccessFeedProps> = ({ environment, locationId: propLocationId }) => {
     const [recentAccesses, setRecentAccesses] = useState<AccessRecord[]>([]);
     const [loadingRecent, setLoadingRecent] = useState(true);
-    const [isPinModalOpen, setIsPinModalOpen] = useState(false);
-    const [pinAction, setPinAction] = useState<PinAction | null>(null);
+
     const [unlockedTowelIds, setUnlockedTowelIds] = useState<string[]>([]);
     const [latestMemberPhotos, setLatestMemberPhotos] = useState<Record<string, string>>({});
     const [locationId, setLocationId] = useState<string | null>(propLocationId || null);
@@ -226,22 +222,18 @@ export const RecentAccessFeed: React.FC<RecentAccessFeedProps> = ({ environment,
     });
 
     const handleDeleteClick = (id: string) => {
-        setPinAction({ type: 'DELETE', payload: id });
-        setIsPinModalOpen(true);
+        if (confirm("¿Estás seguro de eliminar este registro?")) {
+            handlePinSuccess('DELETE', id);
+        }
     };
 
     const handleTowelClick = (record: AccessRecord) => {
-        setPinAction({
-            type: 'TOGGLE_TOWEL',
-            payload: { id: record.id, enable: !record.hasTowel }
-        });
-        setIsPinModalOpen(true);
+        handlePinSuccess('TOGGLE_TOWEL', { id: record.id, enable: !record.hasTowel });
     };
 
     const handleTowelInputClick = (id: string) => {
         if (!unlockedTowelIds.includes(id)) {
-            setPinAction({ type: 'UNLOCK_TOWEL', payload: id });
-            setIsPinModalOpen(true);
+            setUnlockedTowelIds(prev => [...prev, id]);
         }
     };
 
@@ -264,18 +256,16 @@ export const RecentAccessFeed: React.FC<RecentAccessFeedProps> = ({ environment,
         }
     };
 
-    const handlePinSuccess = async () => {
-        if (!pinAction) return;
-
+    const handlePinSuccess = async (type: PinActionType, payload: any) => {
         try {
             const asistenciasCol = locationId
                 ? collection(db, 'ubicaciones', locationId, 'asistencias')
                 : collection(db, 'asistencias');
 
-            if (pinAction.type === 'DELETE') {
-                await deleteDoc(doc(asistenciasCol, pinAction.payload));
-            } else if (pinAction.type === 'TOGGLE_TOWEL') {
-                const { id, enable } = pinAction.payload;
+            if (type === 'DELETE') {
+                await deleteDoc(doc(asistenciasCol, payload));
+            } else if (type === 'TOGGLE_TOWEL') {
+                const { id, enable } = payload;
                 if (enable) {
                     await updateDoc(doc(asistenciasCol, id), { hasTowel: true });
                     // Automatically unlock the newly enabled towel for input
@@ -284,24 +274,15 @@ export const RecentAccessFeed: React.FC<RecentAccessFeedProps> = ({ environment,
                     await updateDoc(doc(asistenciasCol, id), { hasTowel: false, towelNumber: null });
                     setUnlockedTowelIds(prev => prev.filter(uid => uid !== id));
                 }
-            } else if (pinAction.type === 'UNLOCK_TOWEL') {
-                setUnlockedTowelIds(prev => [...prev, pinAction.payload]);
             }
         } catch (error) {
-            console.error("Error executing pin action:", error);
+            console.error("Error executing action:", error);
             alert("Error al procesar la acción.");
         }
     };
 
     // Check if the prompt title map needs update
-    const getModalTitle = () => {
-        switch (pinAction?.type) {
-            case 'DELETE': return "PIN eliminar";
-            case 'TOGGLE_TOWEL': return pinAction.payload.enable ? "PIN activar toalla" : "PIN devolver toalla";
-            case 'UNLOCK_TOWEL': return "PIN editar número";
-            default: return "PIN de seguridad";
-        }
-    };
+
 
     return (
         <div className={styles.activitySection}>
@@ -426,15 +407,7 @@ export const RecentAccessFeed: React.FC<RecentAccessFeedProps> = ({ environment,
                 )}
             </div>
 
-            <PinModal
-                isOpen={isPinModalOpen}
-                onClose={() => {
-                    setIsPinModalOpen(false);
-                    setPinAction(null);
-                }}
-                onSuccess={handlePinSuccess}
-                title={getModalTitle()}
-            />
+
         </div>
     );
 };

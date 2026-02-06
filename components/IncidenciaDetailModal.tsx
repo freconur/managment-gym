@@ -19,91 +19,31 @@ export const IncidenciaDetailModal: React.FC<IncidenciaDetailModalProps> = ({
   onDelete,
   onCreateMaintenance
 }) => {
-  const [showPinModal, setShowPinModal] = useState(false)
-  const [pin, setPin] = useState('')
-  const [pinError, setPinError] = useState('')
+
   const [isDeleting, setIsDeleting] = useState(false)
 
   useEscapeKey(() => {
-    if (showPinModal) {
-      handleClosePinModal()
-      return
-    }
+
     onClose()
   }, isOpen)
 
   if (!isOpen || !incidencia) return null
 
-  const handleDeleteClick = () => {
-    setShowPinModal(true)
-    setPin('')
-
-    if (!incidencia.usuario?.pin) {
-      setPinError('No hay PIN configurado para el usuario que reportó esta incidencia')
-    } else {
-      setPinError('')
-    }
-  }
-
-  const handlePinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value
-    if (value === '' || (/^\d+$/.test(value) && value.length <= 4)) {
-      setPin(value)
-      setPinError('')
-    }
-  }
-
-  const handlePinSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setPinError('')
-
-    if (!pin || pin.length === 0) {
-      setPinError('Por favor ingrese su PIN')
-      return
-    }
-
-    if (pin.length !== 4) {
-      setPinError('El PIN debe tener 4 dígitos')
-      return
-    }
-
-    if (!incidencia.usuario?.pin) {
-      setPinError('No hay PIN configurado para el usuario')
-      return
-    }
-
-    const pinIngresado = parseInt(pin, 10)
-    const pinUsuario = Number(incidencia.usuario.pin)
-
-    if (isNaN(pinIngresado)) {
-      setPinError('El PIN debe ser numérico')
-      return
-    }
-
-    if (pinIngresado === pinUsuario) {
-      setIsDeleting(true)
+  const handleDeleteClick = async () => {
+    if (confirm("¿Está seguro de eliminar esta incidencia? Esta acción no se puede deshacer.")) {
+      setIsDeleting(true);
       try {
         if (onDelete && incidencia.id) {
-          await onDelete(incidencia.id)
-          setShowPinModal(false)
-          onClose()
+          await onDelete(incidencia.id);
+          onClose();
         }
       } catch (error) {
-        console.error('Error al eliminar incidencia:', error)
-        setPinError('Error al eliminar la incidencia. Intente nuevamente.')
+        console.error('Error al eliminar incidencia:', error);
+        alert('Error al eliminar la incidencia. Intente nuevamente.');
       } finally {
-        setIsDeleting(false)
+        setIsDeleting(false);
       }
-    } else {
-      setPinError('PIN incorrecto. Intente nuevamente.')
-      setPin('')
     }
-  }
-
-  const handleClosePinModal = () => {
-    setShowPinModal(false)
-    setPin('')
-    setPinError('')
   }
 
   const getEstadoLabel = (estado?: string) => {
@@ -567,77 +507,7 @@ export const IncidenciaDetailModal: React.FC<IncidenciaDetailModalProps> = ({
       </div>
 
       {/* Modal de Validación de PIN */}
-      {
-        showPinModal && (
-          <div className={styles.modalOverlay} onClick={handleClosePinModal} style={{ zIndex: 2000 }}>
-            <div className={styles.modalContent} onClick={(e) => e.stopPropagation()} style={{ maxWidth: '400px' }}>
-              <div className={styles.modalHeader}>
-                <h3 className={styles.modalTitle}>
-                  <FaLock size={20} style={{ marginRight: '0.5rem', verticalAlign: 'middle' }} />
-                  Validar PIN
-                </h3>
-                <button
-                  type="button"
-                  onClick={handleClosePinModal}
-                  className={styles.modalCloseButton}
-                  aria-label="Cerrar modal"
-                >
-                  <FaTimes size={20} />
-                </button>
-              </div>
-              <div className={styles.modalBody}>
-                <form onSubmit={handlePinSubmit}>
-                  <div className={styles.formField}>
-                    <label className={styles.label}>
-                      Ingrese el PIN del usuario que reportó esta incidencia
-                    </label>
-                    <input
-                      type="password"
-                      name="incident_pin_delete"
-                      autoComplete="new-password"
-                      data-lpignore="true"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      value={pin}
-                      onChange={handlePinChange}
-                      className={styles.input}
-                      placeholder="Ingrese su PIN (4 dígitos)"
-                      autoFocus
-                      maxLength={4}
-                      disabled={isDeleting}
-                    />
-                    {pinError && (
-                      <p className={styles.dangerMessage}>
-                        {pinError}
-                      </p>
-                    )}
-                  </div>
-                  <div className={styles.modalButtonGroup}>
-                    <button
-                      type="button"
-                      onClick={handleClosePinModal}
-                      className={`${styles.button} ${styles.buttonSecondary} ${styles.modalButton}`}
-                      disabled={isDeleting}
-                    >
-                      Cancelar
-                    </button>
-                    <button
-                      type="submit"
-                      className={`${styles.button} ${styles.buttonSubmit} ${styles.modalButton}`}
-                      disabled={isDeleting}
-                      style={{
-                        backgroundColor: isDeleting ? '#9ca3af' : '#ef4444'
-                      }}
-                    >
-                      {isDeleting ? 'Eliminando...' : 'Eliminar'}
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          </div>
-        )
-      }
+
     </div >
   )
 }

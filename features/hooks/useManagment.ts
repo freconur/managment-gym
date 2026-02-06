@@ -59,49 +59,23 @@ export const useManagment = () => {
     return unsubscribe;
   }, [])
 
-  //////////////////////////USUARIOS//////////////////////////
 
-  const validateSiEsAdmin = async (dni: string, pin: string) => {
-    const pathRef = collection(db, 'usuarios');
-    const q = query(pathRef, where('dni', '==', dni), where('pin', '==', Number(pin)));
-    const snapshot = await getDocs(q);
-    if (snapshot.docs.length > 0) {
-      const usuario = snapshot.docs[0].data() as Usuario;
-      if (usuario.rol === 'Administrador' || usuario.rol === 'Desarrollador') {
-        return true;
-      }
-    }
-    return false;
-  }
-  const validateUsuario = async (dni: string, pin: string) => {
-    const pathRef = collection(db, 'usuarios');
-    const q = query(pathRef, where('dni', '==', dni), where('pin', '==', Number(pin)));
-    const snapshot = await getDocs(q);
-    if (snapshot.docs.length > 0) {
-      setUsuariosValidate(snapshot.docs[0].data() as Usuario);
-      return true;
-    }
-    return false;
-  }
-
-  const validateAndGetUser = async (dni: string, pin: string): Promise<Usuario | null> => {
-    const pathRef = collection(db, 'usuarios');
-    const q = query(pathRef, where('dni', '==', dni), where('pin', '==', Number(pin)));
-    const snapshot = await getDocs(q);
-    if (snapshot.docs.length > 0) {
-      return snapshot.docs[0].data() as Usuario;
-    }
-    return null;
-  }
 
   const getUsuarios = useCallback(() => {
-    const pathRef = collection(db, 'usuarios');
-    const q = query(pathRef, orderBy('apellidos', 'asc'));
+    const pathRef = collection(db, 'users');
+    const q = query(pathRef, orderBy('name', 'asc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const usuarios = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Usuario[];
+      const usuarios = snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          dni: data.dni,
+          nombres: data.nombres,
+          apellidos: data.apellidos,
+          rol: data.role,
+          ...data
+        };
+      }) as Usuario[];
       setUsuarios(usuarios);
       setLoadingUsuarios(false);
     });
@@ -448,9 +422,7 @@ export const useManagment = () => {
     createUsuario,
     updateUsuario,
     deleteUsuario,
-    validateUsuario,
-    usuariosValidate,
-    validateSiEsAdmin,
+
     getAllEventos,
     eventos,
     getReusableTasks,
@@ -459,7 +431,7 @@ export const useManagment = () => {
     updateReusableTask,
     deleteReusableTask,
     getIncidencia,
-    validateAndGetUser,
+
     getUserByDni,
     saveMachineOrder
   };

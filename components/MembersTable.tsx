@@ -4,7 +4,7 @@ import { FaEdit, FaTrash, FaSearch, FaChevronLeft, FaChevronRight } from 'react-
 import styles from '@/pages/members/Members.module.css';
 
 import { Member, Company } from '@/features/types/types';
-import PinModal from './PinModal';
+
 
 interface MembersTableProps {
     members: Member[];
@@ -28,8 +28,7 @@ export const MembersTable: React.FC<MembersTableProps> = ({
     const [currentPage, setCurrentPage] = useState(1);
 
     // PIN Security State
-    const [isPinModalOpen, setIsPinModalOpen] = useState(false);
-    const [pendingAction, setPendingAction] = useState<{ type: 'EDIT' | 'DELETE', payload: any } | null>(null);
+
 
     // Reset page when filters change
     useEffect(() => {
@@ -37,20 +36,12 @@ export const MembersTable: React.FC<MembersTableProps> = ({
     }, [filterEmpresa, searchTerm]);
 
     const handleActionRequest = (type: 'EDIT' | 'DELETE', payload: any) => {
-        setPendingAction({ type, payload });
-        setIsPinModalOpen(true);
-    };
-
-    const handlePinSuccess = () => {
-        if (!pendingAction) return;
-
-        if (pendingAction.type === 'EDIT') {
-            onEdit(pendingAction.payload);
-        } else if (pendingAction.type === 'DELETE') {
-            onDelete(pendingAction.payload);
+        if (type === 'EDIT') {
+            onEdit(payload);
+        } else if (type === 'DELETE') {
+            // Defer to parent's delete handling which usually has a confirm check
+            onDelete(payload);
         }
-
-        setPendingAction(null);
     };
 
     const filteredMembers = members.filter(member => {
@@ -251,15 +242,7 @@ export const MembersTable: React.FC<MembersTableProps> = ({
                 </div>
             )}
 
-            <PinModal
-                isOpen={isPinModalOpen}
-                onClose={() => {
-                    setIsPinModalOpen(false);
-                    setPendingAction(null);
-                }}
-                onSuccess={handlePinSuccess}
-                title={pendingAction?.type === 'DELETE' ? 'PIN para Eliminar' : 'PIN para Editar'}
-            />
+
         </div>
     );
 };

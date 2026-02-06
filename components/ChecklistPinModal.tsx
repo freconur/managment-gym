@@ -8,7 +8,7 @@ interface ChecklistPinModalProps {
     onClose: () => void;
     assignedUser?: Usuario | null;
     onSuccess: (user: Usuario) => Promise<void> | void;
-    validateUser: (dni: string, pin: string) => Promise<Usuario | null>;
+    validateUser: (dni: string) => Promise<Usuario | null>;
 }
 
 export const ChecklistPinModal: React.FC<ChecklistPinModalProps> = ({
@@ -18,7 +18,7 @@ export const ChecklistPinModal: React.FC<ChecklistPinModalProps> = ({
     onSuccess,
     validateUser
 }) => {
-    const [pin, setPin] = useState('');
+
     const [dni, setDni] = useState(''); // Only used if no assigned user
     const [error, setError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -31,14 +31,14 @@ export const ChecklistPinModal: React.FC<ChecklistPinModalProps> = ({
 
         const targetDni = assignedUser ? assignedUser.dni : dni;
 
-        if (!targetDni || !pin) {
+        if (!targetDni) {
             setError('Por favor complete todos los campos');
             return;
         }
 
         try {
             setIsSubmitting(true);
-            const user = await validateUser(targetDni, pin);
+            const user = await validateUser(targetDni);
             if (user) {
                 // Wait for the success callback to finish (e.g., checklist creation/navigation)
                 await Promise.resolve(onSuccess(user));
@@ -85,29 +85,7 @@ export const ChecklistPinModal: React.FC<ChecklistPinModalProps> = ({
                             </div>
                         )}
 
-                        <div className={styles.formGroup}>
-                            <label className={styles.label}>
-                                {assignedUser ? 'Ingresa tu PIN para continuar' : 'Ingresa tu PIN'}
-                            </label>
-                            <input
-                                type="password"
-                                className={styles.input}
-                                value={pin}
-                                onChange={(e) => {
-                                    setPin(e.target.value);
-                                    setError('');
-                                }}
-                                placeholder="****"
-                                maxLength={4}
-                                autoFocus={!!assignedUser}
-                                name="pin_one_time_verify"
-                                id="pin_code_entry"
-                                autoComplete="new-password"
-                                data-lpignore="true"
-                                inputMode="numeric"
-                                pattern="[0-9]*"
-                            />
-                        </div>
+
 
                         {error && (
                             <div style={{ color: '#ef4444', fontSize: '0.875rem', marginTop: '0.5rem' }}>
@@ -123,7 +101,7 @@ export const ChecklistPinModal: React.FC<ChecklistPinModalProps> = ({
                         <button
                             type="submit"
                             className={`${styles.button} ${styles.buttonSubmit}`}
-                            disabled={isSubmitting || !pin}
+                            disabled={isSubmitting}
                         >
                             {isSubmitting ? (
                                 assignedUser ? 'Iniciando revisión...' : 'Verificando...'

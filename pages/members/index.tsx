@@ -30,7 +30,7 @@ import { MembersForm } from '@/components/MembersForm'
 import { Member, Company, Area, Cargo, Ubicacion } from '@/features/types/types'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import UbicacionModal from '@/components/UbicacionModal'
-import PinModal from '@/components/PinModal'
+
 
 
 
@@ -70,8 +70,7 @@ const MembersPage: NextPage = () => {
     const [isModalOpen, setIsModalOpen] = useState(false)
 
     // PIN Protection State
-    const [isPinModalOpen, setIsPinModalOpen] = useState(false);
-    const [pendingAction, setPendingAction] = useState<'new_member' | 'manage_environments' | null>(null);
+
 
 
     useEffect(() => {
@@ -366,25 +365,13 @@ const MembersPage: NextPage = () => {
     }
 
     const openNewMemberModal = () => {
-        setPendingAction('new_member');
-        setIsPinModalOpen(true);
+        handleCancel();
+        setIsModalOpen(true);
     }
 
     const openManageEnvironments = () => {
-        setPendingAction('manage_environments');
-        setIsPinModalOpen(true);
+        setIsUbicacionModalOpen(true);
     }
-
-    const handlePinSuccess = () => {
-        setIsPinModalOpen(false);
-        if (pendingAction === 'new_member') {
-            handleCancel(); // Ensure form is reset
-            setIsModalOpen(true);
-        } else if (pendingAction === 'manage_environments') {
-            setIsUbicacionModalOpen(true);
-        }
-        setPendingAction(null);
-    };
 
     return (
         <>
@@ -506,15 +493,7 @@ const MembersPage: NextPage = () => {
                 db={db}
             />
 
-            <PinModal
-                isOpen={isPinModalOpen}
-                onClose={() => {
-                    setIsPinModalOpen(false);
-                    setPendingAction(null);
-                }}
-                onSuccess={handlePinSuccess}
-                title="Ingrese PIN de Seguridad"
-            />
+
         </>
     )
 }

@@ -37,11 +37,12 @@ interface AccessModalProps {
     onClose: () => void;
     environment?: string;
     locationId?: string;
+    isAuthenticated?: boolean;
 }
 
 import { useEscapeKey } from '@/features/hooks/useEscapeKey'
 
-export const AccessModal: React.FC<AccessModalProps> = ({ isOpen, onClose, environment, locationId: propLocationId }) => {
+export const AccessModal: React.FC<AccessModalProps> = ({ isOpen, onClose, environment, locationId: propLocationId, isAuthenticated = false }) => {
     const [dni, setDni] = useState('');
     const [member, setMember] = useState<Member | null>(null);
     const [loading, setLoading] = useState(false);
@@ -473,13 +474,15 @@ export const AccessModal: React.FC<AccessModalProps> = ({ isOpen, onClose, envir
                                 <div className={styles.subEnvironmentsSection}>
                                     <div className={styles.subEnvHeader}>
                                         <h4><FaMapMarkerAlt /> Sub ambientes de acceso</h4>
-                                        <button
-                                            onClick={() => setIsSubEnvModalOpen(true)}
-                                            className={styles.manageSubEnvBtn}
-                                            title="Gestionar Sub-ambientes"
-                                        >
-                                            <FaEdit />
-                                        </button>
+                                        {isAuthenticated && (
+                                            <button
+                                                onClick={() => setIsSubEnvModalOpen(true)}
+                                                className={styles.manageSubEnvBtn}
+                                                title="Gestionar Sub-ambientes"
+                                            >
+                                                <FaEdit />
+                                            </button>
+                                        )}
                                     </div>
                                     <div className={styles.subEnvGrid}>
                                         {subEnvironments.length === 0 ? (

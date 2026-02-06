@@ -8,16 +8,12 @@ import { useEffect, useRef, useState } from "react";
 import { useManagment } from "@/features/hooks/useManagment";
 import { EquipmentForm } from "@/components/EquipmentForm";
 import { MachineDetailsModal } from "@/components/MachineDetailsModal";
-import { NuevoUsuarioModal } from "@/components/NuevoUsuarioModal";
-import { UsuariosTable } from "@/components/UsuariosTable";
-import { UsuarioActionsModal } from "@/components/UsuarioActionsModal";
 import { CalendarView } from "@/components/CalendarView";
 import { IncidenciaDetailModal } from "@/components/IncidenciaDetailModal";
 import { MantenimientoModal } from "@/components/MantenimientoModal";
 import { MantenimientoDetailModal } from "@/components/MantenimientoDetailModal";
 import { QRReader } from "@/components/QRReader";
 import { EquiposTable } from "@/components/EquiposTable";
-import { AuthModal } from "@/components/AuthModal";
 import { SelectGymModal } from "@/components/SelectGymModal";
 import { FaUserPlus, FaTools, FaTimes, FaQrcode, FaDumbbell, FaPlus, FaHome, FaChartBar, FaUsers, FaChartLine, FaClipboardList } from "react-icons/fa";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -46,14 +42,13 @@ const Equipment: NextPage = () => {
     eventos,
     updateIncidencia,
     deleteIncidencia,
-    validateSiEsAdmin,
+
     createMantenimiento,
   } = useManagment();
   const { formData, handleChange, resetForm } =
     useEquipmentForm(agregarMaquina);
   const [selectedMachine, setSelectedMachine] = useState<Machine | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isUsuarioModalOpen, setIsUsuarioModalOpen] = useState(false);
   const [showEventoDetailModal, setShowEventoDetailModal] = useState(false);
   const [selectedIncidencia, setSelectedIncidencia] =
     useState<Incidencia | null>(null);
@@ -61,12 +56,7 @@ const Equipment: NextPage = () => {
     useState(false);
   const [showMantenimientoModal, setShowMantenimientoModal] = useState(false);
   const [isQRReaderOpen, setIsQRReaderOpen] = useState(false);
-  const [showAuthModal, setShowAuthModal] = useState(false);
-  const [authError, setAuthError] = useState('');
-  const [authAction, setAuthAction] = useState<'mantenimiento' | 'usuario' | 'equipo' | 'delete_usuario' | 'manage_usuario' | 'details' | null>(null);
-  const [usuarioToDelete, setUsuarioToDelete] = useState<Usuario | null>(null);
-  const [isUsuarioActionsModalOpen, setIsUsuarioActionsModalOpen] = useState(false);
-  const [selectedUserForActions, setSelectedUserForActions] = useState<Usuario | null>(null);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSelectGymModalOpen, setIsSelectGymModalOpen] = useState(false);
 
@@ -92,9 +82,7 @@ const Equipment: NextPage = () => {
 
   const handleOpenModal = (machine: Machine) => {
     setSelectedMachine(machine);
-    setAuthAction('details');
-    setShowAuthModal(true);
-    setAuthError('');
+    setIsModalOpen(true);
   };
 
   const handleCloseModal = () => {
@@ -128,20 +116,10 @@ const Equipment: NextPage = () => {
     }
   };
 
-  const handleOpenUsuarioModal = () => {
-    setAuthAction('usuario');
-    setShowAuthModal(true);
-    setAuthError('');
-  };
 
-  const handleCloseUsuarioModal = () => {
-    setIsUsuarioModalOpen(false);
-  };
 
   const handleOpenEquipmentFormModal = () => {
-    setAuthAction('equipo');
-    setShowAuthModal(true);
-    setAuthError('');
+    setIsEquipmentFormModalOpen(true);
   };
 
   const handleCloseEquipmentFormModal = () => {
@@ -149,45 +127,7 @@ const Equipment: NextPage = () => {
     resetForm();
   };
 
-  const handleSubmitUsuario = async (usuario: {
-    dni: string;
-    nombres: string;
-    apellidos: string;
-    rol: string;
-    pin: number;
-  }) => {
-    try {
-      createUsuario(usuario);
-      // Aquí puedes agregar la lógica para guardar el usuario
-      // Por ejemplo: await agregarUsuario(usuario)
-    } catch (error) {
-      console.error("Error al agregar usuario:", error);
-    }
-  };
 
-  const handleEditUsuario = async (usuario: Usuario) => {
-    try {
-      if (usuario.id || usuario.dni) {
-        const id = usuario.id || usuario.dni || "";
-        await updateUsuario(id, usuario);
-        await getUsuarios();
-      }
-    } catch (error) {
-      console.error("Error al editar usuario:", error);
-    }
-  };
-
-  const handleOpenUsuarioActions = (usuario: Usuario) => {
-    setSelectedUserForActions(usuario);
-    setAuthAction('manage_usuario');
-    setShowAuthModal(true);
-    setAuthError('');
-  };
-
-  const handleCloseUsuarioActionsModal = () => {
-    setIsUsuarioActionsModalOpen(false);
-    setSelectedUserForActions(null);
-  };
 
   useEffect(() => {
     const unsubscribeMaquinas = getMaquinas();
@@ -255,52 +195,11 @@ const Equipment: NextPage = () => {
   const handleOpenMantenimientoModal = () => {
     // Verificar si hay una incidencia seleccionada para obtener la máquina
     if (selectedIncidencia?.machineId) {
-      setAuthAction('mantenimiento');
-      setShowAuthModal(true);
-      setAuthError('');
+      setShowMantenimientoModal(true);
     }
   };
 
-  const handleAuthAccept = async (dni: string, pin: string) => {
-    try {
-      const esAdmin = await validateSiEsAdmin(dni, pin);
-      if (esAdmin) {
-        setShowAuthModal(false);
-        setAuthError('');
 
-        if (authAction === 'mantenimiento') {
-          setShowMantenimientoModal(true);
-        } else if (authAction === 'usuario') {
-          setIsUsuarioModalOpen(true);
-        } else if (authAction === 'equipo') {
-          setIsEquipmentFormModalOpen(true);
-        } else if (authAction === 'delete_usuario' && usuarioToDelete) {
-          const id = usuarioToDelete.id || usuarioToDelete.dni || "";
-          if (id) {
-            await deleteUsuario(id);
-            await getUsuarios();
-          }
-          setUsuarioToDelete(null);
-        } else if (authAction === 'manage_usuario') {
-          setIsUsuarioActionsModalOpen(true);
-        } else if (authAction === 'details') {
-          setIsModalOpen(true);
-        }
-
-        setAuthAction(null);
-      } else {
-        setAuthError('Acceso denegado. Solo administradores y desarrolladores pueden realizar esta acción.');
-      }
-    } catch (error) {
-      console.error('Error al validar administrador:', error);
-      setAuthError('Error al validar credenciales. Intente nuevamente.');
-    }
-  };
-
-  const handleCloseAuthModal = () => {
-    setShowAuthModal(false);
-    setAuthError('');
-  };
 
   const handleCloseMantenimientoModal = () => {
     setShowMantenimientoModal(false);
@@ -445,9 +344,9 @@ const Equipment: NextPage = () => {
               <FaQrcode size={18} />
             </button>
             <button
-              onClick={handleOpenUsuarioModal}
+              onClick={() => router.push('/users')}
               className={`${styles.actionButton} ${styles.buttonUser}`}
-              title="Nuevo Usuario"
+              title="Gestión de Usuarios (Admin)"
             >
               <FaUserPlus size={18} />
             </button>
@@ -500,16 +399,7 @@ const Equipment: NextPage = () => {
           onScanError={(errorMessage) => console.error("Error al escanear QR:", errorMessage)}
         />
 
-        <section className={styles.sectionCard}>
-          <div className={styles.sectionHeader}>
-            <FaUsers className={styles.sectionIcon} />
-            <h2 className={styles.sectionTitle}>Gestión de Usuarios</h2>
-          </div>
-          <UsuariosTable
-            onEdit={handleEditUsuario}
-            onOpenActions={handleOpenUsuarioActions}
-          />
-        </section>
+
 
         <section className={styles.sectionCard}>
           <div className={styles.sectionHeader}>
@@ -541,25 +431,7 @@ const Equipment: NextPage = () => {
         marcas={marcas}
         ubicaciones={ubicaciones}
       />
-      <NuevoUsuarioModal
-        isOpen={isUsuarioModalOpen}
-        onClose={handleCloseUsuarioModal}
-        onSubmit={handleSubmitUsuario}
-      />
-      <UsuarioActionsModal
-        isOpen={isUsuarioActionsModalOpen}
-        usuario={selectedUserForActions}
-        onClose={handleCloseUsuarioActionsModal}
-        onEdit={handleEditUsuario}
-        onDelete={async (usuario) => {
-          if (usuario.id || usuario.dni) {
-            const id = usuario.id || usuario.dni || "";
-            await deleteUsuario(id);
-            await getUsuarios();
-            handleCloseUsuarioActionsModal();
-          }
-        }}
-      />
+
 
       {/* Modal de Formulario de Equipo */}
       {
@@ -596,7 +468,7 @@ const Equipment: NextPage = () => {
                   handleSubmit={handleSubmit}
                   marcas={marcas}
                   ubicaciones={ubicaciones}
-                  validateSiEsAdmin={validateSiEsAdmin}
+
                   isSubmitting={isSubmitting}
                 />
               </div>
@@ -665,7 +537,7 @@ const Equipment: NextPage = () => {
                 );
               }
             }}
-            validateSiEsAdmin={validateSiEsAdmin}
+
             onDelete={async (id) => {
               if (selectedIncidencia?.id && selectedIncidencia?.machineId) {
                 await deleteIncidencia(selectedIncidencia.machineId, id);
@@ -723,12 +595,7 @@ const Equipment: NextPage = () => {
         onSelect={handleGymSelected}
       />
 
-      <AuthModal
-        isOpen={showAuthModal}
-        onClose={handleCloseAuthModal}
-        onAccept={handleAuthAccept}
-        error={authError}
-      />
+
     </div>
   );
 };

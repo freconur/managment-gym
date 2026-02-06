@@ -39,7 +39,7 @@ const ChecklistDetailPage: NextPage = () => {
         clearUsuarioChecklist
     } = useChecklist();
 
-    const { maquinas, getMaquinas, usuariosValidate, createIncidencia, getIncidencia, getUserByDni, getUbicaciones, ubicaciones } = useManagment();
+    const { maquinas, getMaquinas, createIncidencia, getIncidencia, getUserByDni, getUbicaciones, ubicaciones } = useManagment();
     const { equipment: complementaryEquipment, getComplementaryEquipment } = useComplementaryEquipment();
 
     const assignedGym = useMemo(() => currentChecklist?.gym || null, [currentChecklist]);
@@ -462,7 +462,7 @@ const ChecklistDetailPage: NextPage = () => {
                     setSelectedMachineId(null);
                 }}
                 onSubmit={handleIncidenciaSubmit}
-                usuariosValidate={usuariosValidate}
+
                 usuarioChecklist={usuarioChecklist as Usuario}
                 maquina={allItems.find(m => m.id === selectedMachineId) as any}
             />

@@ -34,21 +34,10 @@ export const UsuarioActionsModal: React.FC<UsuarioActionsModalProps> = ({
     apellidos: '',
     rol: ''
   });
-  const [isPinModalOpen, setIsPinModalOpen] = useState(false);
-  const [pinData, setPinData] = useState({
-    pin: '',
-    confirmPin: ''
-  });
-  const [pinErrors, setPinErrors] = useState({
-    pin: '',
-    confirmPin: ''
-  });
+
 
   useEscapeKey(() => {
-    if (isPinModalOpen) {
-      handleClosePinModal();
-      return;
-    }
+
     if (isEditing) {
       handleCancelEdit();
       return;
@@ -135,15 +124,7 @@ export const UsuarioActionsModal: React.FC<UsuarioActionsModalProps> = ({
       apellidos: '',
       rol: ''
     });
-    setIsPinModalOpen(false);
-    setPinData({
-      pin: '',
-      confirmPin: ''
-    });
-    setPinErrors({
-      pin: '',
-      confirmPin: ''
-    });
+
   };
 
   const handleFormSubmit = (e: React.FormEvent) => {
@@ -183,93 +164,7 @@ export const UsuarioActionsModal: React.FC<UsuarioActionsModalProps> = ({
     onClose();
   };
 
-  const handlePinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    let numericValue = value.replace(/\D/g, '').slice(0, 4);
 
-    if (value === '') {
-      numericValue = '';
-    }
-
-    const updatedPinData = {
-      ...pinData,
-      [name]: numericValue
-    };
-
-    setPinData(updatedPinData);
-
-    if (updatedPinData.pin.length === 4 && updatedPinData.confirmPin.length === 4) {
-      if (updatedPinData.pin !== updatedPinData.confirmPin) {
-        setPinErrors({
-          pin: '',
-          confirmPin: 'Los PINs no coinciden'
-        });
-      } else {
-        setPinErrors({
-          pin: '',
-          confirmPin: ''
-        });
-      }
-    } else {
-      setPinErrors(prev => ({
-        ...prev,
-        [name]: ''
-      }));
-    }
-  };
-
-  const handlePinSubmit = () => {
-    const pinError = !pinData.pin
-      ? 'El PIN es requerido'
-      : pinData.pin.length !== 4
-        ? 'El PIN debe tener exactamente 4 dígitos'
-        : '';
-
-    const confirmPinError = !pinData.confirmPin
-      ? 'La confirmación de PIN es requerida'
-      : pinData.confirmPin.length !== 4
-        ? 'La confirmación de PIN debe tener exactamente 4 dígitos'
-        : pinData.pin !== pinData.confirmPin
-          ? 'Los PINs no coinciden'
-          : '';
-
-    setPinErrors({
-      pin: pinError,
-      confirmPin: confirmPinError
-    });
-
-    if (pinError || confirmPinError) {
-      return;
-    }
-
-    const updatedUsuario: Usuario = {
-      ...usuario,
-      dni: formData.dni,
-      nombres: formData.nombres.trim(),
-      apellidos: formData.apellidos.trim(),
-      rol: formData.rol,
-      pin: Number(pinData.pin)
-    };
-
-    if (onEdit) {
-      onEdit(updatedUsuario);
-    }
-
-    handleCancelEdit();
-    onClose();
-  };
-
-  const handleClosePinModal = () => {
-    setPinData({
-      pin: '',
-      confirmPin: ''
-    });
-    setPinErrors({
-      pin: '',
-      confirmPin: ''
-    });
-    setIsPinModalOpen(false);
-  };
 
   const isFormValid = () => {
     return (
@@ -281,15 +176,7 @@ export const UsuarioActionsModal: React.FC<UsuarioActionsModalProps> = ({
     );
   };
 
-  const isPinFormValid = () => {
-    return (
-      pinData.pin.length === 4 &&
-      pinData.confirmPin.length === 4 &&
-      pinData.pin === pinData.confirmPin &&
-      /^\d+$/.test(pinData.pin) &&
-      /^\d+$/.test(pinData.confirmPin)
-    );
-  };
+
 
   const handleDeleteClick = () => {
     if (usuario && onDelete && window.confirm(`¿Está seguro de que desea eliminar al usuario ${usuario.nombres} ${usuario.apellidos}? Esta acción no se puede deshacer.`)) {
@@ -298,114 +185,7 @@ export const UsuarioActionsModal: React.FC<UsuarioActionsModalProps> = ({
   };
 
 
-  if (isPinModalOpen) {
-    return (
-      <div className={styles.modalOverlay} onClick={handleClosePinModal}>
-        <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-          <div className={styles.modalHeader}>
-            <h3 className={styles.modalTitle}>Ingresar PIN</h3>
-            <button
-              type="button"
-              onClick={handleClosePinModal}
-              className={styles.modalCloseButton}
-              aria-label="Cerrar modal"
-            >
-              <FaTimes size={20} />
-            </button>
-          </div>
-          <div className={styles.modalBody}>
-            <div className={styles.modalSection}>
-              <div className={styles.formField}>
-                <label className={styles.label} htmlFor="pin">
-                  PIN (4 dígitos)
-                </label>
-                <input
-                  type="password"
-                  id="pin"
-                  name="pin"
-                  value={pinData.pin}
-                  onChange={handlePinChange}
-                  placeholder="Ingrese el PIN (4 dígitos)"
-                  className={styles.input}
-                  required
-                  maxLength={4}
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  onKeyDown={(e) => {
-                    if (!/[0-9]/.test(e.key) && !['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
-                      e.preventDefault();
-                    }
-                  }}
-                />
-                {pinErrors.pin && (
-                  <span style={{ color: 'red', fontSize: '0.875rem', marginTop: '0.25rem', display: 'block' }}>
-                    {pinErrors.pin}
-                  </span>
-                )}
-              </div>
-              <div className={styles.formField}>
-                <label className={styles.label} htmlFor="confirmPin">
-                  Confirmar PIN
-                </label>
-                <input
-                  type="password"
-                  id="confirmPin"
-                  name="confirmPin"
-                  value={pinData.confirmPin}
-                  onChange={handlePinChange}
-                  placeholder="Confirme el PIN (4 dígitos)"
-                  className={styles.input}
-                  required
-                  maxLength={4}
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  onKeyDown={(e) => {
-                    if (!/[0-9]/.test(e.key) && !['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
-                      e.preventDefault();
-                    }
-                  }}
-                />
-                {pinErrors.confirmPin && (
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem',
-                    marginTop: '0.5rem',
-                    padding: '0.75rem',
-                    backgroundColor: '#fff3cd',
-                    border: '1px solid #ffc107',
-                    borderRadius: '4px',
-                    color: '#856404',
-                    fontSize: '0.875rem'
-                  }}>
-                    <FaExclamationTriangle size={16} style={{ flexShrink: 0 }} />
-                    <span>{pinErrors.confirmPin}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-            <div className={styles.modalButtonGroup} style={{ marginTop: '1.5rem', justifyContent: 'flex-end' }}>
-              <button
-                type="button"
-                onClick={handleClosePinModal}
-                className={`${styles.button} ${styles.buttonSecondary}`}
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={handlePinSubmit}
-                className={`${styles.button} ${styles.buttonPrimary}`}
-                disabled={!isPinFormValid()}
-              >
-                Guardar
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+
 
   return (
     <>
@@ -691,35 +471,7 @@ export const UsuarioActionsModal: React.FC<UsuarioActionsModalProps> = ({
                       </div>
                     </div>
 
-                    <div style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '0.5rem',
-                      gridColumn: 'span 2'
-                    }}>
-                      <label style={{
-                        fontSize: '0.75rem',
-                        fontWeight: 600,
-                        color: '#6b7280',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.05em'
-                      }}>
-                        PIN
-                      </label>
-                      <div style={{
-                        fontSize: '1rem',
-                        fontWeight: 500,
-                        color: '#111827',
-                        fontFamily: 'Courier New, monospace',
-                        padding: '0.5rem 0.75rem',
-                        backgroundColor: 'white',
-                        borderRadius: '0.375rem',
-                        border: '1px solid #e5e7eb',
-                        letterSpacing: '0.1em'
-                      }}>
-                        {usuario.pin ? `****${usuario.pin.toString().slice(-1)}` : 'N/A'}
-                      </div>
-                    </div>
+
                   </div>
                 </div>
 

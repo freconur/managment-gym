@@ -10,7 +10,7 @@ import { Ubicacion, useManagment } from '@/features/hooks/useManagment'
 import { MarcaModal } from './MarcaModal'
 import { DeleteMarcaModal } from './DeleteMarcaModal'
 import UbicacionModal from './UbicacionModal'
-import { AuthModal } from './AuthModal'
+
 import { db, storage } from '@/firebase/firebase.config'
 
 
@@ -20,7 +20,7 @@ interface EquipmentFormProps {
   handleSubmit: (e: React.FormEvent) => void;
   marcas: Marca[];
   ubicaciones: Ubicacion[];
-  validateSiEsAdmin?: (dni: string, pin: string) => Promise<boolean>;
+
   isSubmitting?: boolean;
 }
 
@@ -30,7 +30,7 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
   handleSubmit,
   marcas,
   ubicaciones,
-  validateSiEsAdmin,
+
   isSubmitting = false
 }) => {
   // Estados para Marcas
@@ -40,10 +40,7 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
   const [marcaName, setMarcaName] = useState<string>('')
   const [marcaToDelete, setMarcaToDelete] = useState<{ id: string; name: string } | null>(null)
   const [isEditing, setIsEditing] = useState<boolean>(false)
-  const [showAuthModal, setShowAuthModal] = useState(false)
-  const [authError, setAuthError] = useState<string>('')
-  const [authType, setAuthType] = useState<'marca' | 'editMarca'>('marca')
-  const [pendingMarcaData, setPendingMarcaData] = useState<{ id: string; name: string } | null>(null)
+
 
 
 
@@ -99,65 +96,7 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
     }
   }
 
-  const performSaveMarca = async () => {
-    if (!pendingMarcaData) return
-    await updateMarcas(pendingMarcaData.id, { name: pendingMarcaData.name })
-    setMarcaName('')
-    setSelectedMarcaId('')
-    setIsEditing(false)
-    setPendingMarcaData(null)
-  }
 
-  const handleDeleteMarca = () => {
-    if (!selectedMarcaId) return
-    const marca = marcas.find(m => m.id === selectedMarcaId)
-    if (marca) {
-      setMarcaToDelete({ id: selectedMarcaId, name: marca.name || '' })
-      setIsDeleteModalOpen(true)
-    }
-  }
-
-  const handleAuthAccept = async (dni: string, pin: string) => {
-    if (!validateSiEsAdmin) {
-      setAuthError('Error de validación')
-      return
-    }
-
-    try {
-      const esAdmin = await validateSiEsAdmin(dni, pin)
-
-      if (esAdmin) {
-        // Si es admin, proceder con la acción correspondiente
-        setShowAuthModal(false)
-        setAuthError('')
-
-        if (authType === 'marca') {
-          setIsDeleteModalOpen(true)
-        } else if (authType === 'editMarca') {
-          await performSaveMarca()
-        }
-      } else {
-        let errorMessage = ''
-        if (authType === 'marca' || authType === 'editMarca') {
-          errorMessage = 'Acceso denegado. Solo administradores y desarrolladores pueden modificar marcas.'
-        }
-        setAuthError(errorMessage)
-      }
-    } catch (error) {
-      console.error('Error al validar administrador:', error)
-      setAuthError('Error al validar credenciales. Intente nuevamente.')
-    }
-  }
-
-  const handleCloseAuthModal = () => {
-    setShowAuthModal(false)
-    setAuthError('')
-    if (authType === 'marca') {
-      setMarcaToDelete(null)
-    } else if (authType === 'editMarca') {
-      setPendingMarcaData(null)
-    }
-  }
 
   const confirmDeleteMarca = async () => {
     if (!marcaToDelete || isDeletingMarca) return
@@ -226,6 +165,15 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
 
   const handleCloseUbicacionModal = () => {
     setIsUbicacionModalOpen(false)
+  }
+
+  const handleDeleteMarca = () => {
+    if (!selectedMarcaId) return
+    const marca = marcas.find(m => m.id === selectedMarcaId)
+    if (marca) {
+      setMarcaToDelete({ id: selectedMarcaId, name: marca.name || '' })
+      setIsDeleteModalOpen(true)
+    }
   }
 
   return (
@@ -501,12 +449,9 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
 
 
 
-      <AuthModal
-        isOpen={showAuthModal}
-        onClose={handleCloseAuthModal}
-        onAccept={handleAuthAccept}
-        error={authError}
-      />
+
+
+
     </div>
   )
 }

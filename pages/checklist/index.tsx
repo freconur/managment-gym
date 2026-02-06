@@ -7,7 +7,7 @@ import { useManagment } from "@/features/hooks/useManagment";
 import { MonthlyChecklistGrid } from "@/components/MonthlyChecklistGrid";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { AssignUserModal } from "@/components/AssignUserModal";
-import { AuthModal } from "@/components/AuthModal";
+
 import { ChecklistPinModal } from "@/components/ChecklistPinModal";
 import { SelectGymModal } from "@/components/SelectGymModal";
 
@@ -35,7 +35,7 @@ const PDFDownloadLink = dynamic(
 const ChecklistPage: NextPage = () => {
     const router = useRouter();
     const { monthData, getMonthChecklistData, startDailyChecklist, assignUserChecklist, getChecklistAssignment, getMonthlyAssignments, assignments, checklists, deleteChecklist } = useChecklist();
-    const { maquinas, getMaquinas, getUsuarios, usuarios, validateAndGetUser, getIncidencia, getUbicaciones, ubicaciones, saveMachineOrder } = useManagment();
+    const { maquinas, getMaquinas, getUsuarios, usuarios, getUserByDni, getIncidencia, getUbicaciones, ubicaciones, saveMachineOrder } = useManagment();
     const { getComplementaryEquipment, equipment: complementaryEquipment } = useComplementaryEquipment();
     const [isCreating, setIsCreating] = useState(false);
     const [locationFilter, setLocationFilter] = useState('');
@@ -50,7 +50,6 @@ const ChecklistPage: NextPage = () => {
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const [selectedIncidencia, setSelectedIncidencia] = useState<Incidencia | null>(null);
 
-    const [showAuthModal, setShowAuthModal] = useState(false);
     const [authContext, setAuthContext] = useState<'assignment' | 'date_options' | 'complementary' | null>(null);
 
     // Date Action Modal
@@ -177,38 +176,10 @@ const ChecklistPage: NextPage = () => {
     };
 
     const handleConfigClick = () => {
-        setAuthContext('assignment');
-        setShowAuthModal(true);
+        setIsAssignModalOpen(true);
     };
 
-    const handleAuthAccept = async (dni: string, pin: string) => {
-        try {
-            const user = await validateAndGetUser(dni, pin);
-            if (user) {
-                // Role Validation: Allowlist for 'administrador' or 'desarrollador'
-                const userRole = (user.rol || '').toLowerCase();
-                const allowedRoles = ['administrador', 'desarrollador'];
 
-                if (authContext && !allowedRoles.includes(userRole)) {
-                    alert("Acceso denegado: Se requieren permisos de administrador o desarrollador.");
-                    return;
-                }
-
-                setShowAuthModal(false);
-                if (authContext === 'assignment') {
-                    setIsAssignModalOpen(true);
-                } else if (authContext === 'date_options') {
-                    setIsDateActionModalOpen(true);
-                } else if (authContext === 'complementary') {
-                    setIsComplementaryModalOpen(true);
-                }
-            } else {
-                alert("Credenciales inválidas");
-            }
-        } catch (e) {
-            alert("Error de autenticación");
-        }
-    };
 
     const onPinSuccess = async (user: Usuario) => {
         try {
@@ -256,8 +227,7 @@ const ChecklistPage: NextPage = () => {
             day,
             checklistId: found && found.id ? found.id : null
         });
-        setAuthContext('date_options');
-        setShowAuthModal(true);
+        setIsDateActionModalOpen(true);
     };
 
     const handleEditDate = () => {
@@ -380,8 +350,7 @@ const ChecklistPage: NextPage = () => {
 
                             <button
                                 onClick={() => {
-                                    setAuthContext('complementary');
-                                    setShowAuthModal(true);
+                                    setIsComplementaryModalOpen(true);
                                 }}
                                 className={styles.actionButton}
                                 title="Equipos Complementarios"
@@ -494,7 +463,7 @@ const ChecklistPage: NextPage = () => {
                 isOpen={isPinModalOpen}
                 onClose={() => setIsPinModalOpen(false)}
                 assignedUser={assignedUserForPin}
-                validateUser={validateAndGetUser}
+                validateUser={getUserByDni}
                 onSuccess={onPinSuccess}
             />
 
@@ -510,11 +479,7 @@ const ChecklistPage: NextPage = () => {
                 onSelect={handleGymSelected}
             />
 
-            <AuthModal
-                isOpen={showAuthModal}
-                onClose={() => setShowAuthModal(false)}
-                onAccept={handleAuthAccept}
-            />
+
 
             {/* Date Action Modal */}
             {isDateActionModalOpen && selectedDateAction && (

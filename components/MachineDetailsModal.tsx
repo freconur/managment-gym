@@ -100,8 +100,7 @@ export const MachineDetailsModal: React.FC<MachineDetailsModalProps> = ({
     }
   }
 
-  const handleCloseAuthModal = () => {
-  }
+
 
   const handleDeleteClick = () => {
     setIsDeleteModalOpen(true)

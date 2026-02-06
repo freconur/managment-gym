@@ -4,7 +4,7 @@ import { EquiposTable } from '@/components/EquiposTable';
 import { useManagment } from '@/features/hooks/useManagment';
 import { Machine } from '@/features/types/types';
 import { MachineDetailsModal } from '@/components/MachineDetailsModal';
-import { AuthModal } from '@/components/AuthModal';
+
 import styles from '@/styles/equipment.module.css';
 
 const MisEquipos = () => {
@@ -17,21 +17,17 @@ const MisEquipos = () => {
     marcas,
     updateMaquinas,
     deleteMaquinas,
-    validateSiEsAdmin,
+
   } = useManagment();
 
   const [selectedMachine, setSelectedMachine] = useState<Machine | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [showAuthModal, setShowAuthModal] = useState(false);
-  const [authError, setAuthError] = useState('');
-  const [authAction, setAuthAction] = useState<'details' | null>(null);
+
   const hasFetched = useRef(false);
 
   const handleOpenModal = (machine: Machine) => {
     setSelectedMachine(machine);
-    setAuthAction('details');
-    setShowAuthModal(true);
-    setAuthError('');
+    setIsModalOpen(true);
   };
 
   const handleCloseModal = () => {
@@ -39,29 +35,7 @@ const MisEquipos = () => {
     setSelectedMachine(null);
   };
 
-  const handleAuthAccept = async (dni: string, pin: string) => {
-    try {
-      const esAdmin = await validateSiEsAdmin(dni, pin);
-      if (esAdmin) {
-        setShowAuthModal(false);
-        setAuthError('');
-        if (authAction === 'details') {
-          setIsModalOpen(true);
-        }
-        setAuthAction(null);
-      } else {
-        setAuthError('Acceso denegado. Solo administradores y desarrolladores pueden realizar esta acción.');
-      }
-    } catch (error) {
-      console.error('Error al validar administrador:', error);
-      setAuthError('Error al validar credenciales. Intente nuevamente.');
-    }
-  };
 
-  const handleCloseAuthModal = () => {
-    setShowAuthModal(false);
-    setAuthError('');
-  };
 
   const handleUpdateMachine = async (id: string, machine: Partial<Machine>) => {
     try {
@@ -129,12 +103,7 @@ const MisEquipos = () => {
         marcas={marcas}
         ubicaciones={ubicaciones}
       />
-      <AuthModal
-        isOpen={showAuthModal}
-        onClose={handleCloseAuthModal}
-        onAccept={handleAuthAccept}
-        error={authError}
-      />
+
     </>
   );
 };

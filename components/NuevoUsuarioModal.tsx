@@ -2,6 +2,8 @@ import React, { useState } from 'react'
 import { FaTimes, FaExclamationTriangle, FaUserPlus } from 'react-icons/fa'
 import styles from '@/styles/equipment.module.css'
 import { roles } from '@/utils/data'
+import { useEscapeKey } from '@/features/hooks/useEscapeKey'
+
 interface NuevoUsuarioModalProps {
   isOpen: boolean
   onClose: () => void
@@ -13,8 +15,6 @@ interface NuevoUsuarioModalProps {
     pin: number
   }) => void
 }
-
-import { useEscapeKey } from '@/features/hooks/useEscapeKey'
 
 export const NuevoUsuarioModal: React.FC<NuevoUsuarioModalProps> = ({
   isOpen,
@@ -33,21 +33,8 @@ export const NuevoUsuarioModal: React.FC<NuevoUsuarioModalProps> = ({
     apellidos: '',
     rol: ''
   })
-  const [isPinModalOpen, setIsPinModalOpen] = useState(false)
-  const [pinData, setPinData] = useState({
-    pin: '',
-    confirmPin: ''
-  })
-  const [pinErrors, setPinErrors] = useState({
-    pin: '',
-    confirmPin: ''
-  })
 
   useEscapeKey(() => {
-    if (isPinModalOpen) {
-      handleClosePinModal()
-      return
-    }
     onClose()
   }, isOpen)
 
@@ -125,133 +112,16 @@ export const NuevoUsuarioModal: React.FC<NuevoUsuarioModalProps> = ({
       return
     }
 
-    // Si el formulario es válido, abrir el modal de PIN
-    setIsPinModalOpen(true)
-  }
-
-  const handlePinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    // Solo permitir números y máximo 4 dígitos
-    // Si el valor está vacío, permitirlo (para poder borrar)
-    let numericValue = value.replace(/\D/g, '').slice(0, 4)
-
-    // Si el valor es una cadena vacía, mantenerla como cadena vacía
-    if (value === '') {
-      numericValue = ''
-    }
-
-    const updatedPinData = {
-      ...pinData,
-      [name]: numericValue
-    }
-
-    setPinData(updatedPinData)
-
-    // Validar en tiempo real si los PINs coinciden cuando ambos tienen 4 dígitos
-    if (updatedPinData.pin.length === 4 && updatedPinData.confirmPin.length === 4) {
-      if (updatedPinData.pin !== updatedPinData.confirmPin) {
-        setPinErrors({
-          pin: '',
-          confirmPin: 'Los PINs no coinciden'
-        })
-      } else {
-        setPinErrors({
-          pin: '',
-          confirmPin: ''
-        })
-      }
-    } else {
-      // Limpiar errores cuando el usuario escribe
-      setPinErrors(prev => ({
-        ...prev,
-        [name]: ''
-      }))
-    }
-  }
-
-  const handlePinSubmit = () => {
-    // Validar PIN
-    const pinError = !pinData.pin
-      ? 'El PIN es requerido'
-      : pinData.pin.length !== 4
-        ? 'El PIN debe tener exactamente 4 dígitos'
-        : ''
-
-    // Validar confirmación de PIN
-    const confirmPinError = !pinData.confirmPin
-      ? 'La confirmación de PIN es requerida'
-      : pinData.confirmPin.length !== 4
-        ? 'La confirmación de PIN debe tener exactamente 4 dígitos'
-        : pinData.pin !== pinData.confirmPin
-          ? 'Los PINs no coinciden'
-          : ''
-
-    setPinErrors({
-      pin: pinError,
-      confirmPin: confirmPinError
-    })
-
-    // Si hay errores, no proceder
-    if (pinError || confirmPinError) {
-      return
-    }
-
-    // Aplicar trim a nombres y apellidos antes de enviar
+    // Si el formulario es válido, enviar directamente
     const usuarioData = {
       dni: formData.dni,
       nombres: formData.nombres.trim(),
       apellidos: formData.apellidos.trim(),
       rol: formData.rol,
-      pin: Number(pinData.pin)
+      pin: 0 // Default PIN since we are removing legacy auth
     }
-
     onSubmit(usuarioData)
-
-    // Limpiar formularios
-    setFormData({
-      dni: '',
-      nombres: '',
-      apellidos: '',
-      rol: ''
-    })
-    setErrors({
-      dni: '',
-      nombres: '',
-      apellidos: '',
-      rol: ''
-    })
-    setPinData({
-      pin: '',
-      confirmPin: ''
-    })
-    setPinErrors({
-      pin: '',
-      confirmPin: ''
-    })
-    setIsPinModalOpen(false)
-    onClose()
-  }
-
-  const handleClosePinModal = () => {
-    setPinData({
-      pin: '',
-      confirmPin: ''
-    })
-    setPinErrors({
-      pin: '',
-      confirmPin: ''
-    })
-    setIsPinModalOpen(false)
-  }
-
-  const isPinFormValid = () => {
-    return (
-      pinData.pin.length === 4 &&
-      pinData.confirmPin.length === 4 &&
-      pinData.pin === pinData.confirmPin &&
-      /^\d+$/.test(pinData.pin) &&
-      /^\d+$/.test(pinData.confirmPin)
-    )
+    handleClose()
   }
 
   const handleClose = () => {
@@ -267,10 +137,7 @@ export const NuevoUsuarioModal: React.FC<NuevoUsuarioModalProps> = ({
       apellidos: '',
       rol: ''
     })
-    // Cerrar también el modal de PIN si está abierto
-    if (isPinModalOpen) {
-      handleClosePinModal()
-    }
+
     onClose()
   }
 
@@ -419,117 +286,6 @@ export const NuevoUsuarioModal: React.FC<NuevoUsuarioModalProps> = ({
           </div>
         </div>
       </div>
-
-      {/* Modal de PIN */}
-      {isPinModalOpen && (
-        <div className={styles.modalOverlay} onClick={handleClosePinModal}>
-          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h3 className={styles.modalTitle}>Ingresar PIN</h3>
-              <button
-                type="button"
-                onClick={handleClosePinModal}
-                className={styles.modalCloseButton}
-                aria-label="Cerrar modal"
-              >
-                <FaTimes size={20} />
-              </button>
-            </div>
-            <div className={styles.modalBody}>
-              <div className={styles.modalSection}>
-                <div className={styles.formField}>
-                  <label className={styles.label} htmlFor="pin">
-                    PIN (4 dígitos)
-                  </label>
-                  <input
-                    type="password"
-                    id="pin"
-                    name="pin"
-                    value={pinData.pin}
-                    onChange={handlePinChange}
-                    placeholder="Ingrese el PIN (4 dígitos)"
-                    className={styles.input}
-                    required
-                    maxLength={4}
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    onKeyDown={(e) => {
-                      // Prevenir caracteres no numéricos excepto backspace, delete, tab, escape, enter
-                      if (!/[0-9]/.test(e.key) && !['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
-                        e.preventDefault()
-                      }
-                    }}
-                  />
-                  {pinErrors.pin && (
-                    <span style={{ color: 'red', fontSize: '0.875rem', marginTop: '0.25rem', display: 'block' }}>
-                      {pinErrors.pin}
-                    </span>
-                  )}
-                </div>
-                <div className={styles.formField}>
-                  <label className={styles.label} htmlFor="confirmPin">
-                    Confirmar PIN
-                  </label>
-                  <input
-                    type="password"
-                    id="confirmPin"
-                    name="confirmPin"
-                    value={pinData.confirmPin}
-                    onChange={handlePinChange}
-                    placeholder="Confirme el PIN (4 dígitos)"
-                    className={styles.input}
-                    required
-                    maxLength={4}
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    onKeyDown={(e) => {
-                      // Prevenir caracteres no numéricos excepto backspace, delete, tab, escape, enter
-                      if (!/[0-9]/.test(e.key) && !['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
-                        e.preventDefault()
-                      }
-                    }}
-                  />
-                  {pinErrors.confirmPin && (
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.5rem',
-                      marginTop: '0.5rem',
-                      padding: '0.75rem',
-                      backgroundColor: '#fff3cd',
-                      border: '1px solid #ffc107',
-                      borderRadius: '4px',
-                      color: '#856404',
-                      fontSize: '0.875rem'
-                    }}>
-                      <FaExclamationTriangle size={16} style={{ flexShrink: 0 }} />
-                      <span>{pinErrors.confirmPin}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div className={styles.modalButtonGroup} style={{ marginTop: '1.5rem', justifyContent: 'flex-end' }}>
-                <button
-                  type="button"
-                  onClick={handleClosePinModal}
-                  className={`${styles.button} ${styles.buttonSecondary}`}
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="button"
-                  onClick={handlePinSubmit}
-                  className={`${styles.button} ${styles.buttonPrimary}`}
-                  disabled={!isPinFormValid()}
-                >
-                  Aceptar
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   )
 }
-

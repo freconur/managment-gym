@@ -11,12 +11,14 @@ import { AccessModal } from '@/components/AccessModal'
 import { RecentAccessFeed } from '@/components/RecentAccessFeed'
 import { AmenitiesReturnList } from '@/components/AmenitiesReturnList'
 import { ThemeToggle } from '@/components/ThemeToggle'
+import { useAuth } from '@/features/context/AuthContext'
 
 
 const DynamicAccessPage: NextPage = () => {
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [locationName, setLocationName] = useState<string | null>(null)
     const [isLoading, setIsLoading] = useState(true)
+    const { user } = useAuth()
 
     const router = useRouter()
     const { id } = router.query
@@ -64,9 +66,13 @@ const DynamicAccessPage: NextPage = () => {
                 <main className={styles.mainWrapper}>
 
                     <div className={styles.backLinkWrapper} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <Link href={`/members/${id}`} className={styles.backLink}>
-                            <FaArrowLeft /> Volver a Gestión
-                        </Link>
+                        {user ? (
+                            <Link href={`/members/${id}`} className={styles.backLink}>
+                                <FaArrowLeft /> Volver a Gestión
+                            </Link>
+                        ) : (
+                            <div></div> // Spacer to keep layout if needed or just empty
+                        )}
                         <ThemeToggle />
                     </div>
 
@@ -114,6 +120,7 @@ const DynamicAccessPage: NextPage = () => {
                 onClose={() => setIsModalOpen(false)}
                 environment={locationName || undefined}
                 locationId={id as string}
+                isAuthenticated={!!user}
             />
         </>
     )

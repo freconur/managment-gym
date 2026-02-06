@@ -23,7 +23,7 @@ interface IncidenciaModalProps {
     fotoUrl: string
     maquina: Machine
   }) => Promise<void>
-  usuariosValidate: Usuario,
+  usuariosValidate?: Usuario,
   usuarioChecklist?: Usuario
   maquina?: Machine
 }
@@ -45,7 +45,7 @@ export const IncidenciaModal: React.FC<IncidenciaModalProps> = ({
     fechaProgramada: new Date(),
     descripcion: '',
     prioridad: 'media' as 'baja' | 'media' | 'alta' | 'urgente',
-    usuario: (usuarioChecklist as any)?.user || usuariosValidate
+    usuario: (usuarioChecklist as any)?.user || usuariosValidate || usuarioChecklist
   })
   console.log('usuarioChecklist', usuarioChecklist)
   const [fotoFile, setFotoFile] = useState<File | null>(null)
@@ -180,7 +180,7 @@ export const IncidenciaModal: React.FC<IncidenciaModalProps> = ({
         {/* Scrollable Body */}
         <div className={styles.body}>
           {/* Información del usuario validado */}
-          {usuariosValidate && usuariosValidate.dni && (
+          {usuarioChecklist && (
             <div className={styles.userInfoCard}>
               <div className={styles.userInfoHeader}>
                 <FaUser size={16} style={{ marginRight: '0.5rem' }} />
@@ -190,13 +190,13 @@ export const IncidenciaModal: React.FC<IncidenciaModalProps> = ({
                 <div>
                   <span className={styles.userInfoLabel}>Nombres</span>
                   <span className={styles.userInfoValue}>
-                    {usuariosValidate.nombres || 'N/A'}
+                    {usuarioChecklist.nombres || 'N/A'}
                   </span>
                 </div>
                 <div>
                   <span className={styles.userInfoLabel}>Apellidos</span>
                   <span className={styles.userInfoValue}>
-                    {usuariosValidate.apellidos || 'N/A'}
+                    {usuarioChecklist.apellidos || 'N/A'}
                   </span>
                 </div>
                 <div>
@@ -205,7 +205,7 @@ export const IncidenciaModal: React.FC<IncidenciaModalProps> = ({
                     DNI
                   </span>
                   <span className={styles.userInfoValue}>
-                    {usuariosValidate.dni || 'N/A'}
+                    {usuarioChecklist.dni || 'N/A'}
                   </span>
                 </div>
               </div>

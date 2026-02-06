@@ -13,7 +13,7 @@ import { useManagment } from "@/features/hooks/useManagment";
 import { MonthlyChecklistGrid } from "@/components/MonthlyChecklistGrid";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { AssignUserModal } from "@/components/AssignUserModal";
-import { AuthModal } from "@/components/AuthModal";
+
 import { ChecklistPinModal } from "@/components/ChecklistPinModal";
 import { SelectGymModal } from "@/components/SelectGymModal";
 import { ChecklistAssignment, Usuario, Incidencia } from "@/features/types/types";
@@ -40,7 +40,7 @@ const LocationChecklistPage: NextPage = () => {
     const { id: locationId } = router.query; // This is the location ID
 
     const { monthData, getMonthChecklistData, startDailyChecklist, assignUserChecklist, getChecklistAssignment, getMonthlyAssignments, assignments, checklists, deleteChecklist } = useChecklist();
-    const { maquinas, getMaquinas, getUsuarios, usuarios, validateAndGetUser, getIncidencia, getUbicaciones, ubicaciones, saveMachineOrder } = useManagment();
+    const { maquinas, getMaquinas, getUsuarios, usuarios, getUserByDni, getIncidencia, getUbicaciones, ubicaciones, saveMachineOrder } = useManagment();
     const { getComplementaryEquipment, equipment: complementaryEquipment } = useComplementaryEquipment();
 
     const [isCreating, setIsCreating] = useState(false);
@@ -49,7 +49,6 @@ const LocationChecklistPage: NextPage = () => {
     // Modal State
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const [selectedIncidencia, setSelectedIncidencia] = useState<Incidencia | null>(null);
-    const [showAuthModal, setShowAuthModal] = useState(false);
     const [authContext, setAuthContext] = useState<'assignment' | 'date_options' | 'complementary' | null>(null);
 
     // Date Action Modal
@@ -187,37 +186,10 @@ const LocationChecklistPage: NextPage = () => {
     };
 
     const handleConfigClick = () => {
-        setAuthContext('assignment');
-        setShowAuthModal(true);
+        setIsAssignModalOpen(true);
     };
 
-    const handleAuthAccept = async (dni: string, pin: string) => {
-        try {
-            const user = await validateAndGetUser(dni, pin);
-            if (user) {
-                const userRole = (user.rol || '').toLowerCase();
-                const allowedRoles = ['administrador', 'desarrollador'];
 
-                if (authContext && !allowedRoles.includes(userRole)) {
-                    alert("Acceso denegado: Se requieren permisos de administrador o desarrollador.");
-                    return;
-                }
-
-                setShowAuthModal(false);
-                if (authContext === 'assignment') {
-                    setIsAssignModalOpen(true);
-                } else if (authContext === 'date_options') {
-                    setIsDateActionModalOpen(true);
-                } else if (authContext === 'complementary') {
-                    setIsComplementaryModalOpen(true);
-                }
-            } else {
-                alert("Credenciales inválidas");
-            }
-        } catch (e) {
-            alert("Error de autenticación");
-        }
-    };
 
     const onPinSuccess = async (user: Usuario) => {
         try {
@@ -261,8 +233,7 @@ const LocationChecklistPage: NextPage = () => {
             day,
             checklistId: found && found.id ? found.id : null
         });
-        setAuthContext('date_options');
-        setShowAuthModal(true);
+        setIsDateActionModalOpen(true);
     };
 
     const handleDeleteDate = async () => {
@@ -353,8 +324,7 @@ const LocationChecklistPage: NextPage = () => {
                         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
                             <button
                                 onClick={() => {
-                                    setAuthContext('complementary');
-                                    setShowAuthModal(true);
+                                    setIsComplementaryModalOpen(true);
                                 }}
                                 className={styles.actionButton}
                                 title="Equipos Complementarios"
@@ -462,7 +432,7 @@ const LocationChecklistPage: NextPage = () => {
                 isOpen={isPinModalOpen}
                 onClose={() => setIsPinModalOpen(false)}
                 assignedUser={assignedUserForPin}
-                validateUser={validateAndGetUser}
+                validateUser={getUserByDni}
                 onSuccess={onPinSuccess}
             />
 
@@ -471,11 +441,7 @@ const LocationChecklistPage: NextPage = () => {
                 onClose={() => setIsComplementaryModalOpen(false)}
             />
 
-            <AuthModal
-                isOpen={showAuthModal}
-                onClose={() => setShowAuthModal(false)}
-                onAccept={handleAuthAccept}
-            />
+
 
             {/* Date Action Modal Logic Copied/Reused */}
             {isDateActionModalOpen && selectedDateAction && (
