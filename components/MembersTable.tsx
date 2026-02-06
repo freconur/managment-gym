@@ -12,6 +12,21 @@ interface MembersTableProps {
     isLoading: boolean;
     onEdit: (member: Member) => void;
     onDelete: (id: string) => void;
+    onLoadMore?: () => void; // Deprecated
+    hasMore?: boolean; // Deprecated
+    loadingMore?: boolean; // Deprecated
+
+    // New Pagination Props
+    currentPage?: number;
+    totalPages?: number;
+    totalMembers?: number;
+    onNextPage?: () => void;
+    onPrevPage?: () => void;
+    isPaginating?: boolean;
+
+    // Search Props
+    searchTerm?: string;
+    onSearchChange?: (term: string) => void;
 }
 
 const ITEMS_PER_PAGE = 20;
@@ -21,19 +36,33 @@ export const MembersTable: React.FC<MembersTableProps> = ({
     empresas,
     isLoading,
     onEdit,
-    onDelete
+    onDelete,
+    onLoadMore,
+    hasMore,
+    loadingMore,
+    currentPage = 1,
+    totalPages = 1,
+    totalMembers = 0,
+    onNextPage,
+    onPrevPage,
+    isPaginating,
+    searchTerm = '',
+    onSearchChange
 }) => {
+    // Local filter state...
     const [filterEmpresa, setFilterEmpresa] = useState('');
-    const [searchTerm, setSearchTerm] = useState('');
-    const [currentPage, setCurrentPage] = useState(1);
+    // const [searchTerm, setSearchTerm] = useState(''); // REPLACED BY PROP
+
+    // NOTE: searchTerm and filters work on the CURRENT PAGE data only in this implementation
+    // If you need to search globally, that requires a backend search query change.
 
     // PIN Security State
 
 
     // Reset page when filters change
-    useEffect(() => {
-        setCurrentPage(1);
-    }, [filterEmpresa, searchTerm]);
+    // useEffect(() => {
+    //     setCurrentPage(1);
+    // }, [filterEmpresa, searchTerm]);
 
     const handleActionRequest = (type: 'EDIT' | 'DELETE', payload: any) => {
         if (type === 'EDIT') {
@@ -46,27 +75,18 @@ export const MembersTable: React.FC<MembersTableProps> = ({
 
     const filteredMembers = members.filter(member => {
         const matchesEmpresa = filterEmpresa ? member.empresa === filterEmpresa : true;
-        const searchLower = searchTerm.toLowerCase();
-        const matchesSearch = searchTerm === '' ||
-            member.nombre.toLowerCase().includes(searchLower) ||
-            member.apellidos.toLowerCase().includes(searchLower) ||
-            member.dni.includes(searchLower); // Fixed: ensure includes is used on string
+        // const searchLower = searchTerm.toLowerCase();
+        // const matchesSearch = searchTerm === '' ||
+        //     member.nombre.toLowerCase().includes(searchLower) ||
+        //     member.apellidos.toLowerCase().includes(searchLower) ||
+        //     member.dni.includes(searchLower); // Client-side search disabled
 
-        return matchesEmpresa && matchesSearch;
+        // We only filter by company locally now, as search is server-side
+        return matchesEmpresa;
     });
 
-    // Pagination Logic
-    const totalPages = Math.ceil(filteredMembers.length / ITEMS_PER_PAGE);
-    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    const paginatedMembers = filteredMembers.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-
-    const handlePrevPage = () => {
-        if (currentPage > 1) setCurrentPage(prev => prev - 1);
-    };
-
-    const handleNextPage = () => {
-        if (currentPage < totalPages) setCurrentPage(prev => prev + 1);
-    };
+    // Pagination Logic Removed (Server-side handled by parent)
+    const paginatedMembers = filteredMembers; // Use all filtered members directly
 
     return (
         <div className={styles.tableContainer}>
@@ -75,9 +95,13 @@ export const MembersTable: React.FC<MembersTableProps> = ({
                     <FaSearch style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
                     <input
                         type="text"
-                        placeholder="Buscar por DNI, Nombre o Apellidos..."
+                        placeholder="Buscar por DNI..."
                         value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
+                        onChange={(e) => {
+                            const val = e.target.value.replace(/[^0-9]/g, ''); // Only numbers
+                            if (onSearchChange) onSearchChange(val);
+                        }}
+                        maxLength={8}
                         style={{
                             width: '100%',
                             padding: '0.625rem 0.625rem 0.625rem 2.75rem',
@@ -96,6 +120,7 @@ export const MembersTable: React.FC<MembersTableProps> = ({
                 <table className={styles.table}>
                     <thead className={styles.thead}>
                         <tr>
+                            <th className={styles.th}>N°</th>
                             <th className={styles.th}>Foto</th>
                             <th className={styles.th}>DNI</th>
                             <th className={styles.th}>Nombre Completo</th>
@@ -124,15 +149,16 @@ export const MembersTable: React.FC<MembersTableProps> = ({
                     <tbody>
                         {isLoading ? (
                             <tr>
-                                <td colSpan={8} className={styles.emptyState}>Cargando usuarios...</td>
+                                <td colSpan={9} className={styles.emptyState}>Cargando usuarios...</td>
                             </tr>
                         ) : filteredMembers.length === 0 ? (
                             <tr>
-                                <td colSpan={8} className={styles.emptyState}>No hay usuarios registrados.</td>
+                                <td colSpan={9} className={styles.emptyState}>No hay usuarios registrados.</td>
                             </tr>
                         ) : (
-                            paginatedMembers.map((member) => (
+                            paginatedMembers.map((member, index) => (
                                 <tr key={member.id} className={styles.tr}>
+                                    <td className={styles.td}>{index + 1}</td>
                                     <td className={styles.td}>
                                         {member.fotoUrl ? (
                                             <NextImage
@@ -190,55 +216,67 @@ export const MembersTable: React.FC<MembersTableProps> = ({
                 </table>
             </div>
 
-            {/* Pagination Controls */}
-            {!isLoading && filteredMembers.length > 0 && (
+            {/* Numbered Pagination Control */}
+            {onNextPage && onPrevPage && (
                 <div className={styles.paginationContainer} style={{
                     display: 'flex',
-                    justifyContent: 'center',
+                    flexDirection: 'column',
                     alignItems: 'center',
-                    gap: '1rem',
+                    gap: '0.5rem',
                     padding: '1rem',
                     borderTop: '1px solid var(--border-glass)'
                 }}>
-                    <button
-                        onClick={handlePrevPage}
-                        disabled={currentPage === 1}
-                        className={styles.paginationButton}
-                        style={{
-                            background: 'none',
-                            border: '1px solid var(--border-glass)',
-                            borderRadius: '0.5rem',
-                            padding: '0.5rem',
-                            color: 'var(--text-primary)',
-                            cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
-                            opacity: currentPage === 1 ? 0.5 : 1,
-                            display: 'flex',
-                            alignItems: 'center'
-                        }}
-                    >
-                        <FaChevronLeft />
-                    </button>
-                    <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-                        Página {currentPage} de {totalPages} ({filteredMembers.length} registros)
-                    </span>
-                    <button
-                        onClick={handleNextPage}
-                        disabled={currentPage === totalPages}
-                        className={styles.paginationButton}
-                        style={{
-                            background: 'none',
-                            border: '1px solid var(--border-glass)',
-                            borderRadius: '0.5rem',
-                            padding: '0.5rem',
-                            color: 'var(--text-primary)',
-                            cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
-                            opacity: currentPage === totalPages ? 0.5 : 1,
-                            display: 'flex',
-                            alignItems: 'center'
-                        }}
-                    >
-                        <FaChevronRight />
-                    </button>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <button
+                            onClick={onPrevPage}
+                            disabled={currentPage === 1 || isPaginating}
+                            className={styles.paginationButton}
+                            style={{
+                                background: 'none',
+                                border: '1px solid var(--border-glass)',
+                                borderRadius: '0.5rem',
+                                padding: '0.5rem',
+                                color: 'var(--text-primary)',
+                                cursor: (currentPage === 1 || isPaginating) ? 'not-allowed' : 'pointer',
+                                opacity: (currentPage === 1 || isPaginating) ? 0.5 : 1,
+                                display: 'flex',
+                                alignItems: 'center'
+                            }}
+                        >
+                            <FaChevronLeft />
+                        </button>
+
+                        <div style={{ textAlign: 'center' }}>
+                            <span style={{ color: 'var(--text-primary)', fontWeight: '600' }}>
+                                Página {currentPage} de {totalPages || 1}
+                            </span>
+                            {isPaginating && <span style={{ marginLeft: '10px', fontSize: '0.8rem', color: '#3b82f6' }}>Cargando...</span>}
+                        </div>
+
+                        <button
+                            onClick={onNextPage}
+                            disabled={currentPage === totalPages || isPaginating}
+                            className={styles.paginationButton}
+                            style={{
+                                background: 'none',
+                                border: '1px solid var(--border-glass)',
+                                borderRadius: '0.5rem',
+                                padding: '0.5rem',
+                                color: 'var(--text-primary)',
+                                cursor: (currentPage === totalPages || isPaginating) ? 'not-allowed' : 'pointer',
+                                opacity: (currentPage === totalPages || isPaginating) ? 0.5 : 1,
+                                display: 'flex',
+                                alignItems: 'center'
+                            }}
+                        >
+                            <FaChevronRight />
+                        </button>
+                    </div>
+                    <div>
+                        <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                            Total Miembros: {totalMembers}
+                        </span>
+                    </div>
                 </div>
             )}
 

@@ -447,27 +447,30 @@ export const AccessModal: React.FC<AccessModalProps> = ({ isOpen, onClose, envir
 
                     {member && (
                         <div className={styles.userCard}>
-                            {member.fotoUrl ? (
-                                <NextImage
-                                    src={member.fotoUrl}
-                                    alt={member.nombre}
-                                    width={160}
-                                    height={160}
-                                    className={styles.avatar}
-                                />
-                            ) : (
-                                <div className={styles.avatarPlaceholder}>
-                                    ?
+                            <div className={styles.profileHeader}>
+                                {member.fotoUrl ? (
+                                    <NextImage
+                                        src={member.fotoUrl}
+                                        alt={member.nombre}
+                                        width={80}
+                                        height={80}
+                                        className={styles.avatar}
+                                    />
+                                ) : (
+                                    <div className={styles.avatarPlaceholder}>
+                                        ?
+                                    </div>
+                                )}
+                                <div className={styles.profileInfo}>
+                                    <h3 className={styles.userName}>{member.nombre} {member.apellidos}</h3>
+                                    <p className={styles.userDni}>DNI: {member.dni}</p>
+                                    <div className={styles.userDetailsGrid}>
+                                        <span className={styles.userBadge}><strong>Empresa:</strong> {member.empresa}</span>
+                                        {member.area && <span className={styles.userBadge}><strong>Área:</strong> {member.area}</span>}
+                                        {member.cargo && <span className={styles.userBadge}><strong>Cargo:</strong> {member.cargo}</span>}
+                                        <span className={styles.userBadge}><strong>Sexo:</strong> {member.sexo}</span>
+                                    </div>
                                 </div>
-                            )}
-
-                            <h3 className={styles.userName}>{member.nombre} {member.apellidos}</h3>
-                            <p className={styles.userDni}>DNI: {member.dni}</p>
-                            <div className={styles.userDetailsGrid}>
-                                <span className={styles.userBadge}><strong>Empresa:</strong> {member.empresa}</span>
-                                {member.area && <span className={styles.userBadge}><strong>Área:</strong> {member.area}</span>}
-                                {member.cargo && <span className={styles.userBadge}><strong>Cargo:</strong> {member.cargo}</span>}
-                                <span className={styles.userBadge}><strong>Sexo:</strong> {member.sexo}</span>
                             </div>
 
                             {haveSubEnvironments && (
@@ -651,19 +654,21 @@ export const AccessModal: React.FC<AccessModalProps> = ({ isOpen, onClose, envir
                 </div>
             </div>
 
-            {showScanner && (
-                <div className={styles.scannerOverlay}>
-                    <div className={styles.scannerContainer}>
-                        <div id="reader" style={{ width: '100%', borderRadius: '1rem', overflow: 'hidden', backgroundColor: 'white' }}></div>
-                        <button
-                            className={styles.closeScannerButton}
-                            onClick={() => setShowScanner(false)}
-                        >
-                            Cancelar / Cerrar Escáner
-                        </button>
+            {
+                showScanner && (
+                    <div className={styles.scannerOverlay}>
+                        <div className={styles.scannerContainer}>
+                            <div id="reader" style={{ width: '100%', borderRadius: '1rem', overflow: 'hidden', backgroundColor: 'white' }}></div>
+                            <button
+                                className={styles.closeScannerButton}
+                                onClick={() => setShowScanner(false)}
+                            >
+                                Cancelar / Cerrar Escáner
+                            </button>
+                        </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             <SubEnvironmentModal
                 isOpen={isSubEnvModalOpen}
@@ -676,6 +681,6 @@ export const AccessModal: React.FC<AccessModalProps> = ({ isOpen, onClose, envir
                 onClose={() => setIsAmenityModalOpen(false)}
                 db={db}
             />
-        </div>
+        </div >
     );
 };

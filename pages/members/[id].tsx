@@ -18,7 +18,11 @@ import {
   setDoc,
   addDoc,
   Timestamp,
-  writeBatch
+  writeBatch,
+  limit,
+  startAfter,
+  getCountFromServer,
+  QueryDocumentSnapshot
 } from 'firebase/firestore'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { db, storage } from '@/firebase/firebase.config'
@@ -95,23 +99,180 @@ const DynamicMembersPage: NextPage = () => {
     fetchLocation();
   }, [id])
 
-  // Fetch Members from Dynamic Path
-  useEffect(() => {
-    const membersCol = getMembersCollectionPath(id)
-    const q = query(membersCol, orderBy('createdAt', 'desc'))
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalCount, setTotalCount] = useState(0)
+  const [lastVisibleDocs, setLastVisibleDocs] = useState<QueryDocumentSnapshot[]>([]) // Stack of last docs for pagination boundaries
+  const [loadingMembers, setLoadingMembers] = useState(false)
+
+  const ITEMS_PER_PAGE = 20
+
+  const fetchData = async () => {
+    setIsLoading(true) // Use global page loading state for initial fetch
+    setLoadingMembers(true)
+    try {
+      const membersCol = getMembersCollectionPath(id)
+
+      // 1. Get Total Count (only on first load or refresh)
+      // Note: For large collections, consider caching this or only fetching occasionally
+      const countSnapshot = await getCountFromServer(query(membersCol))
+      const total = countSnapshot.data().count
+      setTotalCount(total)
+
+      // 2. Fetch First Page
+      fetchPage(1, null)
+    } catch (error) {
+      console.error("Error fetching data:", error)
+      setLoadingMembers(false)
+    }
+  }
+
+  const fetchPage = async (page: number, startAfterDoc: QueryDocumentSnapshot | null) => {
+    setLoadingMembers(true)
+    try {
+      const membersCol = getMembersCollectionPath(id)
+      let q = query(membersCol, orderBy('createdAt', 'desc'), limit(ITEMS_PER_PAGE))
+
+      if (startAfterDoc) {
+        q = query(membersCol, orderBy('createdAt', 'desc'), startAfter(startAfterDoc), limit(ITEMS_PER_PAGE))
+      }
+
+      const snapshot = await getDocs(q)
       const membersData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as Member[]
+
       setMembers(membersData)
+      setCurrentPage(page)
+
+      // Update cursors for NEXT page
+      const lastDoc = snapshot.docs[snapshot.docs.length - 1]
+      if (lastDoc) {
+        setLastVisibleDocs(prev => {
+          const newCursors = [...prev]
+          newCursors[page] = lastDoc // Store the last doc of this page key'd by page number
+          return newCursors
+        })
+      }
+    } catch (error) {
+      console.error("Error fetching page:", error)
+    } finally {
       setIsLoading(false)
-    }, (error) => {
-      console.error("Error fetching members:", error);
-      setIsLoading(false);
-    })
-    return () => unsubscribe()
+      setLoadingMembers(false)
+    }
+  }
+
+  // SEARCH LOGIC
+  const [searchTerm, setSearchTerm] = useState('')
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('')
+
+  // Debounce Effect
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm)
+    }, 500)
+
+    return () => clearTimeout(timer)
+  }, [searchTerm])
+
+  // Search Effect
+  useEffect(() => {
+    if (debouncedSearchTerm) {
+      performSearch(debouncedSearchTerm)
+    } else if (id && !debouncedSearchTerm && searchTerm === '') {
+      // Only reset if search was cleared
+      setCurrentPage(1)
+      setLastVisibleDocs([])
+      fetchData()
+    }
+  }, [debouncedSearchTerm, id]) // searchTerm dependency removed to avoid double trigger on clear
+
+  const performSearch = async (term: string) => {
+    setLoadingMembers(true)
+    try {
+      const membersCol = getMembersCollectionPath(id)
+      const isNumeric = /^\d+$/.test(term)
+
+      // Prepare queries
+      // Note: Firestore "OR" queries are limited. We'll do a best-effort approach.
+      let q;
+
+      if (isNumeric) {
+        // DNI Search Only
+        q = query(membersCol, where('dni', '>=', term), where('dni', '<=', term + '\uf8ff'), limit(20))
+
+        const snapshot = await getDocs(q)
+        const membersData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as Member[]
+        setMembers(membersData)
+        setTotalCount(membersData.length)
+
+      } else {
+        // Name search removed as requested. reset to empty or do nothing if not numeric.
+        // If user somehow types text, return empty or show all (safest is show nothing or treat as invalid)
+        // But UI will restrict input so this branch might be unreachable or just empty.
+        setMembers([])
+        setTotalCount(0)
+      }
+
+      // Common updates
+      setCurrentPage(1)
+      setLastVisibleDocs([]) // Reset cursor stack
+
+    } catch (error) {
+      console.error("Error searching:", error)
+    } finally {
+      setLoadingMembers(false)
+    }
+  }
+
+  useEffect(() => {
+    if (id && !searchTerm) {
+      // Reset everything on location change
+      setCurrentPage(1)
+      setLastVisibleDocs([])
+      fetchData()
+    }
   }, [id])
+
+  const handleNextPage = () => {
+    const cursor = lastVisibleDocs[currentPage] // The last doc of the current page is the start control for the next page
+    if (cursor) {
+      fetchPage(currentPage + 1, cursor)
+    }
+  }
+
+  const handlePrevPage = () => {
+    if (currentPage > 1) {
+      // To go to previous page, we need the cursor of the page BEFORE the previous one.
+      // Example:
+      // Page 1 (No cursor)
+      // Page 2 (Start after Page 1 Last Doc)
+      // Page 3 (Start after Page 2 Last Doc)
+      // If we are on Page 3 and go to Page 2, we need Page 1 Last Doc.
+      // Our array stores: [1: LastDocPage1, 2: LastDocPage2, ...] (indexes usually 0-based but let's be careful)
+
+      // Let's rely on standard logic: 
+      // Page 1: startAfter = null
+      // Page 2: startAfter = lastVisibleDocs[1] (which corresponds to page 1's last doc)
+
+      const prevPage = currentPage - 1
+      const cursor = prevPage === 1 ? null : lastVisibleDocs[prevPage - 1]
+      fetchPage(prevPage, cursor)
+    }
+  }
+
+  // Refresh list when a member is added/edited/deleted
+  const refreshCurrentPage = () => {
+    // Just re-fetch the current page. Proper logic would need to know the cursor of (currentPage - 1)
+    const cursor = currentPage === 1 ? null : lastVisibleDocs[currentPage - 1]
+    fetchPage(currentPage, cursor)
+    // Also update count
+    getCountFromServer(query(getMembersCollectionPath(id))).then(snap => setTotalCount(snap.data().count))
+  }
 
   // Global Collections for selects
   useEffect(() => {
@@ -390,6 +551,15 @@ const DynamicMembersPage: NextPage = () => {
           isLoading={isLoading}
           onEdit={handleEdit}
           onDelete={handleDelete}
+          currentPage={currentPage}
+          totalPages={Math.ceil(totalCount / ITEMS_PER_PAGE)}
+          totalMembers={totalCount}
+          onNextPage={handleNextPage}
+          onPrevPage={handlePrevPage}
+          isPaginating={loadingMembers}
+          // Search Props
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
         />
       </main>
 
@@ -405,7 +575,11 @@ const DynamicMembersPage: NextPage = () => {
         cargos={cargos}
         onInputChange={handleInputChange}
         onImageChange={handleImageChange}
-        onSubmit={handleSubmit}
+        onSubmit={(e) => {
+          handleSubmit(e).then(() => {
+            refreshCurrentPage(); // Refresh table after add/edit
+          });
+        }}
         onCancel={handleCancel}
         onOpenCompanyModal={() => setIsCompanyModalOpen(true)}
         onOpenAreaModal={() => setIsAreaModalOpen(true)}
