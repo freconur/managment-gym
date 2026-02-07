@@ -55,7 +55,11 @@ const UsersPage = () => {
             const unsubscribe = onSnapshot(collection(db, "users"), (snapshot) => {
                 const usersList: UserData[] = [];
                 snapshot.forEach((doc) => {
-                    usersList.push(doc.data() as UserData);
+                    const data = doc.data();
+                    usersList.push({
+                        ...data,
+                        uid: doc.id, // Ensure UID is always the document ID from Firestore
+                    } as UserData);
                 });
                 setUsers(usersList);
                 setIsLoadingUsers(false);

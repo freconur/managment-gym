@@ -16,7 +16,8 @@ import {
     getDocs,
     orderBy,
     serverTimestamp,
-    setDoc
+    setDoc,
+    writeBatch
 } from 'firebase/firestore'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { db, storage } from '@/firebase/firebase.config'
@@ -335,6 +336,66 @@ const MembersPage: NextPage = () => {
         setIsModalOpen(true) // Open modal for editing
     }
 
+    const handleBatchUpdateCompany = async (memberIds: string[], targetCompany: string) => {
+        if (!window.confirm(`¿Estás seguro de que deseas actualizar la empresa a "${targetCompany}" para los ${memberIds.length} miembros seleccionados?`)) {
+            return;
+        }
+
+        setIsLoading(true);
+        try {
+            const batch = writeBatch(db);
+            memberIds.forEach(id => {
+                const docRef = doc(db, 'members', id);
+                batch.update(docRef, {
+                    empresa: targetCompany,
+                    updatedAt: serverTimestamp()
+                });
+            });
+
+            await batch.commit();
+
+            // Optional: Sync with today's access records for all updated members
+            // This could be slow if there are many members, but let's follow the single-update logic
+            try {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const tomorrow = new Date(today);
+                tomorrow.setDate(tomorrow.getDate() + 1);
+
+                for (const memberId of memberIds) {
+                    const q_assist = query(
+                        collection(db, 'asistencias'),
+                        where('memberId', '==', memberId)
+                    );
+                    const querySnapshot = await getDocs(q_assist);
+                    const todayRecords = querySnapshot.docs.filter(recordDoc => {
+                        const data = recordDoc.data();
+                        if (!data.timestamp) return false;
+                        const recordDate = data.timestamp.toDate();
+                        return recordDate >= today && recordDate < tomorrow;
+                    });
+
+                    const assistBatch = writeBatch(db);
+                    todayRecords.forEach(assistDoc => {
+                        assistBatch.update(assistDoc.ref, {
+                            company: targetCompany
+                        });
+                    });
+                    await assistBatch.commit();
+                }
+            } catch (syncError) {
+                console.error("Error syncing batch access records:", syncError);
+            }
+
+            alert("Actualización masiva completada con éxito");
+        } catch (error) {
+            console.error("Error in batch update:", error);
+            alert("Error al realizar la actualización masiva");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const handleDelete = async (id: string) => {
         if (window.confirm('¿Estás seguro de que deseas eliminar este usuario?')) {
             try {
@@ -447,6 +508,7 @@ const MembersPage: NextPage = () => {
                     isLoading={isLoading}
                     onEdit={handleEdit}
                     onDelete={handleDelete}
+                    onBatchUpdateCompany={handleBatchUpdateCompany}
                 />
             </main>
 

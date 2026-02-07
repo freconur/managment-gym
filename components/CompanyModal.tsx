@@ -9,9 +9,12 @@ import {
     orderBy,
     onSnapshot,
     serverTimestamp,
-    Firestore
+    Firestore,
+    writeBatch,
+    getDocs,
+    where
 } from 'firebase/firestore'
-import { FaEdit, FaTrash, FaPlus, FaTimes, FaSave } from 'react-icons/fa'
+import { FaEdit, FaTrash, FaPlus, FaTimes, FaSave, FaSyncAlt, FaArrowRight, FaSpinner } from 'react-icons/fa'
 
 interface Company {
     id: string;

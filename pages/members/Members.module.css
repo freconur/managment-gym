@@ -586,3 +586,28 @@
     background-color: var(--bg-card);
     text-transform: uppercase;
 }
+
+.searchBarContainer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: rgba(255, 255, 255, 0.02);
+    border-bottom: 1px solid var(--border-glass);
+}
+
+.selectedRow {
+    background-color: rgba(59, 130, 246, 0.1) !important;
+}
+
+.paginationContainer {
+    background-color: rgba(255, 255, 255, 0.02);
+}
+
+.paginationButton {
+    transition: all 0.2s;
+}
+
+.paginationButton:hover:not(:disabled) {
+    background-color: rgba(59, 130, 246, 0.1) !important;
+    border-color: var(--accent-primary) !important;
+}

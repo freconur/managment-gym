@@ -107,27 +107,24 @@ const DynamicMembersPage: NextPage = () => {
 
   const ITEMS_PER_PAGE = 20
 
-  const fetchData = async () => {
-    setIsLoading(true) // Use global page loading state for initial fetch
+
+  /* SERVER-SIDE PAGINATION LOGIC (PRESERVED FOR FUTURE USE) */
+  const fetchDataServerSide = async () => {
+    setIsLoading(true)
     setLoadingMembers(true)
     try {
       const membersCol = getMembersCollectionPath(id)
-
-      // 1. Get Total Count (only on first load or refresh)
-      // Note: For large collections, consider caching this or only fetching occasionally
       const countSnapshot = await getCountFromServer(query(membersCol))
       const total = countSnapshot.data().count
       setTotalCount(total)
-
-      // 2. Fetch First Page
-      fetchPage(1, null)
+      fetchPageServerSide(1, null)
     } catch (error) {
       console.error("Error fetching data:", error)
       setLoadingMembers(false)
     }
   }
 
-  const fetchPage = async (page: number, startAfterDoc: QueryDocumentSnapshot | null) => {
+  const fetchPageServerSide = async (page: number, startAfterDoc: QueryDocumentSnapshot | null) => {
     setLoadingMembers(true)
     try {
       const membersCol = getMembersCollectionPath(id)
@@ -146,17 +143,44 @@ const DynamicMembersPage: NextPage = () => {
       setMembers(membersData)
       setCurrentPage(page)
 
-      // Update cursors for NEXT page
       const lastDoc = snapshot.docs[snapshot.docs.length - 1]
       if (lastDoc) {
         setLastVisibleDocs(prev => {
           const newCursors = [...prev]
-          newCursors[page] = lastDoc // Store the last doc of this page key'd by page number
+          newCursors[page] = lastDoc
           return newCursors
         })
       }
     } catch (error) {
       console.error("Error fetching page:", error)
+    } finally {
+      setIsLoading(false)
+      setLoadingMembers(false)
+    }
+  }
+  /* END SERVER-SIDE PAGINATION LOGIC */
+
+  /* CLIENT-SIDE PAGINATION LOGIC (ACTIVE) */
+  const fetchAllMembers = async () => {
+    setIsLoading(true)
+    setLoadingMembers(true)
+    try {
+      const membersCol = getMembersCollectionPath(id)
+      // Fetch ALL, ordered by createdAt
+      const q = query(membersCol, orderBy('createdAt', 'desc'))
+
+      const snapshot = await getDocs(q)
+      const membersData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Member[]
+
+      setMembers(membersData)
+      setTotalCount(membersData.length)
+      // Client-side pagination doesn't use page/cursor state here
+
+    } catch (error) {
+      console.error("Error fetching all members:", error)
     } finally {
       setIsLoading(false)
       setLoadingMembers(false)
@@ -177,6 +201,8 @@ const DynamicMembersPage: NextPage = () => {
   }, [searchTerm])
 
   // Search Effect
+  // DISABLED FOR CLIENT-SIDE PAGINATION: MembersTable handles filtering locally on the full list.
+  /*
   useEffect(() => {
     if (debouncedSearchTerm) {
       performSearch(debouncedSearchTerm)
@@ -184,9 +210,10 @@ const DynamicMembersPage: NextPage = () => {
       // Only reset if search was cleared
       setCurrentPage(1)
       setLastVisibleDocs([])
-      fetchData()
+      fetchAllMembers()
     }
-  }, [debouncedSearchTerm, id]) // searchTerm dependency removed to avoid double trigger on clear
+  }, [debouncedSearchTerm, id]) 
+  */
 
   const performSearch = async (term: string) => {
     setLoadingMembers(true)
@@ -230,48 +257,25 @@ const DynamicMembersPage: NextPage = () => {
   }
 
   useEffect(() => {
-    if (id && !searchTerm) {
+    if (id) {
       // Reset everything on location change
       setCurrentPage(1)
       setLastVisibleDocs([])
-      fetchData()
+      fetchAllMembers()
     }
   }, [id])
 
   const handleNextPage = () => {
-    const cursor = lastVisibleDocs[currentPage] // The last doc of the current page is the start control for the next page
-    if (cursor) {
-      fetchPage(currentPage + 1, cursor)
-    }
+    // Client-side handled within MembersTable or ignored here
   }
 
   const handlePrevPage = () => {
-    if (currentPage > 1) {
-      // To go to previous page, we need the cursor of the page BEFORE the previous one.
-      // Example:
-      // Page 1 (No cursor)
-      // Page 2 (Start after Page 1 Last Doc)
-      // Page 3 (Start after Page 2 Last Doc)
-      // If we are on Page 3 and go to Page 2, we need Page 1 Last Doc.
-      // Our array stores: [1: LastDocPage1, 2: LastDocPage2, ...] (indexes usually 0-based but let's be careful)
-
-      // Let's rely on standard logic: 
-      // Page 1: startAfter = null
-      // Page 2: startAfter = lastVisibleDocs[1] (which corresponds to page 1's last doc)
-
-      const prevPage = currentPage - 1
-      const cursor = prevPage === 1 ? null : lastVisibleDocs[prevPage - 1]
-      fetchPage(prevPage, cursor)
-    }
+    // Client-side handled within MembersTable or ignored here
   }
 
   // Refresh list when a member is added/edited/deleted
   const refreshCurrentPage = () => {
-    // Just re-fetch the current page. Proper logic would need to know the cursor of (currentPage - 1)
-    const cursor = currentPage === 1 ? null : lastVisibleDocs[currentPage - 1]
-    fetchPage(currentPage, cursor)
-    // Also update count
-    getCountFromServer(query(getMembersCollectionPath(id))).then(snap => setTotalCount(snap.data().count))
+    fetchAllMembers()
   }
 
   // Global Collections for selects
@@ -488,10 +492,58 @@ const DynamicMembersPage: NextPage = () => {
       try {
         const membersCol = getMembersCollectionPath(id)
         await deleteDoc(doc(membersCol, memberId))
+        refreshCurrentPage()
       } catch (error) {
         console.error("Error deleting member:", error)
         alert("Error al eliminar el usuario")
       }
+    }
+  }
+
+  const handleBatchUpdateCompany = async (memberIds: string[], targetCompany: string) => {
+    if (!targetCompany) return;
+    if (memberIds.length === 0) return;
+
+    // Safety check mostly for user confirm
+    if (!window.confirm(`¿Estás seguro de mover ${memberIds.length} miembros a la empresa "${targetCompany}"?`)) {
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const membersCol = getMembersCollectionPath(id);
+      const batch = writeBatch(db);
+
+      // Firestore batch limit is 500. If more, we need multiple batches or simple promises.
+      // For simplicity and speed with <500 usually, we try batch. 
+      // If >500, we loop.
+
+      // Let's use Promise.all for flexibility with large numbers (though batch is atomic)
+      // With writeBatch we would need to chunk. 
+      // Given the use case, let's chunk it properly to be safe.
+
+      const chunkSize = 450;
+      for (let i = 0; i < memberIds.length; i += chunkSize) {
+        const chunk = memberIds.slice(i, i + chunkSize);
+        const batch = writeBatch(db);
+        chunk.forEach(mid => {
+          const docRef = doc(membersCol, mid);
+          batch.update(docRef, {
+            empresa: targetCompany,
+            updatedAt: serverTimestamp()
+          });
+        });
+        await batch.commit();
+      }
+
+      alert("Empresas actualizadas correctamente.");
+      fetchAllMembers(); // Refresh list
+
+    } catch (error) {
+      console.error("Error batch updating companies:", error);
+      alert("Error al actualizar empresas.");
+    } finally {
+      setIsLoading(false);
     }
   }
 
@@ -551,15 +603,18 @@ const DynamicMembersPage: NextPage = () => {
           isLoading={isLoading}
           onEdit={handleEdit}
           onDelete={handleDelete}
-          currentPage={currentPage}
-          totalPages={Math.ceil(totalCount / ITEMS_PER_PAGE)}
-          totalMembers={totalCount}
-          onNextPage={handleNextPage}
-          onPrevPage={handlePrevPage}
+          /* Pass empty/dummy props if required by interface until updated, or remove if optional */
+          currentPage={1} // Ignored by client-side table logic? Or used as initial?
+          totalPages={1} // Ignored
+          totalMembers={members.length}
+          onNextPage={() => { }}
+          onPrevPage={() => { }}
           isPaginating={loadingMembers}
           // Search Props
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
+          // Batch Action
+          onBatchUpdateCompany={handleBatchUpdateCompany}
         />
       </main>
 

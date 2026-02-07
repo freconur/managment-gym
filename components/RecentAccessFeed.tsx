@@ -341,6 +341,10 @@ export const RecentAccessFeed: React.FC<RecentAccessFeedProps> = ({ environment,
                             )}
                             <div className={styles.activityInfo}>
                                 <p className={styles.activityName}>{record.memberName}</p>
+                                {/* Display DNI as requested */}
+                                <p className={styles.metaLabel} style={{ fontSize: '0.8rem', color: '#6b7280', margin: '0.1rem 0' }}>
+                                    DNI: {record.memberDni || 'N/A'}
+                                </p>
                                 <div className={styles.metaTags}>
                                     <span className={styles.tagCompany}>{record.company}</span>
                                     {record.area && <span className={styles.tagArea}>{record.area}</span>}
