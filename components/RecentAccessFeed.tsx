@@ -75,25 +75,11 @@ export const RecentAccessFeed: React.FC<RecentAccessFeedProps> = ({ environment,
         return `${year}-${month}-${day}`;
     });
     const [selectedCompany, setSelectedCompany] = useState<string>('');
-    const [companies, setCompanies] = useState<Company[]>([]);
 
-    // Fetch Companies
-    useEffect(() => {
-        const fetchCompanies = async () => {
-            try {
-                const q = query(collection(db, 'empresas'), orderBy('nombre', 'asc'));
-                const snapshot = await getDocs(q);
-                const companyList = snapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data()
-                })) as Company[];
-                setCompanies(companyList);
-            } catch (error) {
-                console.error("Error fetching companies:", error);
-            }
-        };
-        fetchCompanies();
-    }, []);
+    const companies = React.useMemo(() => {
+        const unique = new Set(recentAccesses.map(r => r.company).filter(Boolean));
+        return Array.from(unique).sort().map(name => ({ id: name, nombre: name }));
+    }, [recentAccesses]);
 
     // Fetch Accesses based on Date
     useEffect(() => {
