@@ -140,6 +140,8 @@ export interface SubEnvironment {
   id: string;
   nombre: string;
   requireTableAssignment?: boolean;
+  requireTime?: boolean;
+  maxTime?: number;
   createdAt?: any;
 }
 

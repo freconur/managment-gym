@@ -315,10 +315,21 @@ export const AccessModal: React.FC<AccessModalProps> = ({ isOpen, onClose, envir
                 subEnvironments: selectedSubEnvironments, // Will be empty array if !haveSubEnvironments
                 subEnvironmentDetails: selectedSubEnvironments.map(name => {
                     const env = subEnvironments.find(e => e.nombre === name);
+                    const detail: any = { name };
+
                     if (env?.requireTableAssignment) {
-                        return { name, tableNumber: tableAssignments[name] };
+                        detail.tableNumber = tableAssignments[name];
                     }
-                    return { name };
+
+                    if (env?.maxTime) {
+                        const now = new Date();
+                        const endTime = new Date(now.getTime() + env.maxTime * 60000);
+                        detail.startTime = now;
+                        detail.endTime = endTime;
+                        detail.duration = env.maxTime; // Store duration for extensions
+                    }
+
+                    return detail; // Ensure this returns the object
                 }),
                 amenities: selectedAmenities,
                 amenitiesReturned: selectedAmenities.length > 0 ? false : true,

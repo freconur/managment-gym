@@ -26,9 +26,13 @@ const SubEnvironmentModal = ({ isOpen, onClose, db, locationId }: SubEnvironment
     const [environments, setEnvironments] = useState<SubEnvironment[]>([])
     const [newEnvironment, setNewEnvironment] = useState('')
     const [newRequireTable, setNewRequireTable] = useState(false)
+    const [newRequireTime, setNewRequireTime] = useState(false)
+    const [newMaxTime, setNewMaxTime] = useState('')
     const [editingId, setEditingId] = useState<string | null>(null)
     const [editName, setEditName] = useState('')
     const [editRequireTable, setEditRequireTable] = useState(false)
+    const [editRequireTime, setEditRequireTime] = useState(false)
+    const [editMaxTime, setEditMaxTime] = useState('')
     const [isLoading, setIsLoading] = useState(true)
 
     useEffect(() => {
@@ -71,6 +75,8 @@ const SubEnvironmentModal = ({ isOpen, onClose, db, locationId }: SubEnvironment
                     id: crypto.randomUUID(),
                     nombre: newEnvironment.trim(),
                     requireTableAssignment: newRequireTable,
+                    requireTime: newRequireTime,
+                    maxTime: newRequireTime && newMaxTime ? parseInt(newMaxTime) : undefined,
                     createdAt: new Date().toISOString()
                 };
                 const updatedEnvs = [...environments, newSubEnv];
@@ -81,11 +87,15 @@ const SubEnvironmentModal = ({ isOpen, onClose, db, locationId }: SubEnvironment
                 await addDoc(collection(db, 'sub_environments'), {
                     nombre: newEnvironment.trim(),
                     requireTableAssignment: newRequireTable,
+                    requireTime: newRequireTime,
+                    maxTime: newRequireTime && newMaxTime ? parseInt(newMaxTime) : undefined,
                     createdAt: serverTimestamp()
                 })
             }
             setNewEnvironment('')
             setNewRequireTable(false)
+            setNewRequireTime(false)
+            setNewMaxTime('')
         } catch (error) {
             console.error("Error adding sub-environment:", error)
             alert("Error al agregar sub-ambiente")
@@ -98,7 +108,13 @@ const SubEnvironmentModal = ({ isOpen, onClose, db, locationId }: SubEnvironment
         try {
             if (locationId) {
                 const updatedEnvs = environments.map(env =>
-                    env.id === id ? { ...env, nombre: editName.trim(), requireTableAssignment: editRequireTable } : env
+                    env.id === id ? {
+                        ...env,
+                        nombre: editName.trim(),
+                        requireTableAssignment: editRequireTable,
+                        requireTime: editRequireTime,
+                        maxTime: editRequireTime && editMaxTime ? parseInt(editMaxTime) : undefined
+                    } : env
                 );
                 await updateDoc(doc(db, 'ubicaciones', locationId), {
                     subEnvironments: updatedEnvs
@@ -106,12 +122,16 @@ const SubEnvironmentModal = ({ isOpen, onClose, db, locationId }: SubEnvironment
             } else {
                 await updateDoc(doc(db, 'sub_environments', id), {
                     nombre: editName.trim(),
-                    requireTableAssignment: editRequireTable
+                    requireTableAssignment: editRequireTable,
+                    requireTime: editRequireTime,
+                    maxTime: editRequireTime && editMaxTime ? parseInt(editMaxTime) : undefined
                 })
             }
             setEditingId(null)
             setEditName('')
             setEditRequireTable(false)
+            setEditRequireTime(false)
+            setEditMaxTime('')
         } catch (error) {
             console.error("Error updating sub-environment:", error)
             alert("Error al actualizar sub-ambiente")
@@ -187,6 +207,22 @@ const SubEnvironmentModal = ({ isOpen, onClose, db, locationId }: SubEnvironment
                                 textTransform: 'uppercase'
                             }}
                         />
+                        {newRequireTime && (
+                            <input
+                                type="number"
+                                value={newMaxTime}
+                                onChange={(e) => setNewMaxTime(e.target.value)}
+                                placeholder="Max min..."
+                                style={{
+                                    width: '80px',
+                                    padding: '0.5rem',
+                                    border: '1px solid #d1d5db',
+                                    borderRadius: '0.375rem',
+                                    outline: 'none'
+                                }}
+                                title="Tiempo máximo en minutos (opcional)"
+                            />
+                        )}
                         <button
                             type="submit"
                             style={{
@@ -204,15 +240,26 @@ const SubEnvironmentModal = ({ isOpen, onClose, db, locationId }: SubEnvironment
                             <FaPlus /> Agregar
                         </button>
                     </div>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: '#4b5563', cursor: 'pointer' }}>
-                        <input
-                            type="checkbox"
-                            checked={newRequireTable}
-                            onChange={(e) => setNewRequireTable(e.target.checked)}
-                            style={{ cursor: 'pointer' }}
-                        />
-                        ¿Requiere asignación de mesa/número?
-                    </label>
+                    <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: '#4b5563', cursor: 'pointer' }}>
+                            <input
+                                type="checkbox"
+                                checked={newRequireTable}
+                                onChange={(e) => setNewRequireTable(e.target.checked)}
+                                style={{ cursor: 'pointer' }}
+                            />
+                            ¿Requiere Mesa?
+                        </label>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: '#4b5563', cursor: 'pointer' }}>
+                            <input
+                                type="checkbox"
+                                checked={newRequireTime}
+                                onChange={(e) => setNewRequireTime(e.target.checked)}
+                                style={{ cursor: 'pointer' }}
+                            />
+                            ¿Requiere Tiempo?
+                        </label>
+                    </div>
                 </form>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
@@ -247,6 +294,20 @@ const SubEnvironmentModal = ({ isOpen, onClose, db, locationId }: SubEnvironment
                                                 }}
                                                 autoFocus
                                             />
+                                            {editRequireTime && (
+                                                <input
+                                                    type="number"
+                                                    value={editMaxTime}
+                                                    onChange={(e) => setEditMaxTime(e.target.value)}
+                                                    placeholder="Min"
+                                                    style={{
+                                                        width: '60px',
+                                                        padding: '0.25rem 0.5rem',
+                                                        border: '1px solid #d1d5db',
+                                                        borderRadius: '0.25rem'
+                                                    }}
+                                                />
+                                            )}
                                             <button
                                                 onClick={() => handleUpdate(env.id)}
                                                 style={{ color: '#059669', background: 'none', border: 'none', cursor: 'pointer' }}
@@ -260,14 +321,24 @@ const SubEnvironmentModal = ({ isOpen, onClose, db, locationId }: SubEnvironment
                                                 <FaTimes />
                                             </button>
                                         </div>
-                                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: '#4b5563' }}>
-                                            <input
-                                                type="checkbox"
-                                                checked={editRequireTable}
-                                                onChange={(e) => setEditRequireTable(e.target.checked)}
-                                            />
-                                            Requiere mesa
-                                        </label>
+                                        <div style={{ display: 'flex', gap: '1rem' }}>
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: '#4b5563' }}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={editRequireTable}
+                                                    onChange={(e) => setEditRequireTable(e.target.checked)}
+                                                />
+                                                Mesa
+                                            </label>
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: '#4b5563' }}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={editRequireTime}
+                                                    onChange={(e) => setEditRequireTime(e.target.checked)}
+                                                />
+                                                Tiempo
+                                            </label>
+                                        </div>
                                     </div>
                                 ) : (
                                     <>
@@ -276,6 +347,9 @@ const SubEnvironmentModal = ({ isOpen, onClose, db, locationId }: SubEnvironment
                                             {env.requireTableAssignment && (
                                                 <span style={{ fontSize: '0.75rem', color: '#2563eb', fontWeight: 'bold' }}>• Requiere Mesa</span>
                                             )}
+                                            {env.maxTime && (
+                                                <span style={{ fontSize: '0.75rem', color: '#059669', fontWeight: 'bold' }}>• {env.maxTime} min</span>
+                                            )}
                                         </div>
                                         <div style={{ display: 'flex', gap: '0.5rem' }}>
                                             <button
@@ -283,6 +357,8 @@ const SubEnvironmentModal = ({ isOpen, onClose, db, locationId }: SubEnvironment
                                                     setEditingId(env.id)
                                                     setEditName(env.nombre)
                                                     setEditRequireTable(!!env.requireTableAssignment)
+                                                    setEditRequireTime(!!env.requireTime)
+                                                    setEditMaxTime(env.maxTime ? env.maxTime.toString() : '')
                                                 }}
                                                 style={{ color: '#d97706', background: 'none', border: 'none', cursor: 'pointer' }}
                                             >
