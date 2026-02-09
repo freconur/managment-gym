@@ -432,6 +432,7 @@
     color: #1e293b;
     /* darker slate-800 */
     font-weight: 600;
+    text-transform: uppercase;
 }
 
 .checkboxLabel span {
