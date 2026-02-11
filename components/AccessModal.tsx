@@ -463,9 +463,10 @@ export const AccessModal: React.FC<AccessModalProps> = ({ isOpen, onClose, envir
                                     <NextImage
                                         src={member.fotoUrl}
                                         alt={member.nombre}
-                                        width={80}
-                                        height={80}
+                                        width={300}
+                                        height={300}
                                         className={styles.avatar}
+                                        priority
                                     />
                                 ) : (
                                     <div className={styles.avatarPlaceholder}>
