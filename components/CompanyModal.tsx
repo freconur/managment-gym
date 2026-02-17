@@ -56,7 +56,7 @@ const CompanyModal = ({ isOpen, onClose, db }: CompanyModalProps) => {
 
         try {
             await addDoc(collection(db, 'empresas'), {
-                nombre: newCompany.trim(),
+                nombre: newCompany.trim().toLowerCase(),
                 createdAt: serverTimestamp()
             })
             setNewCompany('')
@@ -71,7 +71,7 @@ const CompanyModal = ({ isOpen, onClose, db }: CompanyModalProps) => {
 
         try {
             await updateDoc(doc(db, 'empresas', id), {
-                nombre: editName.trim()
+                nombre: editName.trim().toLowerCase()
             })
             setEditingId(null)
             setEditName('')

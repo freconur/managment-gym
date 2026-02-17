@@ -1,7 +1,8 @@
 import type { NextPage } from 'next'
 import Head from 'next/head'
 import Link from 'next/link'
-import { useState, useEffect } from 'react'
+import NextImage from 'next/image'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/router'
 import {
   collection,
@@ -26,7 +27,7 @@ import {
 } from 'firebase/firestore'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { db, storage } from '@/firebase/firebase.config'
-import { FaEdit, FaTrash, FaUserPlus, FaSpinner, FaChartBar, FaArrowLeft, FaUserClock } from 'react-icons/fa'
+import { FaEdit, FaTrash, FaUserPlus, FaSpinner, FaChartBar, FaArrowLeft, FaUserClock, FaUsers } from 'react-icons/fa'
 import CompanyModal from '@/components/CompanyModal'
 import AreaModal from '@/components/AreaModal'
 import CargoModal from '@/components/CargoModal'
@@ -69,6 +70,12 @@ const DynamicMembersPage: NextPage = () => {
 
   // Location specific state
   const [locationName, setLocationName] = useState<string>('')
+
+  // Smart Search State
+  const [smartSearchQuery, setSmartSearchQuery] = useState('')
+  const [smartSearchResults, setSmartSearchResults] = useState<Member[]>([])
+  const [isSmartSearching, setIsSmartSearching] = useState(false)
+  const [showSearchResults, setShowSearchResults] = useState(false)
 
   // Company/Area/Cargo Management State
   const [empresas, setEmpresas] = useState<Company[]>([])
@@ -161,100 +168,100 @@ const DynamicMembersPage: NextPage = () => {
   /* END SERVER-SIDE PAGINATION LOGIC */
 
   /* CLIENT-SIDE PAGINATION LOGIC (ACTIVE) */
-  const fetchAllMembers = async () => {
-    setIsLoading(true)
+  const fetchAllMembers = useCallback(async () => {
+    if (!id) return
     setLoadingMembers(true)
     try {
       const membersCol = getMembersCollectionPath(id)
-      // Fetch ALL, ordered by createdAt
       const q = query(membersCol, orderBy('createdAt', 'desc'))
-
       const snapshot = await getDocs(q)
       const membersData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as Member[]
-
       setMembers(membersData)
       setTotalCount(membersData.length)
-      // Client-side pagination doesn't use page/cursor state here
-
     } catch (error) {
-      console.error("Error fetching all members:", error)
+      console.error("Error fetching members:", error)
     } finally {
-      setIsLoading(false)
       setLoadingMembers(false)
     }
-  }
+  }, [id])
 
-  // SEARCH LOGIC
-  const [searchTerm, setSearchTerm] = useState('')
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('')
+  const performSmartSearch = useCallback(async (term: string) => {
+    if (!id || !term.trim()) return
+    setIsSmartSearching(true)
+    setShowSearchResults(true)
 
-  // Debounce Effect
+    try {
+      const termLower = term.trim().toLowerCase()
+      const membersCol = collection(db, 'ubicaciones', id as string, 'members')
+
+      const isNumeric = /^\d+$/.test(termLower)
+      let results: Member[] = []
+
+      if (isNumeric) {
+        // Search by DNI prefix
+        const qDni = query(
+          membersCol,
+          where('dni', '>=', termLower),
+          where('dni', '<=', termLower + '\uf8ff'),
+          limit(10)
+        )
+        const snap = await getDocs(qDni)
+        results = snap.docs.map(d => ({ id: d.id, ...d.data() } as Member))
+      } else {
+        // Search by Nombre and Apellidos in parallel
+        const qNombre = query(
+          membersCol,
+          where('nombre', '>=', termLower),
+          where('nombre', '<=', termLower + '\uf8ff'),
+          limit(10)
+        )
+        const qApellidos = query(
+          membersCol,
+          where('apellidos', '>=', termLower),
+          where('apellidos', '<=', termLower + '\uf8ff'),
+          limit(10)
+        )
+
+        const [snapNombre, snapApellidos] = await Promise.all([
+          getDocs(qNombre),
+          getDocs(qApellidos)
+        ])
+
+        const resultsNombre = snapNombre.docs.map(d => ({ id: d.id, ...d.data() } as Member))
+        const resultsApellidos = snapApellidos.docs.map(d => ({ id: d.id, ...d.data() } as Member))
+
+        // Merge and deduplicate
+        const map = new Map<string, Member>()
+        resultsNombre.forEach(m => map.set(m.id!, m))
+        resultsApellidos.forEach(m => map.set(m.id!, m))
+        results = Array.from(map.values()).slice(0, 10)
+      }
+
+      setSmartSearchResults(results)
+    } catch (error) {
+      console.error("Error in smart search:", error)
+    } finally {
+      setIsSmartSearching(false)
+    }
+  }, [id])
+
+  // Smart Search Effect (Debounced)
   useEffect(() => {
+    if (!smartSearchQuery.trim()) {
+      setSmartSearchResults([])
+      setShowSearchResults(false)
+      return
+    }
+
     const timer = setTimeout(() => {
-      setDebouncedSearchTerm(searchTerm)
+      performSmartSearch(smartSearchQuery)
     }, 500)
 
     return () => clearTimeout(timer)
-  }, [searchTerm])
-
-  // Search Effect
-  // DISABLED FOR CLIENT-SIDE PAGINATION: MembersTable handles filtering locally on the full list.
-  /*
-  useEffect(() => {
-    if (debouncedSearchTerm) {
-      performSearch(debouncedSearchTerm)
-    } else if (id && !debouncedSearchTerm && searchTerm === '') {
-      // Only reset if search was cleared
-      setCurrentPage(1)
-      setLastVisibleDocs([])
-      fetchAllMembers()
-    }
-  }, [debouncedSearchTerm, id]) 
-  */
-
-  const performSearch = async (term: string) => {
-    setLoadingMembers(true)
-    try {
-      const membersCol = getMembersCollectionPath(id)
-      const isNumeric = /^\d+$/.test(term)
-
-      // Prepare queries
-      // Note: Firestore "OR" queries are limited. We'll do a best-effort approach.
-      let q;
-
-      if (isNumeric) {
-        // DNI Search Only
-        q = query(membersCol, where('dni', '>=', term), where('dni', '<=', term + '\uf8ff'), limit(20))
-
-        const snapshot = await getDocs(q)
-        const membersData = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as Member[]
-        setMembers(membersData)
-        setTotalCount(membersData.length)
-
-      } else {
-        // Name search removed as requested. reset to empty or do nothing if not numeric.
-        // If user somehow types text, return empty or show all (safest is show nothing or treat as invalid)
-        // But UI will restrict input so this branch might be unreachable or just empty.
-        setMembers([])
-        setTotalCount(0)
-      }
-
-      // Common updates
-      setCurrentPage(1)
-      setLastVisibleDocs([]) // Reset cursor stack
-
-    } catch (error) {
-      console.error("Error searching:", error)
-    } finally {
-      setLoadingMembers(false)
-    }
-  }
+  }, [smartSearchQuery, performSmartSearch])
 
   useEffect(() => {
     if (id) {
@@ -263,7 +270,7 @@ const DynamicMembersPage: NextPage = () => {
       setLastVisibleDocs([])
       fetchAllMembers()
     }
-  }, [id])
+  }, [id, fetchAllMembers])
 
   const handleNextPage = () => {
     // Client-side handled within MembersTable or ignored here
@@ -435,18 +442,25 @@ const DynamicMembersPage: NextPage = () => {
 
       const membersCol = getMembersCollectionPath(id)
 
+      const normalizedFormData = {
+        ...formData,
+        nombre: formData.nombre.trim().toLowerCase(),
+        apellidos: formData.apellidos.trim().toLowerCase(),
+        empresa: formData.empresa.trim().toLowerCase(),
+      }
+
       if (isEditing && editingId) {
         const docRef = doc(membersCol, editingId)
         await updateDoc(docRef, {
-          ...formData,
+          ...normalizedFormData,
           fotoUrl,
           updatedAt: serverTimestamp()
         })
         // Sync today's attendance records with the new data
-        await syncTodaysAsistencias(editingId, formData, fotoUrl)
+        await syncTodaysAsistencias(editingId, normalizedFormData, fotoUrl)
       } else {
         await setDoc(doc(membersCol, formData.dni), {
-          ...formData,
+          ...normalizedFormData,
           fotoUrl,
           createdAt: serverTimestamp()
         })
@@ -577,6 +591,74 @@ const DynamicMembersPage: NextPage = () => {
         </div>
 
         <h1 className={styles.pageTitle}>Gestión de Usuarios</h1>
+
+        {/* Smart Search Section */}
+        <div className={styles.searchSection}>
+          <div className={styles.searchInputWrapper}>
+            <input
+              type="text"
+              placeholder="Buscar miembro por nombre, apellido o DNI..."
+              value={smartSearchQuery}
+              onChange={(e) => setSmartSearchQuery(e.target.value)}
+              onFocus={() => smartSearchQuery && setShowSearchResults(true)}
+              className={styles.searchInput}
+            />
+            <div className={styles.searchIcon}>
+              <FaUsers />
+            </div>
+            {isSmartSearching && (
+              <div style={{ position: 'absolute', right: '15px' }}>
+                <FaSpinner className={styles.spinAnimation} />
+              </div>
+            )}
+          </div>
+
+          {showSearchResults && (smartSearchResults.length > 0 || !isSmartSearching) && smartSearchQuery && (
+            <div className={styles.searchResultsDropdown}>
+              {smartSearchResults.length > 0 ? (
+                smartSearchResults.map(member => (
+                  <div
+                    key={member.id}
+                    onClick={() => {
+                      handleEdit(member)
+                      setShowSearchResults(false)
+                      setSmartSearchQuery('')
+                    }}
+                    className={styles.searchResultItem}
+                  >
+                    <div className={styles.resultAvatar}>
+                      {member.fotoUrl ? (
+                        <NextImage
+                          src={member.fotoUrl}
+                          alt={`${member.nombre} ${member.apellidos}`}
+                          width={40}
+                          height={40}
+                          style={{ objectFit: 'cover' }}
+                        />
+                      ) : (
+                        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af' }}>
+                          <FaUsers />
+                        </div>
+                      )}
+                    </div>
+                    <div className={styles.resultInfo}>
+                      <p className={styles.resultName}>
+                        {member.nombre} {member.apellidos}
+                      </p>
+                      <p className={styles.resultMeta}>
+                        DNI: {member.dni} • <span style={{ textTransform: 'uppercase' }}>{member.empresa}</span>
+                      </p>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className={styles.noResults}>
+                  No se encontraron resultados para &quot;{smartSearchQuery}&quot;
+                </div>
+              )}
+            </div>
+          )}
+        </div>
         <div className={styles.responsiveHeader}>
           <div>
             <h2 style={{ fontSize: '1.8rem', fontWeight: '800', color: '#3b82f6', textTransform: 'uppercase', margin: 0 }}>
@@ -588,7 +670,10 @@ const DynamicMembersPage: NextPage = () => {
             <button onClick={openNewMemberModal} className={`${styles.actionButton} ${styles.btnPremium}`}>
               <FaUserPlus /> Nuevo Miembro
             </button>
-            <Link href={`/members/${id}/access`} className={`${styles.actionButton} ${styles.btnPremiumSecondary}`} style={{ textDecoration: 'none' }}>
+            <Link href={`/members/${id}/all`} className={`${styles.actionButton} ${styles.btnPremiumSecondary}`} style={{ textDecoration: 'none' }}>
+              <FaUsers /> Miembros
+            </Link>
+            <Link href={`/members/${id}/access`} className={`${styles.actionButton} ${styles.btnPremiumSecondary}`} style={{ textDecoration: 'none', backgroundColor: '#6366f1' }}>
               <FaUserClock /> Registrar Ingreso
             </Link>
             <Link href={`/members/${id}/reports`} className={`${styles.actionButton} ${styles.btnPremiumGreen}`} style={{ textDecoration: 'none' }}>
@@ -597,25 +682,16 @@ const DynamicMembersPage: NextPage = () => {
           </div>
         </div>
 
-        <MembersTable
-          members={members}
-          empresas={empresas}
-          isLoading={isLoading}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-          /* Pass empty/dummy props if required by interface until updated, or remove if optional */
-          currentPage={1} // Ignored by client-side table logic? Or used as initial?
-          totalPages={1} // Ignored
-          totalMembers={members.length}
-          onNextPage={() => { }}
-          onPrevPage={() => { }}
-          isPaginating={loadingMembers}
-          // Search Props
-          searchTerm={searchTerm}
-          onSearchChange={setSearchTerm}
-          // Batch Action
-          onBatchUpdateCompany={handleBatchUpdateCompany}
-        />
+        <div className={styles.dashboardSummary}>
+          <div className={styles.summaryCard}>
+            <span className={styles.summaryLabel}>Total Miembros</span>
+            <p className={styles.summaryValue}>{totalCount}</p>
+          </div>
+          <div className={styles.summaryCard}>
+            <span className={styles.summaryLabel}>Empresas Activas</span>
+            <p className={`${styles.summaryValue} ${styles.success}`}>{empresas.length}</p>
+          </div>
+        </div>
       </main>
 
       <MembersForm

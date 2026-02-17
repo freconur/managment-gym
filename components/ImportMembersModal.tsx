@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import styles from './ImportMembersModal.module.css';
+import NextImage from 'next/image';
 import { FaFileExcel, FaTimes, FaUpload, FaCheckCircle, FaExclamationTriangle, FaSpinner, FaInfoCircle, FaDownload } from 'react-icons/fa';
 import { read, utils } from 'xlsx';
 import { writeBatch, doc, serverTimestamp, collection } from 'firebase/firestore';
@@ -147,6 +148,9 @@ export const ImportMembersModal: React.FC<ImportMembersModalProps> = ({ isOpen, 
                     const docRef = doc(membersCol, member.dni);
                     batch.set(docRef, {
                         ...member,
+                        nombre: member.nombre.toLowerCase(),
+                        apellidos: member.apellidos.toLowerCase(),
+                        empresa: member.empresa.toLowerCase(),
                         fotoUrl: null,
                         createdAt: serverTimestamp(),
                         updatedAt: serverTimestamp()
@@ -215,9 +219,11 @@ export const ImportMembersModal: React.FC<ImportMembersModalProps> = ({ isOpen, 
 
                             <div className={styles.exampleImageContainer}>
                                 <h5 className={styles.exampleTitle}>Ejemplo de Formato:</h5>
-                                <img
+                                <NextImage
                                     src="/excel_template_example.png"
                                     alt="Ejemplo de estructura Excel"
+                                    width={400}
+                                    height={100}
                                     className={styles.exampleImage}
                                 />
                             </div>
