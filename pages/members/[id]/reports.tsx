@@ -28,6 +28,7 @@ import {
     LineElement,
 } from 'chart.js'
 import { Bar, Doughnut, Line } from 'react-chartjs-2'
+import ChartDataLabels from 'chartjs-plugin-datalabels' // Added
 import styles from '../Reports.module.css'
 import { InactiveMembersFilter } from '@/components/InactiveMembersFilter'
 import {
@@ -51,7 +52,8 @@ ChartJS.register(
     Legend,
     ArcElement,
     PointElement,
-    LineElement
+    LineElement,
+    ChartDataLabels // Added
 )
 
 const pdfStyles = StyleSheet.create({
@@ -60,15 +62,13 @@ const pdfStyles = StyleSheet.create({
     title: { fontSize: 22, fontWeight: 'bold', color: '#111827' },
     subtitle: { fontSize: 10, color: '#6b7280', marginTop: 5 },
     section: { marginBottom: 25 },
-    sectionTitle: { fontSize: 14, fontWeight: 'bold', color: '#374151', marginBottom: 12, borderLeft: 4, borderLeftColor: '#10b981', paddingLeft: 10 },
+    sectionTitle: { fontSize: 13, fontWeight: 'bold', color: '#1f2937', marginBottom: 6, borderLeft: 3, borderLeftColor: '#10b981', paddingLeft: 8 },
     summaryGrid: { flexDirection: 'row', gap: 15, marginBottom: 20 },
     summaryItem: { flex: 1, padding: 15, backgroundColor: '#f9fafb', borderRadius: 8, alignItems: 'center', borderWidth: 1, borderStyle: 'solid', borderColor: '#f3f4f6' },
     summaryLabel: { fontSize: 8, color: '#6b7280', marginBottom: 4 },
     summaryValue: { fontSize: 16, fontWeight: 'bold', color: '#059669' },
-    chartContainer: { width: '100%', marginBottom: 20, alignItems: 'center' },
-    chartImage: { width: '100%', height: 200, objectFit: 'contain' },
-    row: { flexDirection: 'row', gap: 15 },
-    halfColumn: { flex: 1 },
+    chartContainer: { width: '100%', marginBottom: 15, alignItems: 'center' },
+    chartImage: { width: '100%', height: 220, objectFit: 'contain' },
     footer: { position: 'absolute', bottom: 30, left: 40, right: 40, borderTopWidth: 1, borderTopStyle: 'solid', borderTopColor: '#f3f4f6', paddingTop: 10, alignItems: 'center' },
     footerText: { fontSize: 8, color: '#9ca3af' }
 });
@@ -93,7 +93,34 @@ const MembersReportPDF = ({ data, charts, stats, locationName }: MembersReportPD
             <Text style={pdfStyles.title}>Reporte de Ingresos - {locationName}</Text>
             <Text style={pdfStyles.subtitle}>Management Gym - Generado el {new Date().toLocaleDateString()}</Text>
 
-            <View style={pdfStyles.section}>
+            <View style={pdfStyles.section} wrap={false}>
+                <Text style={pdfStyles.sectionTitle}>Tendencia de Ingresos</Text>
+                {charts.timeline && (
+                    <View style={pdfStyles.chartContainer}>
+                        <Image src={charts.timeline} style={[pdfStyles.chartImage, { height: 200 }]} />
+                    </View>
+                )}
+            </View>
+
+            <View style={pdfStyles.section} wrap={false}>
+                <Text style={pdfStyles.sectionTitle}>Ingresos por Empresa</Text>
+                {charts.company && (
+                    <View style={pdfStyles.chartContainer}>
+                        <Image src={charts.company} style={[pdfStyles.chartImage, { height: 380 }]} />
+                    </View>
+                )}
+            </View>
+
+            <View style={pdfStyles.section} wrap={false} break>
+                <Text style={pdfStyles.sectionTitle}>Distribución por Sexo</Text>
+                {charts.sex && (
+                    <View style={pdfStyles.chartContainer}>
+                        <Image src={charts.sex} style={[pdfStyles.chartImage, { height: 250 }]} />
+                    </View>
+                )}
+            </View>
+
+            <View style={pdfStyles.section} wrap={false}>
                 <Text style={pdfStyles.sectionTitle}>Resumen Ejecutivo</Text>
                 <View style={pdfStyles.summaryGrid}>
                     <View style={pdfStyles.summaryItem}>
@@ -103,28 +130,6 @@ const MembersReportPDF = ({ data, charts, stats, locationName }: MembersReportPD
                     <View style={pdfStyles.summaryItem}>
                         <Text style={pdfStyles.summaryLabel}>Empresas Activas</Text>
                         <Text style={pdfStyles.summaryValue}>{stats.empresasActivas}</Text>
-                    </View>
-                </View>
-            </View>
-
-            <View style={pdfStyles.section}>
-                <Text style={pdfStyles.sectionTitle}>Tendencia de Ingresos</Text>
-                {charts.timeline && (
-                    <View style={pdfStyles.chartContainer}>
-                        <Image src={charts.timeline} style={pdfStyles.chartImage} />
-                    </View>
-                )}
-            </View>
-
-            <View style={pdfStyles.section}>
-                <View style={pdfStyles.row}>
-                    <View style={pdfStyles.halfColumn}>
-                        <Text style={pdfStyles.sectionTitle}>Ingresos por Empresa</Text>
-                        {charts.company && <Image src={charts.company} style={[pdfStyles.chartImage, { height: 150 }]} />}
-                    </View>
-                    <View style={pdfStyles.halfColumn}>
-                        <Text style={pdfStyles.sectionTitle}>Distribución por Sexo</Text>
-                        {charts.sex && <Image src={charts.sex} style={[pdfStyles.chartImage, { height: 150 }]} />}
                     </View>
                 </View>
             </View>
@@ -255,12 +260,17 @@ const DynamicReportsPage: NextPage = () => {
             const comp = item.company || 'Sin Empresa'
             counts[comp] = (counts[comp] || 0) + 1
         })
+        // Sort companies by count descending
+        const sortedEntries = Object.entries(counts).sort((a, b) => b[1] - a[1])
+        const sortedLabels = sortedEntries.map(([label]) => label.toUpperCase())
+        const sortedData = sortedEntries.map(([, value]) => value)
+
         return {
-            labels: Object.keys(counts),
+            labels: sortedLabels,
             datasets: [
                 {
                     label: 'Ingresos',
-                    data: Object.values(counts),
+                    data: sortedData,
                     backgroundColor: 'rgba(59, 130, 246, 0.6)',
                     borderColor: 'rgba(59, 130, 246, 1)',
                     borderWidth: 1,
@@ -315,9 +325,8 @@ const DynamicReportsPage: NextPage = () => {
         const sortedKeys = Object.keys(counts).sort()
         return {
             labels: sortedKeys.map(key => {
-                const [year, month, day] = key.split('-');
-                const count = counts[key];
-                return `${day}/${month}(${count})`;
+                const [, , day] = key.split('-');
+                return day; // Show only the day (e.g., "01", "15")
             }),
             datasets: [
                 {
@@ -499,6 +508,15 @@ const DynamicReportsPage: NextPage = () => {
                                             interaction: { mode: 'index', intersect: false },
                                             plugins: {
                                                 legend: { position: 'top' as const },
+                                                datalabels: { // Permanent values on points
+                                                    display: true,
+                                                    color: '#4bc0c0',
+                                                    align: 'top',
+                                                    offset: 4,
+                                                    font: {
+                                                        weight: 'bold'
+                                                    }
+                                                },
                                                 tooltip: {
                                                     callbacks: {
                                                         label: function (context: any) {
@@ -523,35 +541,75 @@ const DynamicReportsPage: NextPage = () => {
                                 </div>
                             </div>
 
-                            <div className={styles.card}>
+                            <div className={`${styles.card} ${styles.cardFullWidth}`}>
                                 <h3 className={styles.cardTitle}>Ingresos por Empresa</h3>
                                 <div className={styles.chartContainer}>
                                     <Bar
                                         data={companyChartData}
                                         options={{
+                                            indexAxis: 'y' as const, // Added for horizontal bars
                                             responsive: true,
                                             maintainAspectRatio: false,
-                                            plugins: { legend: { display: false } },
+                                            plugins: {
+                                                legend: { display: false },
+                                                tooltip: {
+                                                    callbacks: {
+                                                        label: function (context: any) {
+                                                            return `Ingresos: ${context.parsed.x}`;
+                                                        }
+                                                    }
+                                                },
+                                                datalabels: { // Permanent values on bars
+                                                    display: true,
+                                                    color: '#3b82f6',
+                                                    anchor: 'end',
+                                                    align: 'right',
+                                                    offset: 4,
+                                                    font: {
+                                                        weight: 'bold'
+                                                    }
+                                                }
+                                            },
                                             scales: {
-                                                x: { ticks: { autoSkip: true, maxTicksLimit: 8 } },
-                                                y: { ticks: { precision: 0 }, grid: { tickLength: 8, color: 'rgba(0, 0, 0, 0.1)' } }
+                                                x: {
+                                                    ticks: { precision: 0 },
+                                                    grid: { tickLength: 8, color: 'rgba(0, 0, 0, 0.1)' }
+                                                },
+                                                y: {
+                                                    ticks: { autoSkip: false }, // Don't skip names for better readability
+                                                    grid: { display: false }
+                                                }
                                             }
                                         }}
                                     />
                                 </div>
                             </div>
 
-                            <div className={styles.card}>
+                            <div className={`${styles.card} ${styles.cardFullWidth}`}>
                                 <h3 className={styles.cardTitle}>Distribución por Sexo</h3>
                                 <div className={`${styles.chartContainer} ${styles.doughnutContainer}`}>
                                     <Doughnut
                                         data={sexChartData}
-                                        options={{ responsive: true, maintainAspectRatio: false }}
+                                        options={{
+                                            responsive: true,
+                                            maintainAspectRatio: false,
+                                            plugins: {
+                                                datalabels: { // Permanent values on segments
+                                                    display: true,
+                                                    color: '#fff',
+                                                    font: {
+                                                        weight: 'bold',
+                                                        size: 14
+                                                    },
+                                                    formatter: (value: any) => value
+                                                }
+                                            }
+                                        }}
                                     />
                                 </div>
                             </div>
 
-                            <div className={styles.card}>
+                            <div className={`${styles.card} ${styles.cardFullWidth}`}>
                                 <h3 className={styles.cardTitle}>Resumen</h3>
                                 <div className={styles.summaryGrid}>
                                     <div className={styles.summaryItem}>

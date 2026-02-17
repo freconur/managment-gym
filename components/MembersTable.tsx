@@ -329,7 +329,7 @@ export const MembersTable: React.FC<MembersTableProps> = ({
                                                 <FaEdit size={14} />
                                             </button>
                                             <button
-                                                onClick={() => member.id && handleActionRequest('DELETE', member.id)}
+                                                onClick={() => handleActionRequest('DELETE', member.id || '')}
                                                 className={styles.deleteButton}
                                                 title="Eliminar (Requiere PIN)"
                                             >

@@ -11,11 +11,15 @@ import {
     query,
     orderBy,
     deleteDoc,
+    updateDoc, // Added
+    where, // Added
+    Timestamp, // Added
     writeBatch,
     serverTimestamp,
     onSnapshot
 } from 'firebase/firestore'
-import { db } from '@/firebase/firebase.config'
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage' // Added
+import { db, storage } from '@/firebase/firebase.config' // Added storage
 import { FaArrowLeft, FaUsers, FaSpinner } from 'react-icons/fa'
 import { MembersTable } from '@/components/MembersTable'
 import { Member, Company, Area, Cargo } from '@/features/types/types'
@@ -44,6 +48,87 @@ const AllMembersPage: NextPage = () => {
     })
     const [previewUrl, setPreviewUrl] = useState<string | null>(null)
     const [isSubmitting, setIsSubmitting] = useState(false)
+    const [selectedImage, setSelectedImage] = useState<File | null>(null)
+
+    // Helper: Compress Image (Logic from dashboard)
+    const compressImage = (file: File): Promise<File> => {
+        return new Promise((resolve, reject) => {
+            const img = new Image()
+            img.src = URL.createObjectURL(file)
+            img.onload = () => {
+                const canvas = document.createElement('canvas')
+                let width = img.width
+                let height = img.height
+                const MAX_DIM = 1000
+                if (width > MAX_DIM || height > MAX_DIM) {
+                    if (width > height) {
+                        height = Math.round((height * MAX_DIM) / width)
+                        width = MAX_DIM
+                    } else {
+                        width = Math.round((width * MAX_DIM) / height)
+                        height = MAX_DIM
+                    }
+                }
+                canvas.width = width
+                canvas.height = height
+                const ctx = canvas.getContext('2d')
+                if (!ctx) return reject(new Error('Canvas context not available'))
+                ctx.drawImage(img, 0, 0, width, height)
+                let quality = 0.7
+                const tryCompress = () => {
+                    canvas.toBlob((blob) => {
+                        if (!blob) return reject(new Error('Compression failed'))
+                        if (blob.size <= 100 * 1024 || quality <= 0.1) {
+                            resolve(new File([blob], file.name, { type: 'image/jpeg', lastModified: Date.now() }))
+                        } else {
+                            quality -= 0.1
+                            tryCompress()
+                        }
+                    }, 'image/jpeg', quality)
+                }
+                tryCompress()
+            }
+            img.onerror = (err) => reject(err)
+        })
+    }
+
+    // Helper: Sync Today's Assistances
+    const syncTodaysAsistencias = async (memberId: string, updatedData: Partial<Member>, fotoUrl?: string) => {
+        try {
+            const startOfToday = new Date()
+            startOfToday.setHours(0, 0, 0, 0)
+
+            const asistenciasCol = id
+                ? collection(db, 'ubicaciones', id as string, 'asistencias')
+                : collection(db, 'asistencias')
+
+            const q = query(
+                asistenciasCol,
+                where('memberId', '==', memberId),
+                where('timestamp', '>=', Timestamp.fromDate(startOfToday))
+            )
+
+            const snapshot = await getDocs(q)
+            if (snapshot.empty) return
+
+            const batch = writeBatch(db)
+            snapshot.docs.forEach((d) => {
+                batch.update(d.ref, {
+                    memberName: `${updatedData.nombre} ${updatedData.apellidos}`,
+                    memberDni: updatedData.dni,
+                    company: updatedData.empresa,
+                    area: updatedData.area || null,
+                    cargo: updatedData.cargo || null,
+                    sexo: updatedData.sexo,
+                    fotoUrl: fotoUrl || null,
+                })
+            })
+
+            await batch.commit()
+        } catch (error) {
+            console.error("Error syncing today's asistencias:", error)
+        }
+    }
 
     // Fetch Location Name
     useEffect(() => {
@@ -56,6 +141,8 @@ const AllMembersPage: NextPage = () => {
                 }
             } catch (error) {
                 console.error("Error fetching location:", error);
+            } finally {
+                setIsLoading(false);
             }
         }
         fetchLocation();
@@ -70,14 +157,15 @@ const AllMembersPage: NextPage = () => {
             const q = query(membersCol, orderBy('createdAt', 'desc'))
             const snapshot = await getDocs(q)
             const membersData = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
+                ...doc.data(),
+                id: doc.id
             })) as Member[]
             setMembers(membersData)
         } catch (error) {
             console.error("Error fetching members:", error)
         } finally {
             setLoadingMembers(false)
+            setIsLoading(false)
         }
     }, [id])
 
@@ -123,10 +211,15 @@ const AllMembersPage: NextPage = () => {
     }
 
     const handleDelete = async (memberId: string) => {
+        if (!id) {
+            alert("Error: No se pudo identificar la ubicación.")
+            return
+        }
         if (window.confirm('¿Estás seguro de que deseas eliminar este usuario?')) {
             try {
                 const docRef = doc(db, 'ubicaciones', id as string, 'members', memberId)
                 await deleteDoc(docRef)
+                alert("Usuario eliminado correctamente.")
                 fetchAllMembers()
             } catch (error) {
                 console.error("Error deleting member:", error)
@@ -228,12 +321,60 @@ const AllMembersPage: NextPage = () => {
                         const { name, value } = e.target
                         setFormData(prev => ({ ...prev, [name]: value }))
                     }}
-                    onImageChange={() => { }} // Simplified for view-only or separate logic if needed
+                    onImageChange={async (e) => {
+                        const file = e.target.files?.[0]
+                        if (file) {
+                            try {
+                                const compressed = await compressImage(file)
+                                setSelectedImage(compressed)
+                                setPreviewUrl(URL.createObjectURL(compressed))
+                            } catch (error) {
+                                console.error("Error compressing image:", error)
+                                alert("Error al procesar la imagen.")
+                            }
+                        }
+                    }}
                     onSubmit={async (e) => {
                         e.preventDefault()
-                        // Implementation for simple edit if needed, or redirect
-                        alert("Para editar, regresa a la página principal por ahora.")
-                        setIsModalOpen(false)
+                        setIsSubmitting(true)
+                        try {
+                            const memberId = editingId
+                            if (!memberId || !id) return
+
+                            let fotoUrl = formData.fotoUrl
+                            if (selectedImage) {
+                                const storageRef = ref(storage, `members/${formData.dni}`)
+                                await uploadBytes(storageRef, selectedImage)
+                                fotoUrl = await getDownloadURL(storageRef)
+                            }
+
+                            const normalizedData = {
+                                ...formData,
+                                nombre: formData.nombre.trim().toLowerCase(),
+                                apellidos: formData.apellidos.trim().toLowerCase(),
+                                empresa: formData.empresa.trim().toLowerCase(),
+                                fotoUrl: fotoUrl || ''
+                            }
+
+                            const docRef = doc(db, 'ubicaciones', id as string, 'members', memberId)
+                            await updateDoc(docRef, {
+                                ...normalizedData,
+                                updatedAt: serverTimestamp()
+                            })
+
+                            // Sync Assistances
+                            await syncTodaysAsistencias(memberId, normalizedData, fotoUrl)
+
+                            alert("Usuario actualizado correctamente.")
+                            setIsModalOpen(false)
+                            setSelectedImage(null)
+                            fetchAllMembers()
+                        } catch (error) {
+                            console.error("Error updating member:", error)
+                            alert("Error al actualizar el usuario.")
+                        } finally {
+                            setIsSubmitting(false)
+                        }
                     }}
                     onCancel={() => setIsModalOpen(false)}
                     onOpenCompanyModal={() => { }}
