@@ -166,7 +166,7 @@
 }
 
 .chartContainer {
-    height: 300px;
+    min-height: 300px;
     position: relative;
     width: 100%;
 }

@@ -61,13 +61,13 @@ const pdfStyles = StyleSheet.create({
     header: { marginBottom: 25, borderBottom: 1, borderBottomColor: '#e5e7eb', paddingBottom: 15 },
     title: { fontSize: 22, fontWeight: 'bold', color: '#111827' },
     subtitle: { fontSize: 10, color: '#6b7280', marginTop: 5 },
-    section: { marginBottom: 25 },
-    sectionTitle: { fontSize: 13, fontWeight: 'bold', color: '#1f2937', marginBottom: 6, borderLeft: 3, borderLeftColor: '#10b981', paddingLeft: 8 },
+    section: { marginBottom: 1 },
+    sectionTitle: { fontSize: 13, fontWeight: 'bold', color: '#1f2937', marginBottom: 10, borderLeft: 3, borderLeftColor: '#10b981', paddingLeft: 8 },
     summaryGrid: { flexDirection: 'row', gap: 15, marginBottom: 20 },
     summaryItem: { flex: 1, padding: 15, backgroundColor: '#f9fafb', borderRadius: 8, alignItems: 'center', borderWidth: 1, borderStyle: 'solid', borderColor: '#f3f4f6' },
     summaryLabel: { fontSize: 8, color: '#6b7280', marginBottom: 4 },
     summaryValue: { fontSize: 16, fontWeight: 'bold', color: '#059669' },
-    chartContainer: { width: '100%', marginBottom: 15, alignItems: 'center' },
+    chartContainer: { width: '100%', marginBottom: 1, alignItems: 'center' },
     chartImage: { width: '100%', height: 220, objectFit: 'contain' },
     footer: { position: 'absolute', bottom: 30, left: 40, right: 40, borderTopWidth: 1, borderTopStyle: 'solid', borderTopColor: '#f3f4f6', paddingTop: 10, alignItems: 'center' },
     footerText: { fontSize: 8, color: '#9ca3af' }
@@ -171,6 +171,10 @@ const DynamicReportsPage: NextPage = () => {
     const [selectedSubEnv, setSelectedSubEnv] = useState<string>('all')
     const [location, setLocation] = useState<Ubicacion | null>(null)
 
+    const [timeRange, setTimeRange] = useState<string>('all')
+    const [customStartTime, setCustomStartTime] = useState<string>('')
+    const [customEndTime, setCustomEndTime] = useState<string>('')
+
     useEffect(() => {
         if (!id) return
 
@@ -246,8 +250,37 @@ const DynamicReportsPage: NextPage = () => {
             )
         }
 
+        // Time Filter
+        if (timeRange !== 'all') {
+            let startMin: number | null = null;
+            let endMin: number | null = null;
+
+            if (timeRange === '18:30-19:30') { startMin = 18 * 60 + 30; endMin = 19 * 60 + 30; }
+            else if (timeRange === '19:30-20:30') { startMin = 19 * 60 + 30; endMin = 20 * 60 + 30; }
+            else if (timeRange === '20:30-21:30') { startMin = 20 * 60 + 30; endMin = 21 * 60 + 30; }
+            else if (timeRange === '21:30-22:30') { startMin = 21 * 60 + 30; endMin = 22 * 60 + 30; }
+            else if (timeRange === 'custom' && customStartTime && customEndTime) {
+                const [sH, sM] = customStartTime.split(':').map(Number);
+                const [eH, eM] = customEndTime.split(':').map(Number);
+                startMin = sH * 60 + sM;
+                endMin = eH * 60 + eM;
+            }
+
+            if (startMin !== null && endMin !== null) {
+                filtered = filtered.filter(item => {
+                    const date = item.timestamp?.toDate ? item.timestamp.toDate() : new Date(item.timestamp);
+                    const itemMin = date.getHours() * 60 + date.getMinutes();
+                    if (startMin! <= endMin!) {
+                        return itemMin >= startMin! && itemMin < endMin!;
+                    } else {
+                        return itemMin >= startMin! || itemMin < endMin!;
+                    }
+                });
+            }
+        }
+
         return filtered
-    }, [accessData, dateRange, selectedCompany, selectedSex, customStart, customEnd, selectedSubEnv])
+    }, [accessData, dateRange, selectedCompany, selectedSex, customStart, customEnd, selectedSubEnv, timeRange, customStartTime, customEndTime])
 
     const companies = useMemo(() => {
         const unique = new Set(accessData.map(item => item.company).filter(Boolean))
@@ -274,10 +307,17 @@ const DynamicReportsPage: NextPage = () => {
                     backgroundColor: 'rgba(59, 130, 246, 0.6)',
                     borderColor: 'rgba(59, 130, 246, 1)',
                     borderWidth: 1,
+                    barPercentage: 0.8,
+                    categoryPercentage: 0.9,
                 },
             ],
         }
     }, [filteredData])
+
+    const companyChartHeight = useMemo(() => {
+        const numLabels = companyChartData.labels?.length || 0
+        return Math.max(300, numLabels * 40 + 50)
+    }, [companyChartData.labels])
 
     const sexChartData = useMemo(() => {
         const counts = { 'Hombre': 0, 'Mujer': 0, 'Otro': 0 }
@@ -490,6 +530,37 @@ const DynamicReportsPage: NextPage = () => {
                                     ))}
                                 </select>
                             )}
+
+                            <select
+                                value={timeRange}
+                                onChange={(e) => setTimeRange(e.target.value)}
+                                className={styles.select}
+                            >
+                                <option value="all">Todo el día</option>
+                                <option value="18:30-19:30">18:30 - 19:30</option>
+                                <option value="19:30-20:30">19:30 - 20:30</option>
+                                <option value="20:30-21:30">20:30 - 21:30</option>
+                                <option value="21:30-22:30">21:30 - 22:30</option>
+                                <option value="custom">Rango Horario Pers.</option>
+                            </select>
+
+                            {timeRange === 'custom' && (
+                                <div className={styles.customDateContainer}>
+                                    <input
+                                        type="time"
+                                        value={customStartTime}
+                                        onChange={(e) => setCustomStartTime(e.target.value)}
+                                        className={styles.dateInput}
+                                    />
+                                    <span className={styles.dateSeparator}>a</span>
+                                    <input
+                                        type="time"
+                                        value={customEndTime}
+                                        onChange={(e) => setCustomEndTime(e.target.value)}
+                                        className={styles.dateInput}
+                                    />
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -543,7 +614,7 @@ const DynamicReportsPage: NextPage = () => {
 
                             <div className={`${styles.card} ${styles.cardFullWidth}`}>
                                 <h3 className={styles.cardTitle}>Ingresos por Empresa</h3>
-                                <div className={styles.chartContainer}>
+                                <div className={styles.chartContainer} style={{ height: `${companyChartHeight}px` }}>
                                     <Bar
                                         data={companyChartData}
                                         options={{
@@ -579,7 +650,12 @@ const DynamicReportsPage: NextPage = () => {
                                                     ticks: { autoSkip: false }, // Don't skip names for better readability
                                                     grid: { display: false }
                                                 }
-                                            }
+                                            },
+                                            elements: {
+                                                bar: {
+                                                    borderWidth: 1,
+                                                }
+                                            },
                                         }}
                                     />
                                 </div>
