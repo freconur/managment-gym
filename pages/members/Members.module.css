@@ -712,6 +712,28 @@
 .resultInfo {
     display: flex;
     flex-direction: column;
+    flex-grow: 1;
+}
+
+.searchDeleteBtn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    opacity: 0.6;
+}
+
+.searchDeleteBtn:hover {
+    background: rgba(220, 38, 38, 0.1);
+    color: #dc2626;
+    opacity: 1;
+    transform: scale(1.1);
 }
 
 .resultName {

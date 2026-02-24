@@ -92,6 +92,11 @@ export const ImportMembersModal: React.FC<ImportMembersModalProps> = ({ isOpen, 
                     }
                 }
 
+                const sexoStr = String(row.sexo || '').trim().toLowerCase();
+                if (sexoStr !== 'hombre' && sexoStr !== 'mujer') {
+                    reasons.push('Sexo debe ser "Hombre" o "Mujer"');
+                }
+
                 if (reasons.length > 0) {
                     invalid.push({
                         row: rowNum,
@@ -106,7 +111,7 @@ export const ImportMembersModal: React.FC<ImportMembersModalProps> = ({ isOpen, 
                         empresa: String(row.empresa).trim(),
                         area: row.area ? String(row.area).trim() : null,
                         cargo: row.cargo ? String(row.cargo).trim() : null,
-                        sexo: String(row.sexo).trim()
+                        sexo: sexoStr // Save as lower temporarily for easier normalization later
                     });
                 }
             });
@@ -146,11 +151,15 @@ export const ImportMembersModal: React.FC<ImportMembersModalProps> = ({ isOpen, 
 
                 chunk.forEach(member => {
                     const docRef = doc(membersCol, member.dni);
+                    // Normalize gender to Capitalize (Hombre/Mujer)
+                    const normalizedSexo = member.sexo.charAt(0).toUpperCase() + member.sexo.slice(1).toLowerCase();
+
                     batch.set(docRef, {
                         ...member,
                         nombre: member.nombre.toLowerCase(),
                         apellidos: member.apellidos.toLowerCase(),
                         empresa: member.empresa.toLowerCase(),
+                        sexo: normalizedSexo,
                         fotoUrl: null,
                         createdAt: serverTimestamp(),
                         updatedAt: serverTimestamp()

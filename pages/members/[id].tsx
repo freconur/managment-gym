@@ -506,6 +506,12 @@ const DynamicMembersPage: NextPage = () => {
       try {
         const membersCol = getMembersCollectionPath(id)
         await deleteDoc(doc(membersCol, memberId))
+
+        // Update local state immediately for better UX
+        setSmartSearchResults(prev => prev.filter(m => m.id !== memberId))
+        setMembers(prev => prev.filter(m => m.id !== memberId))
+
+        alert("Usuario eliminado correctamente")
         refreshCurrentPage()
       } catch (error) {
         console.error("Error deleting member:", error)
@@ -649,6 +655,16 @@ const DynamicMembersPage: NextPage = () => {
                         DNI: {member.dni} • <span style={{ textTransform: 'uppercase' }}>{member.empresa}</span>
                       </p>
                     </div>
+                    <button
+                      className={styles.searchDeleteBtn}
+                      onClick={(e) => {
+                        e.stopPropagation(); // Avoid triggering edit
+                        if (member.id) handleDelete(member.id);
+                      }}
+                      title="Eliminar usuario"
+                    >
+                      <FaTrash size={12} />
+                    </button>
                   </div>
                 ))
               ) : (
