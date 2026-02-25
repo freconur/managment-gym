@@ -26,6 +26,9 @@ import { Member, Company, Area, Cargo } from '@/features/types/types'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import styles from '../Members.module.css'
 import { MembersForm } from '@/components/MembersForm'
+import CompanyModal from '@/components/CompanyModal'
+import AreaModal from '@/components/AreaModal'
+import CargoModal from '@/components/CargoModal'
 
 const AllMembersPage: NextPage = () => {
     const router = useRouter()
@@ -49,6 +52,11 @@ const AllMembersPage: NextPage = () => {
     const [previewUrl, setPreviewUrl] = useState<string | null>(null)
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [selectedImage, setSelectedImage] = useState<File | null>(null)
+
+    // Modals states for managing companies, areas, and cargos
+    const [isCompanyModalOpen, setIsCompanyModalOpen] = useState(false)
+    const [isAreaModalOpen, setIsAreaModalOpen] = useState(false)
+    const [isCargoModalOpen, setIsCargoModalOpen] = useState(false)
 
     // Helper: Compress Image (Logic from dashboard)
     const compressImage = (file: File): Promise<File> => {
@@ -377,12 +385,28 @@ const AllMembersPage: NextPage = () => {
                         }
                     }}
                     onCancel={() => setIsModalOpen(false)}
-                    onOpenCompanyModal={() => { }}
-                    onOpenAreaModal={() => { }}
-                    onOpenCargoModal={() => { }}
+                    onOpenCompanyModal={() => setIsCompanyModalOpen(true)}
+                    onOpenAreaModal={() => setIsAreaModalOpen(true)}
+                    onOpenCargoModal={() => setIsCargoModalOpen(true)}
                     locationId={id as string}
                 />
             )}
+
+            <CompanyModal
+                isOpen={isCompanyModalOpen}
+                onClose={() => setIsCompanyModalOpen(false)}
+                db={db}
+            />
+            <AreaModal
+                isOpen={isAreaModalOpen}
+                onClose={() => setIsAreaModalOpen(false)}
+                db={db}
+            />
+            <CargoModal
+                isOpen={isCargoModalOpen}
+                onClose={() => setIsCargoModalOpen(false)}
+                db={db}
+            />
         </>
     )
 }

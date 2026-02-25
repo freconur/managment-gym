@@ -97,7 +97,7 @@ const AreaModal = ({ isOpen, onClose, db }: AreaModalProps) => {
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
-            zIndex: 1100
+            zIndex: 2000
         }}>
             <div style={{
                 backgroundColor: 'white',
@@ -208,8 +208,26 @@ const AreaModal = ({ isOpen, onClose, db }: AreaModalProps) => {
                                                 <FaEdit />
                                             </button>
                                             <button
-                                                onClick={() => handleDelete(area.id)}
-                                                style={{ color: '#dc2626', background: 'none', border: 'none', cursor: 'pointer' }}
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleDelete(area.id);
+                                                }}
+                                                style={{
+                                                    color: '#dc2626',
+                                                    background: 'none',
+                                                    border: 'none',
+                                                    cursor: 'pointer',
+                                                    padding: '8px',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    borderRadius: '4px',
+                                                    transition: 'background-color 0.2s'
+                                                }}
+                                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(220, 38, 38, 0.1)'}
+                                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                                title="Eliminar área"
                                             >
                                                 <FaTrash />
                                             </button>
