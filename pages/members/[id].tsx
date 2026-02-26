@@ -54,6 +54,7 @@ const DynamicMembersPage: NextPage = () => {
   const [formData, setFormData] = useState<Member>({
     nombre: '',
     dni: '',
+    tipoDocumento: 'DNI',
     apellidos: '',
     empresa: '',
     area: '',
@@ -325,9 +326,19 @@ const DynamicMembersPage: NextPage = () => {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
     if (name === 'dni') {
-      const numericValue = value.replace(/[^0-9]/g, '')
-      if (numericValue.length <= 8) {
-        setFormData(prev => ({ ...prev, [name]: numericValue }))
+      const isCE = formData.tipoDocumento === 'CE';
+      if (isCE) {
+        // CE: Alphanumeric, up to 9 chars
+        const alphanumericValue = value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+        if (alphanumericValue.length <= 9) {
+          setFormData(prev => ({ ...prev, [name]: alphanumericValue }))
+        }
+      } else {
+        // DNI: Numeric, up to 8 digits
+        const numericValue = value.replace(/[^0-9]/g, '')
+        if (numericValue.length <= 8) {
+          setFormData(prev => ({ ...prev, [name]: numericValue }))
+        }
       }
     } else {
       setFormData(prev => ({ ...prev, [name]: value }))
@@ -488,6 +499,7 @@ const DynamicMembersPage: NextPage = () => {
     setFormData({
       nombre: member.nombre,
       dni: member.dni,
+      tipoDocumento: member.tipoDocumento || 'DNI',
       apellidos: member.apellidos,
       empresa: member.empresa,
       area: member.area || '',
@@ -571,7 +583,7 @@ const DynamicMembersPage: NextPage = () => {
     setIsEditing(false)
     setEditingId(null)
     setFormData({
-      nombre: '', dni: '', apellidos: '', empresa: '', area: '', cargo: '', sexo: '', fotoUrl: ''
+      nombre: '', dni: '', tipoDocumento: 'DNI', apellidos: '', empresa: '', area: '', cargo: '', sexo: '', fotoUrl: ''
     })
     setSelectedImage(null)
     setPreviewUrl(null)

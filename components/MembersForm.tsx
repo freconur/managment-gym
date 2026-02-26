@@ -123,34 +123,35 @@ export const MembersForm: React.FC<MembersFormProps> = ({
                         <span>Todos los campos son obligatorios, excepto la foto.</span>
                     </div>
 
-                    <div>
+                    <div className={styles.dniHeader}>
                         <label htmlFor="dni" className={styles.label}>
-                            DNI <span className={styles.required}>*</span>
+                            {formData.tipoDocumento} <span className={styles.required}>*</span>
                         </label>
-                        <input
-                            type="number"
-                            id="dni"
-                            name="dni"
-                            value={formData.dni}
-                            onChange={(e) => {
-                                const val = e.target.value;
-                                if (val.length > 8) return; // Prevent more than 8
-                                onInputChange(e);
-                            }}
-                            onKeyDown={(e) => {
-                                // Block invalid chars for DNI
-                                if (['e', 'E', '+', '-', '.'].includes(e.key)) {
-                                    e.preventDefault();
-                                }
-                            }}
-                            onBlur={(e) => {
-                                // Optional logic if needed, but required handles empty
-                            }}
-                            placeholder="8 dígitos"
-                            required
-                            className={styles.input}
-                        />
+                        <label className={styles.ceToggle}>
+                            <input
+                                type="checkbox"
+                                checked={formData.tipoDocumento === 'CE'}
+                                onChange={(e) => {
+                                    const newTipo = e.target.checked ? 'CE' : 'DNI';
+                                    onInputChange({ target: { name: 'tipoDocumento', value: newTipo } } as any);
+                                }}
+                            />
+                            <span>CE</span>
+                        </label>
                     </div>
+                    <input
+                        type="text"
+                        id="dni"
+                        name="dni"
+                        value={formData.dni}
+                        onChange={(e) => {
+                            // The actual logic is in handleInputChange in [id].tsx
+                            onInputChange(e);
+                        }}
+                        placeholder={formData.tipoDocumento === 'DNI' ? "8 dígitos" : "Hasta 9 caracteres"}
+                        required
+                        className={styles.input}
+                    />
 
                     <div>
                         <label className={styles.label}>Foto</label>

@@ -108,6 +108,7 @@ export interface Member {
   id?: string;
   nombre: string;
   dni: string;
+  tipoDocumento?: 'DNI' | 'CE';
   apellidos: string;
   empresa: string;
   area?: string;

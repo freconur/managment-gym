@@ -154,16 +154,23 @@ export const ImportMembersModal: React.FC<ImportMembersModalProps> = ({ isOpen, 
                     // Normalize gender to Capitalize (Hombre/Mujer)
                     const normalizedSexo = member.sexo.charAt(0).toUpperCase() + member.sexo.slice(1).toLowerCase();
 
-                    batch.set(docRef, {
-                        ...member,
+                    // Build update object intelligently to avoid overwriting existing data with nulls
+                    const updateData: any = {
+                        dni: member.dni,
                         nombre: member.nombre.toLowerCase(),
                         apellidos: member.apellidos.toLowerCase(),
                         empresa: member.empresa.toLowerCase(),
                         sexo: normalizedSexo,
-                        fotoUrl: null,
-                        createdAt: serverTimestamp(),
                         updatedAt: serverTimestamp()
-                    });
+                    };
+
+                    // Only include area and cargo if they have values to avoid clearing existing data
+                    if (member.area) updateData.area = member.area;
+                    if (member.cargo) updateData.cargo = member.cargo;
+
+                    // Note: We omit fotoUrl and createdAt to preserve existing data upon merge
+
+                    batch.set(docRef, updateData, { merge: true });
                 });
 
                 await batch.commit();
