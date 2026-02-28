@@ -88,15 +88,16 @@ export const MembersTable: React.FC<MembersTableProps> = ({
     };
 
     const filteredMembers = members.filter(member => {
-        const matchesEmpresa = filterEmpresa ? member.empresa?.toLowerCase() === filterEmpresa.toLowerCase() : true;
-        const matchesMemberCompany = filterMemberCompany ? member.empresa?.toLowerCase() === filterMemberCompany.toLowerCase() : true;
-        const searchLower = searchTerm.toLowerCase();
+        const memberComp = member.empresa?.trim().toLowerCase() || '';
+        const matchesEmpresa = filterEmpresa ? memberComp === filterEmpresa.trim().toLowerCase() : true;
+        const matchesMemberCompany = filterMemberCompany ? memberComp === filterMemberCompany.trim().toLowerCase() : true;
+        const searchLower = searchTerm.trim().toLowerCase();
 
         // Client-side search (since we have all members)
         const matchesSearch = searchTerm === '' ||
-            member.dni.includes(searchLower) || // DNI Match
-            member.nombre.toLowerCase().includes(searchLower) || // Name Match
-            member.apellidos.toLowerCase().includes(searchLower); // Surname Match
+            (member.dni?.includes(searchLower) || false) ||
+            (member.nombre?.toLowerCase().includes(searchLower) || false) ||
+            (member.apellidos?.toLowerCase().includes(searchLower) || false);
 
         return matchesEmpresa && matchesMemberCompany && matchesSearch;
     });

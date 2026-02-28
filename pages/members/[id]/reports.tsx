@@ -231,6 +231,8 @@ const DynamicReportsPage: NextPage = () => {
                 const date = item.timestamp?.toDate()
                 return date >= start && date <= end
             })
+
+            console.log(`Filtrados por fecha (${customStart} a ${customEnd}):`, filtered)
         }
 
         // Company Filter
