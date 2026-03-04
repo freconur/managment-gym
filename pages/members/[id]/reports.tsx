@@ -257,7 +257,9 @@ const DynamicReportsPage: NextPage = () => {
             let startMin: number | null = null;
             let endMin: number | null = null;
 
-            if (timeRange === '18:30-19:30') { startMin = 18 * 60 + 30; endMin = 19 * 60 + 30; }
+            if (timeRange === '07:00-11:00') { startMin = 7 * 60; endMin = 11 * 60; }
+            else if (timeRange === '14:00-17:00') { startMin = 14 * 60; endMin = 17 * 60; }
+            else if (timeRange === '18:30-19:30') { startMin = 18 * 60 + 30; endMin = 19 * 60 + 30; }
             else if (timeRange === '19:30-20:30') { startMin = 19 * 60 + 30; endMin = 20 * 60 + 30; }
             else if (timeRange === '20:30-21:30') { startMin = 20 * 60 + 30; endMin = 21 * 60 + 30; }
             else if (timeRange === '21:30-22:30') { startMin = 21 * 60 + 30; endMin = 22 * 60 + 30; }
@@ -539,6 +541,8 @@ const DynamicReportsPage: NextPage = () => {
                                 className={styles.select}
                             >
                                 <option value="all">Todo el día</option>
+                                <option value="07:00-11:00">07:00 - 11:00</option>
+                                <option value="14:00-17:00">14:00 - 17:00</option>
                                 <option value="18:30-19:30">18:30 - 19:30</option>
                                 <option value="19:30-20:30">19:30 - 20:30</option>
                                 <option value="20:30-21:30">20:30 - 21:30</option>
@@ -605,6 +609,8 @@ const DynamicReportsPage: NextPage = () => {
                                                     grid: { display: false }
                                                 },
                                                 y: {
+                                                    beginAtZero: false,
+                                                    grace: '10%',
                                                     ticks: { precision: 0 },
                                                     grid: { tickLength: 8, color: 'rgba(0, 0, 0, 0.1)' }
                                                 }
