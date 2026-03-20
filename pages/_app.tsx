@@ -7,7 +7,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import { useRouter } from "next/router";
 
 // List of routes that do not require authentication
-const noAuthRequired = ["/login", "/unauthorized", "/members/[id]/access"];
+const noAuthRequired = ["/login", "/unauthorized", "/members/[id]/access", "/reservas"];
 
 export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter();

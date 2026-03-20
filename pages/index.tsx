@@ -1,7 +1,7 @@
 import type { NextPage } from 'next'
 import Head from 'next/head'
 import Link from 'next/link'
-import { FaDumbbell, FaChartLine, FaUsers, FaArrowRight, FaPhone, FaEnvelope, FaCode } from 'react-icons/fa'
+import { FaDumbbell, FaChartLine, FaUsers, FaArrowRight, FaPhone, FaEnvelope, FaCode, FaCalendarAlt } from 'react-icons/fa'
 import { useState } from 'react'
 import { db } from '@/firebase/firebase.config'
 import styles from './Home.module.css'
@@ -60,6 +60,21 @@ const Home: NextPage = () => {
             </div>
             <div className={styles.cardFooter}>
               Ver Reportes <FaArrowRight />
+            </div>
+          </Link>
+
+          <Link href="/reservas" className={styles.card}>
+            <div className={styles.cardIcon}>
+              <FaCalendarAlt />
+            </div>
+            <div className={styles.cardInfo}>
+              <h3 className={styles.cardLabel}>Reservas</h3>
+              <p className={styles.cardDescription}>
+                Gestiona las reservas de clases, espacios y servicios de tu gimnasio de forma eficiente.
+              </p>
+            </div>
+            <div className={styles.cardFooter}>
+              Ir a Reservas <FaArrowRight />
             </div>
           </Link>
 

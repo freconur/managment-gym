@@ -30,6 +30,8 @@ import { Machine, Marca, Incidencia, Mantenimiento, Usuario, ReusableTask } from
 export type Ubicacion = {
   id?: string;
   name: string;
+  haveSubEnvironments?: boolean;
+  subEnvironments?: { id: string, nombre: string }[];
 };
 
 export const useManagment = () => {
@@ -43,6 +45,7 @@ export const useManagment = () => {
   const [usuariosValidate, setUsuariosValidate] = useState<Usuario>({});
   const [eventos, setEventos] = useState<Incidencia[]>([]);
   const [reusableTasks, setReusableTasks] = useState<ReusableTask[]>([]);
+  const [loadingUbicaciones, setLoadingUbicaciones] = useState(true);
 
 
 
@@ -52,9 +55,10 @@ export const useManagment = () => {
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const ubicaciones = snapshot.docs.map(doc => ({
         id: doc.id,
-        name: doc.data().name
-      }));
+        ...doc.data()
+      })) as Ubicacion[];
       setUbicaciones(ubicaciones);
+      setLoadingUbicaciones(false);
     });
     return unsubscribe;
   }, [])
@@ -395,6 +399,7 @@ export const useManagment = () => {
   return {
     getUbicaciones,
     ubicaciones,
+    loadingUbicaciones,
     agregarMaquina,
     getMaquinas,
     maquinas,
