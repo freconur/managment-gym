@@ -7,7 +7,7 @@ import { ThemeToggle } from '@/components/ThemeToggle'
 import { useAuth } from '@/features/context/AuthContext'
 import { useManagment } from '@/features/hooks/useManagment'
 import { db } from '@/firebase/firebase.config'
-import { collection, addDoc, serverTimestamp, query, where, onSnapshot, doc, getDoc } from 'firebase/firestore'
+import { collection, addDoc, serverTimestamp, query, where, onSnapshot, doc, getDoc, getDocs } from 'firebase/firestore'
 import styles from './Reservas.module.css'
 
 const getPeruDate = (offsetDays = 0) => {
@@ -69,8 +69,12 @@ const Reservas: NextPage = () => {
         name: '',
         email: '',
         phone: '',
-        company: ''
+        company: '',
+        companyId: ''
     })
+    const [dniExists, setDniExists] = useState(false)
+    const [companySuggestions, setCompanySuggestions] = useState<any[]>([])
+    const [showCompanySuggestions, setShowCompanySuggestions] = useState(false)
 
     useEffect(() => {
         const searchDNI = async () => {
@@ -81,23 +85,76 @@ const Reservas: NextPage = () => {
                     const docSnap = await getDoc(docRef)
                     if (docSnap.exists()) {
                         const data = docSnap.data()
+                        setDniExists(true)
+
+                        let initialCompanyId = ''
+                        if (data.empresa) {
+                            try {
+                                const q = query(collection(db, 'empresas'), where('nombre', '==', data.empresa.toUpperCase()))
+                                const snap = await getDocs(q)
+                                if (!snap.empty) {
+                                    initialCompanyId = snap.docs[0].id
+                                }
+                            } catch (e) {
+                                console.error("Error auto-validating company:", e)
+                            }
+                        }
+
                         setCustomerData(prev => ({
                             ...prev,
                             name: `${data.nombre || ''} ${data.apellidos || ''}`.trim(),
                             phone: data.celular || data.telefono || prev.phone,
-                            company: data.empresa || ''
+                            company: data.empresa || '',
+                            companyId: initialCompanyId
                         }))
+                    } else {
+                        setDniExists(false)
                     }
                 } catch (error) {
                     console.error("Error al buscar miembro por DNI:", error)
+                    setDniExists(false)
                 } finally {
                     setIsSearchingDNI(false)
                 }
+            } else {
+                setDniExists(false)
             }
         }
 
         searchDNI()
     }, [customerData.dni, selectedUbicacionId])
+
+    // Effect for Company Autocomplete with Debouncing
+    useEffect(() => {
+        // Solo buscamos empresas si el DNI NO fue encontrado (dniExists === false)
+        if (customerData.companyId || !customerData.company.trim() || customerData.company.length < 2) {
+            setCompanySuggestions([])
+            setShowCompanySuggestions(false)
+            return
+        }
+
+        const delayDebounceFn = setTimeout(async () => {
+            try {
+                const term = customerData.company.toLowerCase()
+                const q = query(
+                    collection(db, 'empresas'),
+                    where('nombre', '>=', term),
+                    where('nombre', '<=', term + '\uf8ff')
+                )
+                const querySnapshot = await getDocs(q)
+                const suggestions = querySnapshot.docs.map((doc: any) => ({
+                    id: doc.id,
+                    ...doc.data()
+                }))
+                setCompanySuggestions(suggestions)
+                setShowCompanySuggestions(suggestions.length > 0)
+            } catch (error) {
+                console.error("Error searching companies:", error)
+            }
+        }, 500)
+
+        return () => clearTimeout(delayDebounceFn)
+    }, [customerData.company, dniExists])
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [submitSuccess, setSubmitSuccess] = useState(false)
 
@@ -171,7 +228,7 @@ const Reservas: NextPage = () => {
     }, [selectedUbicacionId])
 
     // Efecto para auto-seleccionar fecha y validaciones
-    const activeUbicaciones = ubicaciones.filter(u => (u as any).reservationConfig)
+    const activeUbicaciones = (ubicaciones as any[]).filter(u => u.reservationConfig?.enabled)
     const selectedUbicacion = activeUbicaciones.find(u => u.id === selectedUbicacionId)
 
     useEffect(() => {
@@ -304,6 +361,7 @@ const Reservas: NextPage = () => {
                 userEmail: customerData.email,
                 userPhone: customerData.phone,
                 companyName: customerData.company,
+                companyId: customerData.companyId,
                 locationId: selectedUbicacionId,
                 locationName: (selectedUbicacion as any).name,
                 subEnvironmentId: selectedSlotData.subId,
@@ -833,10 +891,69 @@ const Reservas: NextPage = () => {
                                                 required
                                                 type="text"
                                                 value={customerData.company}
-                                                onChange={(e) => setCustomerData({ ...customerData, company: e.target.value })}
+                                                onChange={(e) => setCustomerData({ ...customerData, company: e.target.value, companyId: '' })}
+                                                onFocus={() => dniExists && customerData.company.trim().length >= 2 && setShowCompanySuggestions(true)}
+                                                onBlur={() => setTimeout(() => setShowCompanySuggestions(false), 200)}
                                                 placeholder="Empresa SAC"
-                                                style={{ width: '100%', padding: '0.75rem 1rem 0.75rem 2.5rem', borderRadius: '0.75rem', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)', outline: 'none' }}
+                                                autoComplete="off"
+                                                style={{
+                                                    width: '100%',
+                                                    padding: '0.75rem 2.5rem 0.75rem 2.5rem',
+                                                    borderRadius: '0.75rem',
+                                                    background: 'rgba(255,255,255,0.02)',
+                                                    border: customerData.companyId ? '1px solid #10b981' : '1px solid var(--border-glass)',
+                                                    color: 'var(--text-primary)',
+                                                    outline: 'none',
+                                                    transition: 'all 0.3s'
+                                                }}
                                             />
+                                            {customerData.companyId && (
+                                                <FaCheck style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#10b981', fontSize: '0.9rem' }} />
+                                            )}
+                                            {showCompanySuggestions && companySuggestions.length > 0 && (
+                                                <div style={{
+                                                    position: 'absolute',
+                                                    top: '100%',
+                                                    left: 0,
+                                                    right: 0,
+                                                    zIndex: 10,
+                                                    marginTop: '0.5rem',
+                                                    background: 'var(--bg-card)',
+                                                    border: '1px solid var(--border-glass)',
+                                                    borderRadius: '0.75rem',
+                                                    maxHeight: '200px',
+                                                    overflowY: 'auto',
+                                                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.5)',
+                                                    backdropFilter: 'blur(10px)'
+                                                }}>
+                                                    {companySuggestions.map((suggestion) => (
+                                                        <div
+                                                            key={suggestion.id}
+                                                            onClick={() => {
+                                                                setCustomerData({
+                                                                    ...customerData,
+                                                                    company: suggestion.nombre.toUpperCase(),
+                                                                    companyId: suggestion.id
+                                                                })
+                                                                setShowCompanySuggestions(false)
+                                                            }}
+                                                            style={{
+                                                                padding: '0.75rem 1rem',
+                                                                cursor: 'pointer',
+                                                                borderBottom: '1px solid var(--border-glass)',
+                                                                color: 'var(--text-primary)',
+                                                                fontSize: '0.9rem',
+                                                                textTransform: 'uppercase',
+                                                                transition: 'background 0.2s'
+                                                            }}
+                                                            onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                                                            onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
+                                                        >
+                                                            {suggestion.nombre}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
 
@@ -882,16 +999,16 @@ const Reservas: NextPage = () => {
                                         marginTop: '2rem',
                                         padding: '1rem',
                                         borderRadius: '0.75rem',
-                                        background: isSubmitting ? 'var(--text-secondary)' : 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                                        background: (isSubmitting || !customerData.companyId) ? 'var(--text-secondary)' : 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
                                         color: 'white',
                                         border: 'none',
                                         fontWeight: '700',
-                                        cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                                        cursor: (isSubmitting || !customerData.companyId) ? 'not-allowed' : 'pointer',
                                         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                                        boxShadow: isSubmitting ? 'none' : '0 4px 15px rgba(59, 130, 246, 0.4), 0 0 20px rgba(59, 130, 246, 0.2)'
+                                        boxShadow: (isSubmitting || !customerData.companyId) ? 'none' : '0 4px 15px rgba(59, 130, 246, 0.4), 0 0 20px rgba(59, 130, 246, 0.2)'
                                     }}
                                 >
-                                    {isSubmitting ? 'Enviando...' : 'Enviar Solicitud'}
+                                    {isSubmitting ? 'Enviando...' : !customerData.companyId ? 'Selecciona una empresa' : 'Enviar Solicitud'}
                                 </button>
                                 <p style={{ textAlign: 'center', marginTop: '1rem', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
                                     * Tu reserva está sujeta a aprobación del administrador.
