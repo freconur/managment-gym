@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '@/features/context/AuthContext';
 import NextImage from 'next/image';
-import { FaHistory, FaSpinner, FaTrash } from 'react-icons/fa';
+import { FaHistory, FaSpinner, FaTrash, FaEdit } from 'react-icons/fa';
 import {
     collection,
     query,
@@ -18,31 +19,11 @@ import {
 import { db } from '@/firebase/firebase.config';
 import styles from './RecentAccessFeed.module.css';
 import { AdminPinModal } from './AdminPinModal';
+import { AccessModal } from './AccessModal';
+import { AccessRecord } from '@/features/types/types';
 
 
 
-// ... AccessRecord interface
-interface AccessRecord {
-    id: string;
-    memberId: string;
-    memberName: string;
-    memberDni: string;
-    company: string;
-    area?: string;
-    cargo?: string;
-    timestamp: any;
-    fotoUrl?: string;
-    hasTowel?: boolean;
-    towelNumber?: string;
-    subEnvironments?: string[];
-    subEnvironmentDetails?: {
-        name: string;
-        tableNumber?: string;
-        startTime?: any;
-        endTime?: any;
-        duration?: number;
-    }[];
-}
 
 interface Company {
     id: string;
@@ -62,6 +43,11 @@ export const RecentAccessFeed: React.FC<RecentAccessFeedProps> = ({ environment,
     const [recentAccesses, setRecentAccesses] = useState<AccessRecord[]>([]);
     const [loadingRecent, setLoadingRecent] = useState(true);
     const [now, setNow] = useState(new Date());
+
+    const { user } = useAuth();
+
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [recordToEdit, setRecordToEdit] = useState<AccessRecord | null>(null);
 
     // Update 'now' every minute to refresh expiration status
     useEffect(() => {
@@ -239,6 +225,11 @@ export const RecentAccessFeed: React.FC<RecentAccessFeedProps> = ({ environment,
         if (!selectedCompany) return true;
         return record.company === selectedCompany;
     });
+
+    const handleEditClick = (record: AccessRecord) => {
+        setRecordToEdit(record);
+        setIsEditModalOpen(true);
+    };
 
     const handleDeleteClick = (id: string) => {
         if (confirm("¿Estás seguro de eliminar este registro?")) {
@@ -463,7 +454,7 @@ export const RecentAccessFeed: React.FC<RecentAccessFeedProps> = ({ environment,
                                                     >
                                                         {isExpired && "⚠️ TIEMPO CUMPLIDO: "}{label}
                                                     </span>
-                                                    {renderTimeControls && detail && (
+                                                    {user && renderTimeControls && detail && (
                                                         <button
                                                             onClick={() => {
                                                                 const config = subEnvConfigs.find((s: any) => s.nombre === sub);
@@ -538,13 +529,24 @@ export const RecentAccessFeed: React.FC<RecentAccessFeedProps> = ({ environment,
                                         {record.timestamp?.toDate ? record.timestamp.toDate().toLocaleDateString() : ''}
                                     </p>
                                 </div>
-                                <button
-                                    onClick={() => handleDeleteClick(record.id)}
-                                    className={styles.deleteButton}
-                                    title="Eliminar registro"
-                                >
-                                    <FaTrash />
-                                </button>
+                                {user && (
+                                    <>
+                                        <button
+                                            onClick={() => handleEditClick(record)}
+                                            className={styles.editButton}
+                                            title="Editar registro"
+                                        >
+                                            <FaEdit />
+                                        </button>
+                                        <button
+                                            onClick={() => handleDeleteClick(record.id)}
+                                            className={styles.deleteButton}
+                                            title="Eliminar registro"
+                                        >
+                                            <FaTrash />
+                                        </button>
+                                    </>
+                                )}
                             </div>
                         ))
                     )}
@@ -560,6 +562,18 @@ export const RecentAccessFeed: React.FC<RecentAccessFeedProps> = ({ environment,
                     setPendingExtendAction(null);
                 }}
                 onSuccess={executeExtendAction}
+            />
+
+            <AccessModal
+                isOpen={isEditModalOpen}
+                onClose={() => {
+                    setIsEditModalOpen(false);
+                    setRecordToEdit(null);
+                }}
+                environment={environment || undefined}
+                locationId={locationId || undefined}
+                isAuthenticated={true}
+                recordToEdit={recordToEdit || undefined}
             />
         </>
     );

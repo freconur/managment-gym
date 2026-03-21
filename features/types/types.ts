@@ -219,3 +219,29 @@ export interface ChecklistAssignment {
   gym?: string;
   createdAt?: any;
 }
+
+export interface AccessRecord {
+  id: string;
+  memberId: string;
+  memberName: string;
+  memberDni: string;
+  company: string;
+  area?: string;
+  cargo?: string;
+  timestamp: any;
+  fotoUrl?: string;
+  hasTowel?: boolean;
+  towelNumber?: string;
+  subEnvironments?: string[];
+  subEnvironmentDetails?: {
+    name: string;
+    tableNumber?: string;
+    startTime?: any;
+    endTime?: any;
+    duration?: number;
+  }[];
+  amenities?: string[];
+  amenitiesReturned?: boolean;
+  environment?: string;
+  sexo?: string;
+}

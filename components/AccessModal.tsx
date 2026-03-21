@@ -15,7 +15,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/firebase/firebase.config';
 import styles from './AccessModal.module.css';
-import { SubEnvironment, Amenity, AllowedCompany } from '@/features/types/types';
+import { SubEnvironment, Amenity, AllowedCompany, AccessRecord } from '@/features/types/types';
 import SubEnvironmentModal from './SubEnvironmentModal';
 import AmenityModal from './AmenityModal';
 
@@ -38,11 +38,12 @@ interface AccessModalProps {
     environment?: string;
     locationId?: string;
     isAuthenticated?: boolean;
+    recordToEdit?: AccessRecord;
 }
 
 import { useEscapeKey } from '@/features/hooks/useEscapeKey'
 
-export const AccessModal: React.FC<AccessModalProps> = ({ isOpen, onClose, environment, locationId: propLocationId, isAuthenticated = false }) => {
+export const AccessModal: React.FC<AccessModalProps> = ({ isOpen, onClose, environment, locationId: propLocationId, isAuthenticated = false, recordToEdit }) => {
     const [dni, setDni] = useState('');
     const [member, setMember] = useState<Member | null>(null);
     const [loading, setLoading] = useState(false);
@@ -106,6 +107,43 @@ export const AccessModal: React.FC<AccessModalProps> = ({ isOpen, onClose, envir
 
         return () => window.removeEventListener('resize', checkMobile);
     }, [isOpen]);
+
+    // Pre-fill state if editing
+    useEffect(() => {
+        if (recordToEdit && isOpen) {
+            setDni(recordToEdit.memberDni);
+            setMember({
+                id: recordToEdit.memberId,
+                nombre: recordToEdit.memberName.split(' ')[0],
+                apellidos: recordToEdit.memberName.split(' ').slice(1).join(' '),
+                dni: recordToEdit.memberDni,
+                empresa: recordToEdit.company,
+                area: recordToEdit.area,
+                cargo: recordToEdit.cargo,
+                fotoUrl: recordToEdit.fotoUrl,
+                sexo: recordToEdit.sexo || ''
+            });
+            setSelectedSubEnvironments(recordToEdit.subEnvironments || []);
+            setSelectedAmenities(recordToEdit.amenities || []);
+
+            if (recordToEdit.subEnvironmentDetails) {
+                const assignments: Record<string, string> = {};
+                recordToEdit.subEnvironmentDetails.forEach(detail => {
+                    if (detail.tableNumber) {
+                        assignments[detail.name] = detail.tableNumber;
+                    }
+                });
+                setTableAssignments(assignments);
+            }
+        } else if (!recordToEdit && isOpen) {
+            // Clear state if not editing (resetting for next creation)
+            setDni('');
+            setMember(null);
+            setSelectedSubEnvironments([]);
+            setSelectedAmenities([]);
+            setTableAssignments({});
+        }
+    }, [recordToEdit, isOpen]);
 
 
 
@@ -304,7 +342,7 @@ export const AccessModal: React.FC<AccessModalProps> = ({ isOpen, onClose, envir
                 ? collection(db, 'ubicaciones', locationId, 'asistencias')
                 : collection(db, 'asistencias');
 
-            await addDoc(asistenciasCol, {
+            const accessData: any = {
                 memberId: member.id,
                 memberName: `${member.nombre} ${member.apellidos}`,
                 memberDni: member.dni,
@@ -312,7 +350,7 @@ export const AccessModal: React.FC<AccessModalProps> = ({ isOpen, onClose, envir
                 area: member.area || null,
                 cargo: member.cargo || null,
                 sexo: member.sexo,
-                subEnvironments: selectedSubEnvironments, // Will be empty array if !haveSubEnvironments
+                subEnvironments: selectedSubEnvironments,
                 subEnvironmentDetails: selectedSubEnvironments.map(name => {
                     const env = subEnvironments.find(e => e.nombre === name);
                     const detail: any = { name };
@@ -322,49 +360,63 @@ export const AccessModal: React.FC<AccessModalProps> = ({ isOpen, onClose, envir
                     }
 
                     if (env?.maxTime) {
-                        const now = new Date();
-                        const endTime = new Date(now.getTime() + env.maxTime * 60000);
-                        detail.startTime = now;
-                        detail.endTime = endTime;
-                        detail.duration = env.maxTime; // Store duration for extensions
+                        // Check if we already have a detail for this name in recordToEdit
+                        const existingDetail = recordToEdit?.subEnvironmentDetails?.find(d => d.name === name);
+                        if (existingDetail) {
+                            detail.startTime = existingDetail.startTime;
+                            detail.endTime = existingDetail.endTime;
+                            detail.duration = existingDetail.duration;
+                        } else {
+                            const now = new Date();
+                            const endTime = new Date(now.getTime() + (env.maxTime || 0) * 60000);
+                            detail.startTime = now;
+                            detail.endTime = endTime;
+                            detail.duration = env.maxTime;
+                        }
                     }
 
-                    return detail; // Ensure this returns the object
+                    return detail;
                 }),
                 amenities: selectedAmenities,
-                amenitiesReturned: selectedAmenities.length > 0 ? false : true,
+                amenitiesReturned: recordToEdit ? (recordToEdit.amenitiesReturned ?? (selectedAmenities.length > 0 ? false : true)) : (selectedAmenities.length > 0 ? false : true),
                 fotoUrl: member.fotoUrl || null,
                 environment: environment || null,
-                timestamp: new Date() // Use client-side time for immediate UI update (avoids serverTimestamp latency affecting queries)
-            });
+                timestamp: recordToEdit ? recordToEdit.timestamp : new Date()
+            };
 
-            // Update lastAccess for the member
-            const membersCol = locationId
-                ? collection(db, 'ubicaciones', locationId, 'members')
-                : collection(db, 'members');
+            if (recordToEdit) {
+                await updateDoc(doc(asistenciasCol, recordToEdit.id), accessData);
+                setSuccessMsg(`¡Registro actualizado para ${member.nombre}!`);
+                setTimeout(() => {
+                    handleClose();
+                }, 1500);
+            } else {
+                await addDoc(asistenciasCol, accessData);
 
-            await updateDoc(doc(membersCol, member.id), {
-                lastAccess: serverTimestamp()
-            });
+                const membersCol = locationId
+                    ? collection(db, 'ubicaciones', locationId, 'members')
+                    : collection(db, 'members');
 
-            setSuccessMsg(`¡Ingreso registrado para ${member.nombre}!`);
-            setError(''); // Clear any previous errors
-            setDni('');
-            setMember(null);
-            setSelectedSubEnvironments([]);
-            setTableAssignments({});
-            setSelectedAmenities([]);
+                await updateDoc(doc(membersCol, member.id), {
+                    lastAccess: serverTimestamp()
+                });
 
-            // Auto-hide success message
-            setTimeout(() => setSuccessMsg(''), 3000);
+                setSuccessMsg(`¡Ingreso registrado para ${member.nombre}!`);
+                setDni('');
+                setMember(null);
+                setSelectedSubEnvironments([]);
+                setTableAssignments({});
+                setSelectedAmenities([]);
 
-            // Focus input for next user
-            setTimeout(() => {
-                inputRef.current?.focus();
-            }, 100);
+                setTimeout(() => setSuccessMsg(''), 3000);
+                setTimeout(() => {
+                    inputRef.current?.focus();
+                }, 100);
+            }
+            setError('');
         } catch (err) {
             console.error(err);
-            setError('Error al registrar ingreso');
+            setError('Error al procesar el registro');
         } finally {
             setRegistering(false);
         }
@@ -405,7 +457,7 @@ export const AccessModal: React.FC<AccessModalProps> = ({ isOpen, onClose, envir
             <div className={styles.modal}>
                 <div className={styles.modalHeader}>
                     <h2 className={styles.title}>
-                        <FaUserClock style={{ color: '#3b82f6' }} /> Registrar Ingreso
+                        <FaUserClock style={{ color: '#3b82f6' }} /> {recordToEdit ? 'Editar Registro' : 'Registrar Ingreso'}
                     </h2>
                     <button onClick={handleClose} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#6b7280' }}>
                         <FaTimes size={20} />
@@ -423,26 +475,28 @@ export const AccessModal: React.FC<AccessModalProps> = ({ isOpen, onClose, envir
                         </button>
                     )}
 
-                    <form onSubmit={handleSearch} className={styles.inputGroup}>
-                        <input
-                            ref={inputRef}
-                            type="text"
-                            placeholder="Ingrese DNI..."
-                            value={dni}
-                            onChange={(e) => {
-                                const val = e.target.value.replace(/[^0-9]/g, '');
-                                if (val.length <= 8) setDni(val);
-                            }}
-                            className={styles.input}
-                        />
-                        <button
-                            type="submit"
-                            disabled={loading || !dni}
-                            className={`${styles.searchButton} ${(loading || !dni) ? styles.searchButtonDisabled : ''}`}
-                        >
-                            <FaSearch />
-                        </button>
-                    </form>
+                    {!recordToEdit && (
+                        <form onSubmit={handleSearch} className={styles.inputGroup}>
+                            <input
+                                ref={inputRef}
+                                type="text"
+                                placeholder="Ingrese DNI..."
+                                value={dni}
+                                onChange={(e) => {
+                                    const val = e.target.value.replace(/[^0-9]/g, '');
+                                    if (val.length <= 8) setDni(val);
+                                }}
+                                className={styles.input}
+                            />
+                            <button
+                                type="submit"
+                                disabled={loading || !dni}
+                                className={`${styles.searchButton} ${(loading || !dni) ? styles.searchButtonDisabled : ''}`}
+                            >
+                                <FaSearch />
+                            </button>
+                        </form>
+                    )}
 
                     {error && (
                         <div className={`${styles.statusMessage} ${styles.errorMessage}`}>
@@ -653,10 +707,10 @@ export const AccessModal: React.FC<AccessModalProps> = ({ isOpen, onClose, envir
                                     >
                                         {registering ? (
                                             <>
-                                                <FaSpinner className={styles.spinAnimation} /> Registrando...
+                                                <FaSpinner className={styles.spinAnimation} /> {recordToEdit ? 'Guardando...' : 'Registrando...'}
                                             </>
                                         ) : (
-                                            <><FaCheckCircle /> CONFIRMAR INGRESO</>
+                                            <>{recordToEdit ? <><FaEdit /> GUARDAR CAMBIOS</> : <><FaCheckCircle /> CONFIRMAR INGRESO</>}</>
                                         )}
                                     </button>
                                 );

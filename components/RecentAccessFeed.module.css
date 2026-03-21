@@ -228,6 +228,34 @@
     transform: scale(1.1);
 }
 
+.editButton {
+    background: none;
+    border: none;
+    color: #3b82f6;
+    /* Blue color */
+    padding: 0.5rem;
+    margin-left: 0.5rem;
+    cursor: pointer;
+    border-radius: 0.375rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    /* Hidden by default */
+    transition: all 0.2s;
+}
+
+.activityItem:hover .editButton {
+    opacity: 1;
+    /* Show on hover */
+    background-color: #dbeafe;
+}
+
+.editButton:hover {
+    background-color: #bfdbfe !important;
+    transform: scale(1.1);
+}
+
 /* Loading & Empty States */
 .loadingState {
     display: flex;
