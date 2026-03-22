@@ -2,7 +2,7 @@ import type { NextPage } from 'next'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { useEffect, useState, useRef } from 'react'
-import { FaArrowLeft, FaCog, FaMapMarkerAlt, FaCheck, FaPlus, FaTrash, FaCalendarAlt } from 'react-icons/fa'
+import { FaArrowLeft, FaCog, FaMapMarkerAlt, FaCheck, FaPlus, FaTrash, FaCalendarAlt, FaWhatsapp, FaQrcode } from 'react-icons/fa'
 import { useAuth } from '@/features/context/AuthContext'
 import { useManagment } from '@/features/hooks/useManagment'
 import { ThemeToggle } from '@/components/ThemeToggle'
@@ -51,6 +51,9 @@ const ReservasConfig: NextPage = () => {
     const [senderPass, setSenderPass] = useState('')
     const [isSavingEmails, setIsSavingEmails] = useState(false)
     const [showClosed, setShowClosed] = useState(false)
+    const [isResettingBot, setIsResettingBot] = useState(false)
+    const [qrCode, setQrCode] = useState<string | null>(null)
+    const [isGeneratingQR, setIsGeneratingQR] = useState(false)
 
     useEffect(() => {
         if (!loading && (!userProfile || userProfile.role !== 'admin')) {
@@ -343,11 +346,74 @@ const ReservasConfig: NextPage = () => {
         setConfig({ ...config, dateOverrides: newOverrides })
     }
 
+    const handleResetBot = async () => {
+        if (!confirm('¿Estás seguro de que deseas desvincular todos los dispositivos de WhatsApp? Esta acción es irreversible.')) {
+            return
+        }
+
+        setIsResettingBot(true)
+        try {
+            const response = await fetch('https://whatsapp-builderbot-production.up.railway.app/v1/reset', {
+                method: 'POST',
+            })
+
+            if (response.ok) {
+                alert('Dispositivos desvinculados correctamente.')
+                setQrCode(null) // Reset QR if it was visible
+            } else {
+                const errorData = await response.json().catch(() => ({}))
+                alert(`Error al desvincular: ${errorData.message || response.statusText}`)
+            }
+        } catch (error) {
+            console.error('Error resetting bot:', error)
+            alert('Error de red al intentar desvincular dispositivos.')
+        } finally {
+            setIsResettingBot(false)
+        }
+    }
+
+    const handleGenerateQR = async () => {
+        setIsGeneratingQR(true)
+        try {
+            const response = await fetch('https://whatsapp-builderbot-production.up.railway.app/')
+            if (response.ok) {
+                // If it's a direct image URL or base64, we might need to handle it.
+                // Given the instructions, we just hit the endpoint. 
+                // Often these endpoints return an image/png or similar.
+                // We'll use the URL directly as the src if it's an image.
+                setQrCode('https://whatsapp-builderbot-production.up.railway.app/')
+            } else {
+                alert('Error al generar QR. Intenta de nuevo.')
+            }
+        } catch (error) {
+            console.error('Error generating QR:', error)
+            alert('Error de red al generar QR')
+        } finally {
+            setIsGeneratingQR(false)
+        }
+    }
+
     const dayLabels = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
 
     return (
         <div className={styles.container}>
+            {/* Mobile Restriction Overlay */}
+            <div className={styles.mobileRestriction}>
+                <FaCog className={styles.mobileRestrictionIcon} />
+                <h1 className={styles.mobileRestrictionTitle}>Configuración No Disponible</h1>
+                <p className={styles.mobileRestrictionText}>
+                    Esta sección contiene ajustes avanzados y requiere una pantalla más grande. Por favor, accede desde una PC.
+                </p>
+                <button
+                    onClick={() => router.push('/reservas')}
+                    className={styles.mobileRestrictionBtn}
+                >
+                    Volver a Reservas
+                </button>
+            </div>
+
             <Head>
+
                 <title>Configuración de Reservas | Management Gym</title>
                 <meta name="description" content="Configuración administrativa de reservas" />
             </Head>
@@ -825,6 +891,99 @@ const ReservasConfig: NextPage = () => {
                                                 </div>
                                             ))
                                         )}
+                                    </div>
+                                </div>
+
+                                {/* Configuración de WhatsApp */}
+                                <div style={{ marginTop: '2.5rem', padding: '2rem', background: 'var(--bg-card)', borderRadius: '1.25rem', border: '1px solid var(--border-glass)', borderLeft: '4px solid #25D366' }}>
+                                    <h3 style={{ fontSize: '1.25rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                        <FaWhatsapp style={{ color: '#25D366' }} /> Configuración de WhatsApp
+                                    </h3>
+                                    <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
+                                        Gestiona la conexión del bot de WhatsApp. Si el bot no está respondiendo o deseas cambiar de dispositivo, puedes desvincular las sesiones activas.
+                                    </p>
+
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                            <button
+                                                onClick={handleResetBot}
+                                                disabled={isResettingBot}
+                                                style={{
+                                                    padding: '1rem',
+                                                    borderRadius: '0.75rem',
+                                                    background: 'rgba(239, 68, 68, 0.1)',
+                                                    color: '#ef4444',
+                                                    border: '1px solid rgba(239, 68, 68, 0.2)',
+                                                    fontWeight: '600',
+                                                    cursor: 'pointer',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    gap: '0.5rem',
+                                                    transition: 'all 0.2s',
+                                                    opacity: isResettingBot ? 0.7 : 1
+                                                }}
+                                                onMouseOver={(e) => {
+                                                    if (!isResettingBot) {
+                                                        e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)';
+                                                    }
+                                                }}
+                                                onMouseOut={(e) => {
+                                                    if (!isResettingBot) {
+                                                        e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
+                                                    }
+                                                }}
+                                            >
+                                                {isResettingBot ? 'Procesando...' : 'Desvincular dispositivos'}
+                                            </button>
+
+                                            <button
+                                                onClick={handleGenerateQR}
+                                                disabled={isGeneratingQR}
+                                                style={{
+                                                    padding: '1rem',
+                                                    borderRadius: '0.75rem',
+                                                    background: 'rgba(37, 211, 102, 0.1)',
+                                                    color: '#25D366',
+                                                    border: '1px solid rgba(37, 211, 102, 0.2)',
+                                                    fontWeight: '600',
+                                                    cursor: 'pointer',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    gap: '0.5rem',
+                                                    transition: 'all 0.2s',
+                                                    opacity: isGeneratingQR ? 0.7 : 1
+                                                }}
+                                                onMouseOver={(e) => {
+                                                    if (!isGeneratingQR) {
+                                                        e.currentTarget.style.background = 'rgba(37, 211, 102, 0.2)';
+                                                    }
+                                                }}
+                                                onMouseOut={(e) => {
+                                                    if (!isGeneratingQR) {
+                                                        e.currentTarget.style.background = 'rgba(37, 211, 102, 0.1)';
+                                                    }
+                                                }}
+                                            >
+                                                <FaQrcode /> {isGeneratingQR ? 'Generando...' : 'Generar QR'}
+                                            </button>
+                                        </div>
+
+                                        {qrCode && (
+                                            <div style={{ textAlign: 'center', padding: '1rem', background: '#fff', borderRadius: '1rem', marginTop: '1rem', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                                <p style={{ color: '#000', marginBottom: '1rem', fontSize: '0.9rem', fontWeight: '500' }}>Escanea este código con tu WhatsApp:</p>
+                                                <img
+                                                    src={`${qrCode}?t=${new Date().getTime()}`}
+                                                    alt="WhatsApp QR Code"
+                                                    style={{ maxWidth: '250px', width: '100%', borderRadius: '0.5rem' }}
+                                                />
+                                            </div>
+                                        )}
+
+                                        <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textAlign: 'center' }}>
+                                            Nota: Después de desvincular, deberás escanear el código QR nuevamente desde el servidor del bot.
+                                        </p>
                                     </div>
                                 </div>
                             </div>

@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from 'react'
 import { FaArrowLeft, FaCheck, FaTimes, FaCalendarAlt, FaClock, FaUser, FaBuilding, FaEnvelope, FaMapMarkerAlt, FaFilter, FaQrcode } from 'react-icons/fa'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { useAuth } from '@/features/context/AuthContext'
+import { useManagment } from '@/features/hooks/useManagment'
 import { db } from '@/firebase/firebase.config'
 import { collection, query, orderBy, onSnapshot, updateDoc, doc, Timestamp, writeBatch } from 'firebase/firestore'
 import { QRCodeCanvas } from 'qrcode.react'
@@ -26,6 +27,7 @@ interface Solicitud {
     subEnvironmentName?: string;
     date: string;
     slot: string;
+    endTime?: string;
     status: 'pendiente' | 'confirmada' | 'rechazada';
     createdAt: Timestamp;
 }
@@ -33,10 +35,13 @@ interface Solicitud {
 const AdminReservas: NextPage = () => {
     const router = useRouter()
     const { userProfile } = useAuth()
+    const { ubicaciones } = useManagment()
     const [solicitudes, setSolicitudes] = useState<Solicitud[]>([])
     const [filter, setFilter] = useState<'todos' | 'pendiente' | 'confirmada' | 'rechazada'>('todos')
     const [locationFilter, setLocationFilter] = useState<string>('todas')
+    const [slotFilter, setSlotFilter] = useState<string>('todos')
     const [loading, setLoading] = useState(true)
+    const [solicitudToConfirm, setSolicitudToConfirm] = useState<Solicitud | null>(null)
 
     useEffect(() => {
         if (userProfile && userProfile.role !== 'admin') {
@@ -180,13 +185,36 @@ const AdminReservas: NextPage = () => {
         doc.save("Flyer-Reservas-Gym.pdf")
     }
 
+    const getFullTime = (s: Solicitud) => {
+        if (s.endTime) return `${s.slot} - ${s.endTime}`
+        // Fallback for old records
+        const location = ubicaciones.find(u => u.id === s.locationId)
+        const duration = (location as any)?.reservationConfig?.slotDuration || 60
+        const [h, m] = s.slot.split(':').map(Number)
+        const endMins = h * 60 + m + duration
+        const endH = Math.floor(endMins / 60)
+        const endM = endMins % 60
+        const endTime = `${endH.toString().padStart(2, '0')}:${endM.toString().padStart(2, '0')}`
+        return `${s.slot} - ${endTime}`
+    }
+
     const filteredSolicitudes = solicitudes.filter(s => {
         const matchesStatus = filter === 'todos' ? true : s.status === filter
         const matchesLocation = locationFilter === 'todas' ? true : s.locationName === locationFilter
-        return matchesStatus && matchesLocation
+        const matchesSlot = slotFilter === 'todos' ? true : s.slot === slotFilter
+        return matchesStatus && matchesLocation && matchesSlot
     })
 
     const uniqueLocations = Array.from(new Set(solicitudes.map(s => s.locationName))).sort()
+    const uniqueSlots = Array.from(new Set(
+        solicitudes
+            .filter(s => s.status === 'pendiente')
+            .filter(s => locationFilter === 'todas' ? true : s.locationName === locationFilter)
+            .map(s => s.slot)
+    )).sort().map(slotStart => {
+        const sample = solicitudes.find(s => s.status === 'pendiente' && s.slot === slotStart && (locationFilter === 'todas' ? true : s.locationName === locationFilter))
+        return { start: slotStart, full: sample ? getFullTime(sample) : slotStart }
+    })
 
     const stats = {
         total: solicitudes.length,
@@ -204,14 +232,17 @@ const AdminReservas: NextPage = () => {
 
             <header className={styles.header}>
                 <div className={styles.headerInner}>
-                    <div className={styles.titleGroup}>
-                        <button onClick={() => router.push('/reservas')} className={styles.backButton}>
-                            <FaArrowLeft />
-                        </button>
-                        <div className={styles.titleContainer}>
-                            <h1 className={styles.title}>Gestión de Solicitudes</h1>
-                            <p className={styles.subtitle}>Aprueba o rechaza las reservas de los clientes</p>
+                    <div className={styles.headerTopRow}>
+                        <div className={styles.titleGroup}>
+                            <button onClick={() => router.push('/reservas')} className={styles.backButton}>
+                                <FaArrowLeft />
+                            </button>
+                            <div className={styles.titleContainer}>
+                                <h1 className={styles.title}>Gestión de Solicitudes</h1>
+                                <p className={styles.subtitle}>Aprueba o rechaza las reservas de los clientes</p>
+                            </div>
                         </div>
+                        <ThemeToggle />
                     </div>
                     <div className={styles.headerActions}>
                         <button
@@ -221,266 +252,93 @@ const AdminReservas: NextPage = () => {
                         >
                             <FaQrcode size={16} /> QR Cliente
                         </button>
-                        <ThemeToggle />
                     </div>
                 </div>
+
             </header>
 
-            <main className={styles.mainContent} style={{ padding: '0 2rem', marginTop: '2rem' }}>
-                <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
+            <main className={`${styles.mainContent} ${styles.adminMain}`}>
+                <div className={styles.adminContainer}>
                     {/* Dashboard de Stats */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
-                        <div style={{ background: 'var(--bg-card)', padding: '1.5rem', borderRadius: '1.25rem', border: '1px solid var(--border-glass)', display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
-                            <div style={{ width: '56px', height: '56px', borderRadius: '1rem', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)' }}>
-                                <FaFilter size={24} />
+                    <div className={styles.statsDashboard}>
+                        <div className={`${styles.statItem} ${styles.statTotal}`}>
+                            <div className={styles.statIcon}>
+                                <FaFilter />
                             </div>
-                            <div>
-                                <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: '600' }}>Total Recibidas</p>
-                                <h2 style={{ margin: '0.25rem 0 0', fontSize: '1.75rem', fontWeight: '800' }}>{stats.total}</h2>
-                            </div>
-                        </div>
-
-                        <div style={{ background: 'rgba(59, 130, 246, 0.05)', padding: '1.5rem', borderRadius: '1.25rem', border: '1px solid rgba(59, 130, 246, 0.2)', display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
-                            <div style={{ width: '56px', height: '56px', borderRadius: '1rem', background: 'rgba(59, 130, 246, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-primary)' }}>
-                                <FaClock size={24} />
-                            </div>
-                            <div>
-                                <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--accent-primary)', fontWeight: '600' }}>Pendientes</p>
-                                <h2 style={{ margin: '0.25rem 0 0', fontSize: '1.75rem', fontWeight: '800', color: 'var(--accent-primary)' }}>{stats.pendientes}</h2>
+                            <div className={styles.statInfo}>
+                                <p className={styles.statLabel}>Total Recibidas</p>
+                                <h2 className={styles.statValue}>{stats.total}</h2>
                             </div>
                         </div>
 
-                        <div style={{ background: 'rgba(16, 185, 129, 0.05)', padding: '1.5rem', borderRadius: '1.25rem', border: '1px solid rgba(16, 185, 129, 0.2)', display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
-                            <div style={{ width: '56px', height: '56px', borderRadius: '1rem', background: 'rgba(16, 185, 129, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10b981' }}>
-                                <FaCheck size={24} />
+                        <div className={`${styles.statItem} ${styles.statPending}`}>
+                            <div className={styles.statIcon}>
+                                <FaClock />
                             </div>
-                            <div>
-                                <p style={{ margin: 0, fontSize: '0.85rem', color: '#10b981', fontWeight: '600' }}>Aprobadas</p>
-                                <h2 style={{ margin: '0.25rem 0 0', fontSize: '1.75rem', fontWeight: '800', color: '#10b981' }}>{stats.aprobadas}</h2>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Filtros */}
-                    <div style={{ display: 'flex', gap: '2rem', marginBottom: '3rem', flexWrap: 'wrap', alignItems: 'flex-start', background: 'rgba(255,255,255,0.02)', padding: '1.5rem', borderRadius: '1.5rem', border: '1px solid var(--border-glass)' }}>
-                        {/* Filtro por Estado */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                            <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <FaFilter size={14} /> Filtrar por Estado
-                            </span>
-                            <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-                                {(['todos', 'pendiente', 'confirmada', 'rechazada'] as const).map(s => (
-                                    <button
-                                        key={s}
-                                        onClick={() => setFilter(s)}
-                                        style={{
-                                            padding: '0.6rem 1.25rem',
-                                            borderRadius: '1rem',
-                                            border: filter === s ? '2px solid var(--primary-color)' : '1px solid var(--border-glass)',
-                                            background: filter === s ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
-                                            color: filter === s ? 'var(--primary-color)' : 'var(--text-secondary)',
-                                            cursor: 'pointer',
-                                            fontSize: '0.85rem',
-                                            textTransform: 'capitalize',
-                                            transition: 'all 0.2s',
-                                            fontWeight: '700'
-                                        }}
-                                    >
-                                        {s}
-                                    </button>
-                                ))}
+                            <div className={styles.statInfo}>
+                                <p className={styles.statLabel}>Pendientes</p>
+                                <h2 className={styles.statValue}>{stats.pendientes}</h2>
                             </div>
                         </div>
 
-                        {/* Filtro por Ubicación */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                            <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <FaMapMarkerAlt size={14} /> Por Localización
-                            </span>
-                            <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-                                <button
-                                    onClick={() => setLocationFilter('todas')}
-                                    style={{
-                                        padding: '0.6rem 1.25rem',
-                                        borderRadius: '1rem',
-                                        border: locationFilter === 'todas' ? '2px solid var(--accent-secondary)' : '1px solid var(--border-glass)',
-                                        background: locationFilter === 'todas' ? 'rgba(99, 102, 241, 0.1)' : 'transparent',
-                                        color: locationFilter === 'todas' ? 'var(--accent-secondary)' : 'var(--text-secondary)',
-                                        cursor: 'pointer',
-                                        fontSize: '0.85rem',
-                                        transition: 'all 0.2s',
-                                        fontWeight: '700'
-                                    }}
-                                >
-                                    Todas
-                                </button>
-                                {uniqueLocations.map(loc => (
-                                    <button
-                                        key={loc}
-                                        onClick={() => setLocationFilter(loc)}
-                                        style={{
-                                            padding: '0.6rem 1.25rem',
-                                            borderRadius: '1rem',
-                                            border: locationFilter === loc ? '2px solid var(--accent-secondary)' : '1px solid var(--border-glass)',
-                                            background: locationFilter === loc ? 'rgba(99, 102, 241, 0.1)' : 'transparent',
-                                            color: locationFilter === loc ? 'var(--accent-secondary)' : 'var(--text-secondary)',
-                                            cursor: 'pointer',
-                                            fontSize: '0.85rem',
-                                            transition: 'all 0.2s',
-                                            fontWeight: '700'
-                                        }}
-                                    >
-                                        {loc}
-                                    </button>
-                                ))}
+                        <div className={`${styles.statItem} ${styles.statApproved}`}>
+                            <div className={styles.statIcon}>
+                                <FaCheck />
+                            </div>
+                            <div className={styles.statInfo}>
+                                <p className={styles.statLabel}>Aprobadas</p>
+                                <h2 className={styles.statValue}>{stats.aprobadas}</h2>
                             </div>
                         </div>
                     </div>
 
-                    {/* Resumen por Usuario (Historial) */}
-                    {solicitudes.length > 0 && filter === 'pendiente' && (
-                        <div style={{ marginBottom: '3rem', padding: '1.5rem', background: 'rgba(59, 130, 246, 0.03)', borderRadius: '1.5rem', border: '1px solid rgba(59, 130, 246, 0.1)' }}>
-                            <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                <FaCalendarAlt color="var(--primary-color)" /> Referencia de Historial para Pendientes
-                            </h3>
-                            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
-                                A continuación se muestran las últimas reservas confirmadas de los clientes que tienen solicitudes pendientes.
-                            </p>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1rem' }}>
-                                {Array.from(new Set(filteredSolicitudes.filter(s => s.status === 'pendiente').map(s => s.userDni))).map(dni => {
-                                    const client = solicitudes.find(s => s.userDni === dni)
-                                    const history = solicitudes
-                                        .filter(s => s.userDni === dni && s.status === 'confirmada')
-                                        .sort((a, b) => b.date.localeCompare(a.date))
-                                        .slice(0, 2)
-
-                                    return (
-                                        <div key={dni} style={{ background: 'var(--bg-card)', padding: '1rem', borderRadius: '1rem', border: '1px solid var(--border-glass)' }}>
-                                            <p style={{ margin: '0 0 0.5rem', fontWeight: '800', fontSize: '0.9rem' }}>{client?.userName}</p>
-                                            {history.length > 0 ? (
-                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                                                    {history.map(h => (
-                                                        <div key={h.id} style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'flex', justifyContent: 'space-between' }}>
-                                                            <span>{h.date}</span>
-                                                            <span style={{ fontWeight: '600' }}>{h.locationName}</span>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            ) : (
-                                                <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-secondary)', fontStyle: 'italic' }}>Sin reservas previas confirmadas</p>
-                                            )}
-                                        </div>
-                                    )
-                                })}
-                            </div>
-                        </div>
-                    )}
-
+                    {/* Contenido Principal (Grilla) */}
                     {loading ? (
-                        <div style={{ textAlign: 'center', padding: '6rem 2rem' }}>
-                            <div style={{ width: '40px', height: '40px', border: '3px solid var(--border-glass)', borderTopColor: 'var(--primary-color)', borderRadius: '50%', margin: '0 auto 1.5rem', animation: 'spin 1s linear infinite' }}></div>
+                        <div className={styles.adminLoading}>
+                            <div className={styles.adminLoaderSpinner}></div>
                             <p style={{ color: 'var(--text-secondary)' }}>Cargando solicitudes...</p>
                         </div>
                     ) : (
-                        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(400px, 1fr) minmax(500px, 1.2fr)', gap: '2.5rem', alignItems: 'flex-start' }}>
+                        <div className={styles.adminGrid}>
 
-                            {/* COLUMNA IZQUIERDA: SOLICITUDES PENDIENTES */}
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-                                <h2 style={{ fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.75rem', margin: '0 0 0.5rem' }}>
-                                    <FaClock color="var(--accent-primary)" /> Pendientes por Aprobar
-                                </h2>
-                                {filteredSolicitudes.filter(s => s.status === 'pendiente').length === 0 ? (
-                                    <div style={{ textAlign: 'center', padding: '3rem', background: 'var(--bg-card)', borderRadius: '1.5rem', border: '1px dashed var(--border-glass)' }}>
-                                        <p style={{ color: 'var(--text-secondary)' }}>No hay solicitudes pendientes.</p>
-                                    </div>
-                                ) : (
-                                    filteredSolicitudes.filter(s => s.status === 'pendiente').map(req => (
-                                        <div key={req.id} style={{
-                                            background: 'var(--bg-card)',
-                                            borderRadius: '1.5rem',
-                                            border: '1px solid var(--border-glass)',
-                                            padding: '1.5rem',
-                                            transition: 'all 0.3s'
-                                        }}>
-                                            <div style={{ marginBottom: '1.25rem' }}>
-                                                <h3 style={{ margin: '0 0 0.4rem', fontSize: '1.15rem', fontWeight: '800' }}>{req.userName}</h3>
-                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
-                                                    <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                        <FaBuilding size={12} style={{ opacity: 0.6 }} /> {req.companyName}
-                                                    </p>
-                                                    <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                        <FaUser size={12} style={{ opacity: 0.6 }} /> DNI: {req.userDni}
-                                                    </p>
-                                                </div>
-                                            </div>
-
-                                            <div className={styles.slotModern} style={{ cursor: 'default', marginBottom: '1.25rem', padding: '1rem', '--dynamic-color': 'var(--primary-color)' } as any}>
-                                                <span className={styles.slotModernTime}>
-                                                    <FaClock size={14} /> {req.slot}
-                                                </span>
-                                                <div className={styles.slotModernRight}>
-                                                    <span style={{ fontSize: '0.7rem', fontWeight: '700' }}>{req.date}</span>
-                                                    <p className={styles.slotModernLocation} style={{ fontSize: '0.75rem' }}>{req.locationName} {req.subEnvironmentName ? `(${req.subEnvironmentName})` : ''}</p>
-                                                </div>
-                                            </div>
-
-                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                                                <button
-                                                    onClick={() => handleUpdateStatus(req.id, 'rechazada')}
-                                                    style={{ padding: '0.75rem', borderRadius: '0.75rem', border: '1px solid rgba(239, 68, 68, 0.2)', background: 'transparent', color: '#ef4444', cursor: 'pointer', fontWeight: '700', fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
-                                                >
-                                                    <FaTimes /> Rechazar
-                                                </button>
-                                                <button
-                                                    onClick={() => handleUpdateStatus(req.id, 'confirmada')}
-                                                    style={{ padding: '0.75rem', borderRadius: '0.75rem', border: 'none', background: 'var(--primary-color)', color: 'white', cursor: 'pointer', fontWeight: '700', fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
-                                                >
-                                                    <FaCheck /> Aprobar
-                                                </button>
-                                            </div>
-                                        </div>
-                                    ))
-                                )}
-                            </div>
-
-                            {/* COLUMNA DERECHA: HISTORIAL COMPLETO EN TABLA */}
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-                                <h2 style={{ fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.75rem', margin: '0 0 0.5rem' }}>
+                            {/* COLUMNA IZQUIERDA: HISTORIAL COMPLETO EN TABLA */}
+                            <div className={styles.adminColumn}>
+                                <h2 className={styles.adminColumnTitle}>
                                     <FaCalendarAlt color="#10b981" /> Historial de Reservas
                                 </h2>
-                                <div style={{ background: 'var(--bg-card)', borderRadius: '1.5rem', border: '1px solid var(--border-glass)', overflow: 'hidden' }}>
-                                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
-                                        <thead style={{ background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid var(--border-glass)' }}>
+                                <div className={styles.adminTableContainer}>
+                                    <table className={styles.adminTable}>
+                                        <thead className={styles.adminTableHead}>
                                             <tr>
-                                                <th style={{ textAlign: 'left', padding: '1rem', color: 'var(--text-secondary)', fontWeight: '700' }}>Fecha/Hora</th>
-                                                <th style={{ textAlign: 'left', padding: '1rem', color: 'var(--text-secondary)', fontWeight: '700' }}>Ubicación</th>
-                                                <th style={{ textAlign: 'left', padding: '1rem', color: 'var(--text-secondary)', fontWeight: '700' }}>Cliente</th>
-                                                <th style={{ textAlign: 'left', padding: '1rem', color: 'var(--text-secondary)', fontWeight: '700' }}>DNI</th>
+                                                <th>Fecha/Hora</th>
+                                                <th>Ubicación</th>
+                                                <th>Cliente</th>
+                                                <th>DNI</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             {solicitudes.filter(s => s.status === 'confirmada').length === 0 ? (
-                                                <tr>
-                                                    <td colSpan={4} style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>No hay reservas confirmadas aún.</td>
+                                                <tr className={styles.adminTableRow}>
+                                                    <td colSpan={4} className={styles.adminTableCell} style={{ textAlign: 'center', padding: '3rem' }}>No hay reservas confirmadas aún.</td>
                                                 </tr>
                                             ) : (
                                                 solicitudes.filter(s => s.status === 'confirmada').slice(0, 50).map(s => (
-                                                    <tr key={s.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
-                                                        <td style={{ padding: '1rem' }}>
-                                                            <div style={{ fontWeight: '700' }}>{s.date}</div>
-                                                            <div style={{ color: 'var(--text-secondary)', fontSize: '0.75rem' }}>{s.slot}</div>
+                                                    <tr key={s.id} className={styles.adminTableRow}>
+                                                        <td className={styles.adminTableCell}>
+                                                            <div className={styles.adminTableCellBold}>{s.date}</div>
+                                                            <div className={styles.adminTableCellSub}>{getFullTime(s)}</div>
                                                         </td>
-                                                        <td style={{ padding: '1rem' }}>
+                                                        <td className={styles.adminTableCell}>
                                                             <div style={{ fontWeight: '600' }}>{s.locationName}</div>
-                                                            <div style={{ color: 'var(--text-secondary)', fontSize: '0.75rem' }}>{s.subEnvironmentName || '-'}</div>
+                                                            <div className={styles.adminTableCellSub}>{s.subEnvironmentName || '-'}</div>
                                                         </td>
-                                                        <td style={{ padding: '1rem' }}>
-                                                            <div style={{ fontWeight: '700' }}>{s.userName}</div>
-                                                            <div style={{ color: 'var(--text-secondary)', fontSize: '0.75rem' }}>{s.companyName}</div>
+                                                        <td className={styles.adminTableCell}>
+                                                            <div className={styles.adminTableCellBold}>{s.userName}</div>
+                                                            <div className={styles.adminTableCellSub}>{s.companyName}</div>
                                                         </td>
-                                                        <td style={{ padding: '1rem' }}>
+                                                        <td className={styles.adminTableCell}>
                                                             <div>{s.userDni}</div>
-                                                            <div style={{ color: 'var(--primary-color)', fontSize: '0.75rem' }}>{s.userPhone}</div>
+                                                            <div className={styles.adminTableCellAccent}>{s.userPhone}</div>
                                                         </td>
                                                     </tr>
                                                 ))
@@ -490,6 +348,171 @@ const AdminReservas: NextPage = () => {
                                 </div>
                             </div>
 
+                            {/* COLUMNA DERECHA: FILTROS + SOLICITUDES PENDIENTES */}
+                            <div className={styles.adminColumn}>
+                                {/* Filtros */}
+                                <div className={styles.filterSection} style={{ marginBottom: '1.5rem', padding: '1.25rem' }}>
+                                    {/* Filtro por Estado */}
+                                    <div className={styles.filterGroup}>
+                                        <span className={styles.filterLabel}>
+                                            <FaFilter size={14} /> Filtrar por Estado
+                                        </span>
+                                        <div className={styles.filterList}>
+                                            {(['todos', 'pendiente', 'confirmada', 'rechazada'] as const).map(s => (
+                                                <button
+                                                    key={s}
+                                                    onClick={() => setFilter(s)}
+                                                    className={`${styles.filterBtn} ${filter === s ? styles.filterBtnActive : ''}`}
+                                                >
+                                                    {s}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Filtro por Ubicación */}
+                                    <div className={styles.filterGroup}>
+                                        <span className={styles.filterLabel}>
+                                            <FaMapMarkerAlt size={14} /> Por Localización
+                                        </span>
+                                        <div className={styles.filterList}>
+                                            <button
+                                                onClick={() => {
+                                                    setLocationFilter('todas')
+                                                    setSlotFilter('todos')
+                                                }}
+                                                className={`${styles.filterBtn} ${locationFilter === 'todas' ? styles.filterBtnLocActive : ''}`}
+                                            >
+                                                Todas
+                                            </button>
+                                            {uniqueLocations.map(loc => (
+                                                <button
+                                                    key={loc}
+                                                    onClick={() => {
+                                                        setLocationFilter(loc)
+                                                        setSlotFilter('todos')
+                                                    }}
+                                                    className={`${styles.filterBtn} ${locationFilter === loc ? styles.filterBtnLocActive : ''}`}
+                                                >
+                                                    {loc}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Filtro por Horario (Solo si se selecciona un local) */}
+                                    {locationFilter !== 'todas' && (
+                                        <div className={styles.filterGroup}>
+                                            <span className={styles.filterLabel}>
+                                                <FaClock size={14} /> Por Horario
+                                            </span>
+                                            <div className={styles.filterList}>
+                                                <button
+                                                    onClick={() => setSlotFilter('todos')}
+                                                    className={`${styles.filterBtn} ${slotFilter === 'todos' ? styles.filterBtnActive : ''}`}
+                                                >
+                                                    Todos
+                                                </button>
+                                                {uniqueSlots.map(slot => (
+                                                    <button
+                                                        key={slot.start}
+                                                        onClick={() => setSlotFilter(slot.start)}
+                                                        className={`${styles.filterBtn} ${slotFilter === slot.start ? styles.filterBtnActive : ''}`}
+                                                    >
+                                                        {slot.full}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Resumen por Usuario (Historial de referencia) */}
+                                {solicitudes.length > 0 && filter === 'pendiente' && (
+                                    <div className={styles.historyRefBox} style={{ marginBottom: '1.5rem', padding: '1.25rem' }}>
+                                        <h3 className={styles.historyRefTitle} style={{ fontSize: '1rem' }}>
+                                            <FaCalendarAlt color="var(--primary-color)" /> Referencia de Historial
+                                        </h3>
+                                        <div className={styles.historyClientGrid} style={{ gridTemplateColumns: '1fr' }}>
+                                            {Array.from(new Set(filteredSolicitudes.filter(s => s.status === 'pendiente').map(s => s.userDni))).map(dni => {
+                                                const client = solicitudes.find(s => s.userDni === dni)
+                                                const history = solicitudes
+                                                    .filter(s => s.userDni === dni && s.status === 'confirmada')
+                                                    .sort((a, b) => b.date.localeCompare(a.date))
+                                                    .slice(0, 1)
+
+                                                return (
+                                                    <div key={dni} className={styles.historyClientCard} style={{ padding: '0.75rem' }}>
+                                                        <p className={styles.historyClientName} style={{ fontSize: '0.8rem' }}>{client?.userName}</p>
+                                                        {history.length > 0 ? (
+                                                            <div className={styles.historyClientRecords}>
+                                                                {history.map(h => (
+                                                                    <div key={h.id} className={styles.historyRecordRow} style={{ fontSize: '0.7rem' }}>
+                                                                        <span>{h.date}</span>
+                                                                        <span className={styles.historyRecordLoc}>{h.locationName}</span>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        ) : (
+                                                            <p className={styles.historyClientEmpty}>Sin previas</p>
+                                                        )}
+                                                    </div>
+                                                )
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+
+                                <h2 className={styles.adminColumnTitle}>
+                                    <FaClock color="var(--accent-primary)" /> Pendientes por Aprobar
+                                </h2>
+                                {filteredSolicitudes.filter(s => s.status === 'pendiente').length === 0 ? (
+                                    <div className={styles.adminEmpty}>
+                                        <p style={{ color: 'var(--text-secondary)' }}>No hay solicitudes pendientes.</p>
+                                    </div>
+                                ) : (
+                                    filteredSolicitudes.filter(s => s.status === 'pendiente').map(req => (
+                                        <div key={req.id} className={styles.adminCard}>
+                                            <div className={styles.adminCardHeader}>
+                                                <h3 className={styles.adminCardName}>{req.userName}</h3>
+                                                <div className={styles.adminCardInfo}>
+                                                    <p className={styles.adminCardInfoItem}>
+                                                        <FaBuilding size={12} style={{ opacity: 0.6 }} /> {req.companyName}
+                                                    </p>
+                                                    <p className={styles.adminCardInfoItem}>
+                                                        <FaUser size={12} style={{ opacity: 0.6 }} /> DNI: {req.userDni}
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            <div className={styles.slotModern} style={{ cursor: 'default', marginBottom: '1.25rem', padding: '1rem', '--dynamic-color': 'var(--primary-color)' } as any}>
+                                                <span className={styles.slotModernTime}>
+                                                    <FaClock size={14} /> {getFullTime(req)}
+                                                </span>
+                                                <div className={styles.slotModernRight}>
+                                                    <span style={{ fontSize: '0.7rem', fontWeight: '700' }}>{req.date}</span>
+                                                    <p className={styles.slotModernLocation} style={{ fontSize: '0.75rem' }}>{req.locationName} {req.subEnvironmentName ? `(${req.subEnvironmentName})` : ''}</p>
+                                                </div>
+                                            </div>
+
+                                            <div className={styles.adminCardBtnGroup}>
+                                                <button
+                                                    onClick={() => handleUpdateStatus(req.id, 'rechazada')}
+                                                    className={styles.adminBtnReject}
+                                                >
+                                                    <FaTimes /> Rechazar
+                                                </button>
+                                                <button
+                                                    onClick={() => setSolicitudToConfirm(req)}
+                                                    className={styles.adminBtnApprove}
+                                                >
+                                                    <FaCheck /> Aprobar
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
                         </div>
                     )}
                 </div>
@@ -505,6 +528,37 @@ const AdminReservas: NextPage = () => {
                     includeMargin={true}
                 />
             </div>
+            {/* Confirmación de Aprobación */}
+            {solicitudToConfirm && (
+                <div className={styles.adminModalOverlay}>
+                    <div className={styles.adminModalCard}>
+                        <div className={styles.adminModalIcon}>
+                            <FaCheck size={32} />
+                        </div>
+                        <h2 className={styles.adminModalTitle}>¿Confirmar Aprobación?</h2>
+                        <p className={styles.adminModalText}>
+                            Estás a punto de aprobar la reserva de <strong>{solicitudToConfirm.userName}</strong> para <strong>{solicitudToConfirm.locationName}</strong> el día <strong>{solicitudToConfirm.date}</strong> a las <strong>{solicitudToConfirm.slot}</strong>.
+                        </p>
+                        <div className={styles.adminModalActions}>
+                            <button
+                                onClick={() => setSolicitudToConfirm(null)}
+                                className={styles.adminModalBtnCancel}
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={() => {
+                                    handleUpdateStatus(solicitudToConfirm.id, 'confirmada')
+                                    setSolicitudToConfirm(null)
+                                }}
+                                className={styles.adminModalBtnConfirm}
+                            >
+                                Sí, Aprobar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
