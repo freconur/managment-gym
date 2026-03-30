@@ -176,7 +176,7 @@ export default function MantenimientoInfo({
                     )}
 
                     {/* Fecha de Compra */}
-                    {infoMaquina?.purchaseDate && (
+                    {/* {infoMaquina?.purchaseDate && (
                         <div className={styles.mantenimientoDetailMachineInfoRow}>
                             <FaCalendarAlt size={12} className={styles.mantenimientoDetailIconGray} />
                             <span className={styles.mantenimientoDetailMachineInfoLabel}>
@@ -190,7 +190,7 @@ export default function MantenimientoInfo({
                                 }) || 'N/A'}
                             </span>
                         </div>
-                    )}
+                    )} */}
 
                     {/* ID de la máquina */}
                     {infoMaquina?.id && (
