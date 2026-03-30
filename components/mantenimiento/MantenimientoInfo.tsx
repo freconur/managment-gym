@@ -180,7 +180,7 @@ export default function MantenimientoInfo({
                         <div className={styles.mantenimientoDetailMachineInfoRow}>
                             <FaCalendarAlt size={12} className={styles.mantenimientoDetailIconGray} />
                             <span className={styles.mantenimientoDetailMachineInfoLabel}>
-                                Compra:
+                                N°OT:
                             </span>
                             <span className={styles.mantenimientoDetailMachineInfoValue}>
                                 {convertTimestampToDate(infoMaquina.purchaseDate)?.toLocaleDateString('es-ES', {
