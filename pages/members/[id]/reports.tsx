@@ -879,10 +879,10 @@ const DynamicReportsPage: NextPage = () => {
                                     />
                                 </div>
                                 {tableDataCompany.length > 10 && (
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', marginTop: '10px', fontSize: '0.85rem' }}>
-                                        <button onClick={() => setCompanyPage(p => Math.max(0, p - 1))} disabled={companyPage === 0} style={{ padding: '6px 12px', borderRadius: 4, border: '1px solid #ccc', background: '#fff', cursor: companyPage === 0 ? 'not-allowed' : 'pointer' }}>Anterior</button>
-                                        <span style={{ color: '#666', marginTop: 5 }}>Página {companyPage + 1} de {Math.ceil(tableDataCompany.length / 10)}</span>
-                                        <button onClick={() => setCompanyPage(p => p + 1 < (tableDataCompany.length / 10) ? p + 1 : p)} disabled={companyPage + 1 >= Math.ceil(tableDataCompany.length / 10)} style={{ padding: '6px 12px', borderRadius: 4, border: '1px solid #ccc', background: '#fff', cursor: companyPage + 1 >= Math.ceil(tableDataCompany.length / 10) ? 'not-allowed' : 'pointer' }}>Siguiente</button>
+                                    <div className={styles.paginationContainer}>
+                                        <button onClick={() => setCompanyPage(p => Math.max(0, p - 1))} disabled={companyPage === 0} className={styles.paginationButton}>Anterior</button>
+                                        <span className={styles.paginationInfo}>Página {companyPage + 1} de {Math.ceil(tableDataCompany.length / 10)}</span>
+                                        <button onClick={() => setCompanyPage(p => p + 1 < (tableDataCompany.length / 10) ? p + 1 : p)} disabled={companyPage + 1 >= Math.ceil(tableDataCompany.length / 10)} className={styles.paginationButton}>Siguiente</button>
                                     </div>
                                 )}
                             </div>
@@ -935,10 +935,10 @@ const DynamicReportsPage: NextPage = () => {
                                     />
                                 </div>
                                 {tableDataCompany.length > 10 && (
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', marginTop: '10px', fontSize: '0.85rem' }}>
-                                        <button onClick={() => setUniqueCompanyPage(p => Math.max(0, p - 1))} disabled={uniqueCompanyPage === 0} style={{ padding: '6px 12px', borderRadius: 4, border: '1px solid #ccc', background: '#fff', cursor: uniqueCompanyPage === 0 ? 'not-allowed' : 'pointer' }}>Anterior</button>
-                                        <span style={{ color: '#666', marginTop: 5 }}>Página {uniqueCompanyPage + 1} de {Math.ceil(tableDataCompany.length / 10)}</span>
-                                        <button onClick={() => setUniqueCompanyPage(p => p + 1 < (tableDataCompany.length / 10) ? p + 1 : p)} disabled={uniqueCompanyPage + 1 >= Math.ceil(tableDataCompany.length / 10)} style={{ padding: '6px 12px', borderRadius: 4, border: '1px solid #ccc', background: '#fff', cursor: uniqueCompanyPage + 1 >= Math.ceil(tableDataCompany.length / 10) ? 'not-allowed' : 'pointer' }}>Siguiente</button>
+                                    <div className={styles.paginationContainer}>
+                                        <button onClick={() => setUniqueCompanyPage(p => Math.max(0, p - 1))} disabled={uniqueCompanyPage === 0} className={styles.paginationButton}>Anterior</button>
+                                        <span className={styles.paginationInfo}>Página {uniqueCompanyPage + 1} de {Math.ceil(tableDataCompany.length / 10)}</span>
+                                        <button onClick={() => setUniqueCompanyPage(p => p + 1 < (tableDataCompany.length / 10) ? p + 1 : p)} disabled={uniqueCompanyPage + 1 >= Math.ceil(tableDataCompany.length / 10)} className={styles.paginationButton}>Siguiente</button>
                                     </div>
                                 )}
                             </div>
@@ -991,10 +991,10 @@ const DynamicReportsPage: NextPage = () => {
                                     />
                                 </div>
                                 {tableDataArea.length > 10 && (
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', marginTop: '10px', fontSize: '0.85rem' }}>
-                                        <button onClick={() => setAreaPage(p => Math.max(0, p - 1))} disabled={areaPage === 0} style={{ padding: '6px 12px', borderRadius: 4, border: '1px solid #ccc', background: '#fff', cursor: areaPage === 0 ? 'not-allowed' : 'pointer' }}>Anterior</button>
-                                        <span style={{ color: '#666', marginTop: 5 }}>Página {areaPage + 1} de {Math.ceil(tableDataArea.length / 10)}</span>
-                                        <button onClick={() => setAreaPage(p => p + 1 < (tableDataArea.length / 10) ? p + 1 : p)} disabled={areaPage + 1 >= Math.ceil(tableDataArea.length / 10)} style={{ padding: '6px 12px', borderRadius: 4, border: '1px solid #ccc', background: '#fff', cursor: areaPage + 1 >= Math.ceil(tableDataArea.length / 10) ? 'not-allowed' : 'pointer' }}>Siguiente</button>
+                                    <div className={styles.paginationContainer}>
+                                        <button onClick={() => setAreaPage(p => Math.max(0, p - 1))} disabled={areaPage === 0} className={styles.paginationButton}>Anterior</button>
+                                        <span className={styles.paginationInfo}>Página {areaPage + 1} de {Math.ceil(tableDataArea.length / 10)}</span>
+                                        <button onClick={() => setAreaPage(p => p + 1 < (tableDataArea.length / 10) ? p + 1 : p)} disabled={areaPage + 1 >= Math.ceil(tableDataArea.length / 10)} className={styles.paginationButton}>Siguiente</button>
                                     </div>
                                 )}
                             </div>
@@ -1002,31 +1002,31 @@ const DynamicReportsPage: NextPage = () => {
                             <div className={`${styles.card} ${styles.cardFullWidth}`}>
                                 <h3 className={styles.cardTitle} style={{ borderBottom: '1px solid #eee', paddingBottom: 10, marginBottom: 15 }}>Datos Detallados</h3>
 
-                                <div style={{ border: '1px solid #eaeaea', borderRadius: 8, marginBottom: 10, overflow: 'hidden' }}>
+                                <div style={{ border: '1px solid var(--border-glass)', borderRadius: 8, marginBottom: 10, overflow: 'hidden' }}>
                                     <button
                                         onClick={() => setShowCompanyTable(!showCompanyTable)}
-                                        style={{ width: '100%', padding: '15px', background: showCompanyTable ? '#f8fafc' : '#fff', border: 'none', textAlign: 'left', fontWeight: 'bold', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', color: '#555' }}
+                                        className={styles.accordionButton}
                                     >
                                         1. Tabla de Ingresos y Usuarios Únicos por Empresa
                                         {showCompanyTable ? <FaChevronUp /> : <FaChevronDown />}
                                     </button>
                                     {showCompanyTable && (
-                                        <div style={{ padding: 15, borderTop: '1px solid #eaeaea', background: '#fff' }}>
+                                        <div className={styles.accordionContent}>
                                             <div style={{ overflowX: 'auto' }}>
-                                                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem', color: '#333' }}>
+                                                <table className={styles.dataTable}>
                                                     <thead>
-                                                        <tr style={{ background: '#fafafa', position: 'sticky', top: 0, textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: '0.05em', color: '#666' }}>
-                                                            <th style={{ padding: '12px 10px', borderBottom: '1px solid #eaeaea', fontWeight: 600 }}>Empresa</th>
-                                                            <th style={{ padding: '12px 10px', borderBottom: '1px solid #eaeaea', fontWeight: 600 }}>Ingresos Totales</th>
-                                                            <th style={{ padding: '12px 10px', borderBottom: '1px solid #eaeaea', fontWeight: 600 }}>Usuarios Únicos</th>
+                                                        <tr className={styles.dataTableHeader}>
+                                                            <th>Empresa</th>
+                                                            <th>Ingresos Totales</th>
+                                                            <th>Usuarios Únicos</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>
                                                         {tableDataCompany.map((row, i) => (
-                                                            <tr key={row.company} style={{ borderBottom: '1px solid #f5f5f5', transition: 'background-color 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fafafa'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                                                                <td style={{ padding: '12px 10px' }}>{row.company}</td>
-                                                                <td style={{ padding: '12px 10px' }}>{row.ingresos}</td>
-                                                                <td style={{ padding: '12px 10px' }}>{row.usuariosUnicos}</td>
+                                                            <tr key={row.company} className={styles.dataTableRow}>
+                                                                <td>{row.company}</td>
+                                                                <td>{row.ingresos}</td>
+                                                                <td>{row.usuariosUnicos}</td>
                                                             </tr>
                                                         ))}
                                                     </tbody>
@@ -1036,29 +1036,29 @@ const DynamicReportsPage: NextPage = () => {
                                     )}
                                 </div>
 
-                                <div style={{ border: '1px solid #eaeaea', borderRadius: 8, marginBottom: 10, overflow: 'hidden' }}>
+                                <div style={{ border: '1px solid var(--border-glass)', borderRadius: 8, marginBottom: 10, overflow: 'hidden' }}>
                                     <button
                                         onClick={() => setShowAreaTable(!showAreaTable)}
-                                        style={{ width: '100%', padding: '15px', background: showAreaTable ? '#f8fafc' : '#fff', border: 'none', textAlign: 'left', fontWeight: 'bold', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', color: '#555' }}
+                                        className={styles.accordionButton}
                                     >
                                         2. Tabla de Ingresos por Área
                                         {showAreaTable ? <FaChevronUp /> : <FaChevronDown />}
                                     </button>
                                     {showAreaTable && (
-                                        <div style={{ padding: 15, borderTop: '1px solid #eaeaea', background: '#fff' }}>
+                                        <div className={styles.accordionContent}>
                                             <div style={{ overflowX: 'auto' }}>
-                                                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem', color: '#333' }}>
+                                                <table className={styles.dataTable}>
                                                     <thead>
-                                                        <tr style={{ background: '#fafafa', position: 'sticky', top: 0, textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: '0.05em', color: '#666' }}>
-                                                            <th style={{ padding: '12px 10px', borderBottom: '1px solid #eaeaea', fontWeight: 600 }}>Área</th>
-                                                            <th style={{ padding: '12px 10px', borderBottom: '1px solid #eaeaea', fontWeight: 600 }}>Ingresos Totales</th>
+                                                        <tr className={styles.dataTableHeader}>
+                                                            <th>Área</th>
+                                                            <th>Ingresos Totales</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>
                                                         {tableDataArea.map((row, i) => (
-                                                            <tr key={row.area} style={{ borderBottom: '1px solid #f5f5f5', transition: 'background-color 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fafafa'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                                                                <td style={{ padding: '12px 10px' }}>{row.area}</td>
-                                                                <td style={{ padding: '12px 10px' }}>{row.ingresos}</td>
+                                                            <tr key={row.area} className={styles.dataTableRow}>
+                                                                <td>{row.area}</td>
+                                                                <td>{row.ingresos}</td>
                                                             </tr>
                                                         ))}
                                                     </tbody>
@@ -1068,49 +1068,49 @@ const DynamicReportsPage: NextPage = () => {
                                     )}
                                 </div>
 
-                                <div style={{ border: '1px solid #eaeaea', borderRadius: 8, marginBottom: 10, overflow: 'hidden' }}>
+                                <div style={{ border: '1px solid var(--border-glass)', borderRadius: 8, marginBottom: 10, overflow: 'hidden' }}>
                                     <button
                                         onClick={() => setShowUsersTable(!showUsersTable)}
-                                        style={{ width: '100%', padding: '15px', background: showUsersTable ? '#f8fafc' : '#fff', border: 'none', textAlign: 'left', fontWeight: 'bold', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', color: '#555' }}
+                                        className={styles.accordionButton}
                                     >
                                         3. Tabla Detalle de Cada Usuario Único
                                         {showUsersTable ? <FaChevronUp /> : <FaChevronDown />}
                                     </button>
                                     {showUsersTable && (
-                                        <div style={{ padding: 15, borderTop: '1px solid #eaeaea', background: '#fff' }}>
+                                        <div className={styles.accordionContent}>
                                             <div style={{ overflowX: 'auto' }}>
-                                                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem', color: '#333' }}>
+                                                <table className={styles.dataTable}>
                                                     <thead>
-                                                        <tr style={{ background: '#fafafa', position: 'sticky', top: 0, textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: '0.05em', color: '#666' }}>
-                                                            <th style={{ padding: '12px 10px', borderBottom: '1px solid #eaeaea', fontWeight: 600 }}>#</th>
-                                                            <th style={{ padding: '12px 10px', borderBottom: '1px solid #eaeaea', fontWeight: 600 }}>DNI</th>
-                                                            <th style={{ padding: '12px 10px', borderBottom: '1px solid #eaeaea', fontWeight: 600 }}>Usuario</th>
-                                                            <th style={{ padding: '12px 10px', borderBottom: '1px solid #eaeaea', fontWeight: 600 }}>Empresa</th>
-                                                            <th style={{ padding: '12px 10px', borderBottom: '1px solid #eaeaea', fontWeight: 600 }}>Cargo</th>
-                                                            <th style={{ padding: '12px 10px', borderBottom: '1px solid #eaeaea', fontWeight: 600 }}>Área</th>
-                                                            <th style={{ padding: '12px 10px', borderBottom: '1px solid #eaeaea', fontWeight: 600 }}>Ingresos</th>
+                                                        <tr className={styles.dataTableHeader}>
+                                                            <th>#</th>
+                                                            <th>DNI</th>
+                                                            <th>Usuario</th>
+                                                            <th>Empresa</th>
+                                                            <th>Cargo</th>
+                                                            <th>Área</th>
+                                                            <th>Ingresos</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>
                                                         {(tableDataUniqueUsers.slice(uniqueUsersPage * 20, (uniqueUsersPage + 1) * 20)).map((row: any, i: number) => (
-                                                            <tr key={i} style={{ borderBottom: '1px solid #f5f5f5', transition: 'background-color 0.2s', textTransform: 'capitalize' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fafafa'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                                                                <td style={{ padding: '12px 10px', color: '#999', fontWeight: 600 }}>{uniqueUsersPage * 20 + i + 1}</td>
-                                                                <td style={{ padding: '12px 10px' }}>{row.dni}</td>
-                                                                <td style={{ padding: '12px 10px' }}>{row.name}</td>
-                                                                <td style={{ padding: '12px 10px' }}>{row.company}</td>
-                                                                <td style={{ padding: '12px 10px' }}>{row.cargo}</td>
-                                                                <td style={{ padding: '12px 10px' }}>{row.area}</td>
-                                                                <td style={{ padding: '12px 10px' }}>{row.ingresos}</td>
+                                                            <tr key={i} className={styles.dataTableRow} style={{ textTransform: 'capitalize' }}>
+                                                                <td style={{ padding: '12px 10px', color: 'var(--text-secondary)', fontWeight: 600 }}>{uniqueUsersPage * 20 + i + 1}</td>
+                                                                <td>{row.dni}</td>
+                                                                <td>{row.name}</td>
+                                                                <td>{row.company}</td>
+                                                                <td>{row.cargo}</td>
+                                                                <td>{row.area}</td>
+                                                                <td>{row.ingresos}</td>
                                                             </tr>
                                                         ))}
                                                     </tbody>
                                                 </table>
                                             </div>
                                             {tableDataUniqueUsers.length > 20 && (
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', marginTop: '10px', fontSize: '0.85rem' }}>
-                                                    <button onClick={() => setUniqueUsersPage(p => Math.max(0, p - 1))} disabled={uniqueUsersPage === 0} style={{ padding: '6px 12px', borderRadius: 4, border: '1px solid #ccc', background: '#fff', cursor: uniqueUsersPage === 0 ? 'not-allowed' : 'pointer' }}>Anterior</button>
-                                                    <span style={{ color: '#666', marginTop: 5 }}>Página {uniqueUsersPage + 1} de {Math.ceil(tableDataUniqueUsers.length / 20)}</span>
-                                                    <button onClick={() => setUniqueUsersPage(p => p + 1 < (tableDataUniqueUsers.length / 20) ? p + 1 : p)} disabled={uniqueUsersPage + 1 >= Math.ceil(tableDataUniqueUsers.length / 20)} style={{ padding: '6px 12px', borderRadius: 4, border: '1px solid #ccc', background: '#fff', cursor: uniqueUsersPage + 1 >= Math.ceil(tableDataUniqueUsers.length / 20) ? 'not-allowed' : 'pointer' }}>Siguiente</button>
+                                                <div className={styles.paginationContainer}>
+                                                    <button onClick={() => setUniqueUsersPage(p => Math.max(0, p - 1))} disabled={uniqueUsersPage === 0} className={styles.paginationButton}>Anterior</button>
+                                                    <span className={styles.paginationInfo}>Página {uniqueUsersPage + 1} de {Math.ceil(tableDataUniqueUsers.length / 20)}</span>
+                                                    <button onClick={() => setUniqueUsersPage(p => p + 1 < (tableDataUniqueUsers.length / 20) ? p + 1 : p)} disabled={uniqueUsersPage + 1 >= Math.ceil(tableDataUniqueUsers.length / 20)} className={styles.paginationButton}>Siguiente</button>
                                                 </div>
                                             )}
                                         </div>
