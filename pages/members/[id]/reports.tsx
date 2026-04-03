@@ -94,6 +94,7 @@ interface MembersReportPDFProps {
         totalIngresos: number;
         empresasActivas: number;
         totalUsuariosUnicos: number;
+        areasActivas: number;
     };
     locationName: string;
     tableDataCompany: any[];
@@ -225,6 +226,10 @@ const MembersReportPDF = ({ data, charts, stats, locationName, tableDataCompany,
                         <Text style={pdfStyles.summaryLabel}>Empresas Activas</Text>
                         <Text style={pdfStyles.summaryValue}>{stats.empresasActivas}</Text>
                     </View>
+                    <View style={pdfStyles.summaryItem}>
+                        <Text style={pdfStyles.summaryLabel}>Áreas Activas</Text>
+                        <Text style={pdfStyles.summaryValue}>{stats.areasActivas}</Text>
+                    </View>
                 </View>
             </View>
 
@@ -267,7 +272,6 @@ const DynamicReportsPage: NextPage = () => {
     const reportRef = useRef<HTMLDivElement>(null)
 
     const [selectedSex, setSelectedSex] = useState<string>('all')
-
     const [selectedSubEnv, setSelectedSubEnv] = useState<string>('all')
     const [location, setLocation] = useState<Ubicacion | null>(null)
 
@@ -283,6 +287,51 @@ const DynamicReportsPage: NextPage = () => {
     const [showCompanyTable, setShowCompanyTable] = useState(false)
     const [showAreaTable, setShowAreaTable] = useState(false)
     const [showUsersTable, setShowUsersTable] = useState(false)
+
+    // ── Sync filters from URL on initial load ────────────────────────────────
+    const [queryReady, setQueryReady] = useState(false)
+    useEffect(() => {
+        if (!router.isReady) return
+        const q = router.query
+        if (q.dateRange) setDateRange(q.dateRange as string)
+        if (q.customStart) setCustomStart(q.customStart as string)
+        if (q.customEnd) setCustomEnd(q.customEnd as string)
+        if (q.company) setSelectedCompany(q.company as string)
+        if (q.sex) setSelectedSex(q.sex as string)
+        if (q.subEnv) setSelectedSubEnv(q.subEnv as string)
+        if (q.timeRange) setTimeRange(q.timeRange as string)
+        if (q.startTime) setCustomStartTime(q.startTime as string)
+        if (q.endTime) setCustomEndTime(q.endTime as string)
+        setQueryReady(true)
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [router.isReady])
+
+    /** Push the current filter state to the URL (shallow, no navigation) */
+    const pushFiltersToUrl = (overrides: Record<string, string>) => {
+        const current = {
+            dateRange,
+            customStart,
+            customEnd,
+            company: selectedCompany,
+            sex: selectedSex,
+            subEnv: selectedSubEnv,
+            timeRange,
+            startTime: customStartTime,
+            endTime: customEndTime,
+            ...overrides,
+        }
+        // Drop keys that are defaults so the URL stays clean
+        const cleaned: Record<string, string> = {}
+        const defaults: Record<string, string> = {
+            dateRange: 'this_month', customStart: '', customEnd: '',
+            company: 'all', sex: 'all', subEnv: 'all',
+            timeRange: 'all', startTime: '', endTime: ''
+        }
+        Object.entries(current).forEach(([k, v]) => {
+            if (v && v !== defaults[k]) cleaned[k] = v
+        })
+        router.replace({ query: { id, ...cleaned } }, undefined, { shallow: true })
+    }
 
 
     useEffect(() => {
@@ -396,10 +445,73 @@ const DynamicReportsPage: NextPage = () => {
         return filtered
     }, [accessData, dateRange, selectedCompany, selectedSex, customStart, customEnd, selectedSubEnv, timeRange, customStartTime, customEndTime])
 
+    // Companies derived from data filtered by all active filters EXCEPT the company filter.
+    // This ensures the dropdown only shows companies with actual accesses in the current context.
     const companies = useMemo(() => {
-        const unique = new Set(accessData.map(item => item.company).filter(Boolean))
+        let filtered = accessData
+
+        // Date filter
+        const now = new Date()
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+        if (dateRange === 'this_month') {
+            filtered = filtered.filter(item => item.timestamp?.toDate() >= startOfMonth)
+        } else if (dateRange === 'today') {
+            const startOfDay = new Date(now.setHours(0, 0, 0, 0))
+            filtered = filtered.filter(item => item.timestamp?.toDate() >= startOfDay)
+        } else if (dateRange === 'custom' && customStart && customEnd) {
+            const start = new Date(customStart)
+            start.setMinutes(start.getMinutes() + start.getTimezoneOffset())
+            const end = new Date(customEnd)
+            end.setMinutes(end.getMinutes() + end.getTimezoneOffset())
+            end.setHours(23, 59, 59, 999)
+            filtered = filtered.filter(item => {
+                const date = item.timestamp?.toDate()
+                return date >= start && date <= end
+            })
+        }
+
+        // Sex filter
+        if (selectedSex !== 'all') {
+            filtered = filtered.filter(item => item.sexo === selectedSex)
+        }
+
+        // SubEnvironment filter
+        if (selectedSubEnv !== 'all') {
+            filtered = filtered.filter(item =>
+                item.subEnvironments && item.subEnvironments.includes(selectedSubEnv)
+            )
+        }
+
+        // Time filter
+        if (timeRange !== 'all') {
+            let startMin: number | null = null
+            let endMin: number | null = null
+            if (timeRange === '07:00-11:00') { startMin = 7 * 60; endMin = 11 * 60 }
+            else if (timeRange === '14:00-17:00') { startMin = 14 * 60; endMin = 17 * 60 }
+            else if (timeRange === '18:30-19:30') { startMin = 18 * 60 + 30; endMin = 19 * 60 + 30 }
+            else if (timeRange === '19:30-20:30') { startMin = 19 * 60 + 30; endMin = 20 * 60 + 30 }
+            else if (timeRange === '20:30-21:30') { startMin = 20 * 60 + 30; endMin = 21 * 60 + 30 }
+            else if (timeRange === '21:30-22:30') { startMin = 21 * 60 + 30; endMin = 22 * 60 + 30 }
+            else if (timeRange === 'custom' && customStartTime && customEndTime) {
+                const [sH, sM] = customStartTime.split(':').map(Number)
+                const [eH, eM] = customEndTime.split(':').map(Number)
+                startMin = sH * 60 + sM
+                endMin = eH * 60 + eM
+            }
+            if (startMin !== null && endMin !== null) {
+                filtered = filtered.filter(item => {
+                    const date = item.timestamp?.toDate ? item.timestamp.toDate() : new Date(item.timestamp)
+                    const itemMin = date.getHours() * 60 + date.getMinutes()
+                    return startMin! <= endMin!
+                        ? itemMin >= startMin! && itemMin < endMin!
+                        : itemMin >= startMin! || itemMin < endMin!
+                })
+            }
+        }
+
+        const unique = new Set(filtered.map(item => item.company).filter(Boolean))
         return Array.from(unique).sort()
-    }, [accessData])
+    }, [accessData, dateRange, customStart, customEnd, selectedSex, selectedSubEnv, timeRange, customStartTime, customEndTime])
 
     const tableDataCompany = useMemo(() => {
         const uniqueByComp: Record<string, Set<string>> = {}
@@ -610,7 +722,8 @@ const DynamicReportsPage: NextPage = () => {
             const stats = {
                 totalIngresos: filteredData.length,
                 totalUsuariosUnicos: new Set(filteredData.map(item => item.memberId || item.memberDni || item.dni || item.id)).size,
-                empresasActivas: companyChartData.labels?.length || 0
+                empresasActivas: tableDataCompany.length,
+                areasActivas: tableDataArea.length
             };
             const blob = await pdf(
                 <MembersReportPDF
@@ -687,7 +800,10 @@ const DynamicReportsPage: NextPage = () => {
                         <div className={styles.filtersGrid}>
                             <select
                                 value={dateRange}
-                                onChange={(e) => setDateRange(e.target.value)}
+                                onChange={(e) => {
+                                    setDateRange(e.target.value)
+                                    pushFiltersToUrl({ dateRange: e.target.value })
+                                }}
                                 className={styles.select}
                             >
                                 <option value="all">Todo el Historial</option>
@@ -701,14 +817,20 @@ const DynamicReportsPage: NextPage = () => {
                                     <input
                                         type="date"
                                         value={customStart}
-                                        onChange={(e) => setCustomStart(e.target.value)}
+                                        onChange={(e) => {
+                                            setCustomStart(e.target.value)
+                                            pushFiltersToUrl({ customStart: e.target.value })
+                                        }}
                                         className={styles.dateInput}
                                     />
                                     <span className={styles.dateSeparator}>a</span>
                                     <input
                                         type="date"
                                         value={customEnd}
-                                        onChange={(e) => setCustomEnd(e.target.value)}
+                                        onChange={(e) => {
+                                            setCustomEnd(e.target.value)
+                                            pushFiltersToUrl({ customEnd: e.target.value })
+                                        }}
                                         className={styles.dateInput}
                                     />
                                 </div>
@@ -716,7 +838,10 @@ const DynamicReportsPage: NextPage = () => {
 
                             <select
                                 value={selectedCompany}
-                                onChange={(e) => setSelectedCompany(e.target.value)}
+                                onChange={(e) => {
+                                    setSelectedCompany(e.target.value)
+                                    pushFiltersToUrl({ company: e.target.value })
+                                }}
                                 className={styles.select}
                             >
                                 <option value="all">Todas las Empresas</option>
@@ -725,7 +850,10 @@ const DynamicReportsPage: NextPage = () => {
 
                             <select
                                 value={selectedSex}
-                                onChange={(e) => setSelectedSex(e.target.value)}
+                                onChange={(e) => {
+                                    setSelectedSex(e.target.value)
+                                    pushFiltersToUrl({ sex: e.target.value })
+                                }}
                                 className={styles.select}
                             >
                                 <option value="all">Todos los Sexos</option>
@@ -736,7 +864,10 @@ const DynamicReportsPage: NextPage = () => {
                             {location?.haveSubEnvironments && location.subEnvironments && location.subEnvironments.length > 0 && (
                                 <select
                                     value={selectedSubEnv}
-                                    onChange={(e) => setSelectedSubEnv(e.target.value)}
+                                    onChange={(e) => {
+                                        setSelectedSubEnv(e.target.value)
+                                        pushFiltersToUrl({ subEnv: e.target.value })
+                                    }}
                                     className={styles.select}
                                 >
                                     <option value="all">Todos los Sub-ambientes</option>
@@ -748,7 +879,10 @@ const DynamicReportsPage: NextPage = () => {
 
                             <select
                                 value={timeRange}
-                                onChange={(e) => setTimeRange(e.target.value)}
+                                onChange={(e) => {
+                                    setTimeRange(e.target.value)
+                                    pushFiltersToUrl({ timeRange: e.target.value })
+                                }}
                                 className={styles.select}
                             >
                                 <option value="all">Todo el día</option>
@@ -766,14 +900,20 @@ const DynamicReportsPage: NextPage = () => {
                                     <input
                                         type="time"
                                         value={customStartTime}
-                                        onChange={(e) => setCustomStartTime(e.target.value)}
+                                        onChange={(e) => {
+                                            setCustomStartTime(e.target.value)
+                                            pushFiltersToUrl({ startTime: e.target.value })
+                                        }}
                                         className={styles.dateInput}
                                     />
                                     <span className={styles.dateSeparator}>a</span>
                                     <input
                                         type="time"
                                         value={customEndTime}
-                                        onChange={(e) => setCustomEndTime(e.target.value)}
+                                        onChange={(e) => {
+                                            setCustomEndTime(e.target.value)
+                                            pushFiltersToUrl({ endTime: e.target.value })
+                                        }}
                                         className={styles.dateInput}
                                     />
                                 </div>
@@ -785,6 +925,28 @@ const DynamicReportsPage: NextPage = () => {
                         <div className={styles.loading}>Cargando datos...</div>
                     ) : (
                         <div ref={reportRef} className={styles.chartsGrid}>
+                            <div className={`${styles.card} ${styles.cardFullWidth}`}>
+                                <h3 className={styles.cardTitle}>Resumen</h3>
+                                <div className={styles.summaryGrid}>
+                                    <div className={styles.summaryItem}>
+                                        <p className={styles.summaryLabel}>Total Ingresos</p>
+                                        <p className={styles.summaryValue}>{filteredData.length}</p>
+                                    </div>
+                                    <div className={styles.summaryItem}>
+                                        <p className={styles.summaryLabel}>Usuarios Únicos</p>
+                                        <p className={styles.summaryValue}>{new Set(filteredData.map(item => item.memberId || item.memberDni || item.dni || item.id)).size}</p>
+                                    </div>
+                                    <div className={styles.summaryItem}>
+                                        <p className={styles.summaryLabel}>Empresas Activas</p>
+                                        <p className={styles.summaryValue}>{tableDataCompany.length}</p>
+                                    </div>
+                                    <div className={styles.summaryItem}>
+                                        <p className={styles.summaryLabel}>Áreas Activas</p>
+                                        <p className={styles.summaryValue}>{tableDataArea.length}</p>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div className={`${styles.card} ${styles.cardFullWidth}`}>
                                 <h3 className={styles.cardTitle}>Tendencia de Ingresos</h3>
                                 <div className={styles.chartContainer}>
@@ -1139,24 +1301,6 @@ const DynamicReportsPage: NextPage = () => {
                                             }
                                         }}
                                     />
-                                </div>
-                            </div>
-
-                            <div className={`${styles.card} ${styles.cardFullWidth}`}>
-                                <h3 className={styles.cardTitle}>Resumen</h3>
-                                <div className={styles.summaryGrid}>
-                                    <div className={styles.summaryItem}>
-                                        <p className={styles.summaryLabel}>Total Ingresos</p>
-                                        <p className={styles.summaryValue}>{filteredData.length}</p>
-                                    </div>
-                                    <div className={styles.summaryItem}>
-                                        <p className={styles.summaryLabel}>Usuarios Únicos</p>
-                                        <p className={styles.summaryValue}>{new Set(filteredData.map(item => item.memberId || item.memberDni || item.dni || item.id)).size}</p>
-                                    </div>
-                                    <div className={styles.summaryItem}>
-                                        <p className={styles.summaryLabel}>Empresas Activas</p>
-                                        <p className={styles.summaryValue}>{companyChartData.labels?.length || 0}</p>
-                                    </div>
                                 </div>
                             </div>
 
