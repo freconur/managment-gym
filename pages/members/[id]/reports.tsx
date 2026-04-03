@@ -13,7 +13,7 @@ import {
     Timestamp
 } from 'firebase/firestore'
 import { db } from '@/firebase/firebase.config'
-import { FaChartBar, FaArrowLeft, FaFilter, FaFilePdf, FaSpinner, FaChevronDown, FaChevronUp } from 'react-icons/fa'
+import { FaChartBar, FaArrowLeft, FaFilter, FaFilePdf, FaSpinner, FaChevronDown, FaChevronUp, FaFileExcel } from 'react-icons/fa'
 import { SubEnvironment, Ubicacion } from '@/features/types/types'
 import {
     Chart as ChartJS,
@@ -108,110 +108,7 @@ const MembersReportPDF = ({ data, charts, stats, locationName, tableDataCompany,
             <Text style={pdfStyles.title}>Reporte de Ingresos - {locationName}</Text>
             <Text style={pdfStyles.subtitle}>Management Gym - Generado el {new Date().toLocaleDateString()}</Text>
 
-            <View style={pdfStyles.section} wrap={false}>
-                <Text style={pdfStyles.sectionTitle}>Tendencia de Ingresos</Text>
-                {charts.timeline && (
-                    <View style={pdfStyles.chartContainer}>
-                        <Image src={charts.timeline} style={[pdfStyles.chartImage, { height: 200 }]} />
-                    </View>
-                )}
-            </View>
-
-            <View style={pdfStyles.section} wrap={false}>
-                <Text style={pdfStyles.sectionTitle}>Ingresos por Empresa</Text>
-                {charts.company && (
-                    <View style={pdfStyles.chartContainer}>
-                        <Image src={charts.company} style={[pdfStyles.chartImage, { height: 380 }]} />
-                    </View>
-                )}
-            </View>
-
-            <View style={pdfStyles.section} wrap={false} break>
-                <Text style={pdfStyles.sectionTitle}>Usuarios Únicos por Empresa</Text>
-                {charts.uniqueCompany && (
-                    <View style={pdfStyles.chartContainer}>
-                        <Image src={charts.uniqueCompany} style={[pdfStyles.chartImage, { height: 380 }]} />
-                    </View>
-                )}
-            </View>
-
-            <View style={pdfStyles.section} wrap={false} break>
-                <Text style={pdfStyles.sectionTitle}>Ingresos por Área</Text>
-                {charts.area && (
-                    <View style={pdfStyles.chartContainer}>
-                        <Image src={charts.area} style={[pdfStyles.chartImage, { height: 380 }]} />
-                    </View>
-                )}
-            </View>
-
-            <View style={pdfStyles.section} wrap={false} break>
-                <Text style={pdfStyles.sectionTitle}>Tabla: Detalle por Empresa</Text>
-                <View style={pdfStyles.table}>
-                    <View style={pdfStyles.tableRow}>
-                        <View style={pdfStyles.tableColHeader}><Text style={pdfStyles.tableCellHeader}>Empresa</Text></View>
-                        <View style={pdfStyles.tableColHeader}><Text style={pdfStyles.tableCellHeader}>Ingresos</Text></View>
-                        <View style={pdfStyles.tableColHeader}><Text style={pdfStyles.tableCellHeader}>U. Únicos</Text></View>
-                    </View>
-                    {tableDataCompany.map((row: any, i: number) => (
-                        <View style={pdfStyles.tableRow} key={i}>
-                            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>{row.company}</Text></View>
-                            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>{row.ingresos}</Text></View>
-                            <View style={pdfStyles.tableCol}><Text style={pdfStyles.tableCell}>{row.usuariosUnicos}</Text></View>
-                        </View>
-                    ))}
-                </View>
-            </View>
-
-            <View style={pdfStyles.section} wrap={false} break>
-                <Text style={pdfStyles.sectionTitle}>Tabla: Detalle por Área</Text>
-                <View style={pdfStyles.table}>
-                    <View style={pdfStyles.tableRow}>
-                        <View style={pdfStyles.tableColAreaHeader}><Text style={pdfStyles.tableCellHeader}>Área</Text></View>
-                        <View style={pdfStyles.tableColAreaHeader}><Text style={pdfStyles.tableCellHeader}>Ingresos</Text></View>
-                    </View>
-                    {tableDataArea.map((row: any, i: number) => (
-                        <View style={pdfStyles.tableRow} key={i}>
-                            <View style={pdfStyles.tableColArea}><Text style={pdfStyles.tableCell}>{row.area}</Text></View>
-                            <View style={pdfStyles.tableColArea}><Text style={pdfStyles.tableCell}>{row.ingresos}</Text></View>
-                        </View>
-                    ))}
-                </View>
-            </View>
-
-            <View style={pdfStyles.section} wrap={false} break>
-                <Text style={pdfStyles.sectionTitle}>Tabla: Detalle de Usuarios Únicos</Text>
-                <View style={pdfStyles.table}>
-                    <View style={pdfStyles.tableRow}>
-                        <View style={{ ...pdfStyles.tableColHeader, width: '10%' }}><Text style={pdfStyles.tableCellHeader}>DNI</Text></View>
-                        <View style={{ ...pdfStyles.tableColHeader, width: '25%' }}><Text style={pdfStyles.tableCellHeader}>Miembro</Text></View>
-                        <View style={{ ...pdfStyles.tableColHeader, width: '20%' }}><Text style={pdfStyles.tableCellHeader}>Empresa</Text></View>
-                        <View style={{ ...pdfStyles.tableColHeader, width: '15%' }}><Text style={pdfStyles.tableCellHeader}>Área</Text></View>
-                        <View style={{ ...pdfStyles.tableColHeader, width: '15%' }}><Text style={pdfStyles.tableCellHeader}>Cargo</Text></View>
-                        <View style={{ ...pdfStyles.tableColHeader, width: '15%' }}><Text style={pdfStyles.tableCellHeader}>Ingresos</Text></View>
-                    </View>
-                    {tableDataUniqueUsers.map((row: any, i: number) => (
-                        <View style={pdfStyles.tableRow} key={i}>
-                            <View style={{ ...pdfStyles.tableCol, width: '10%' }}><Text style={pdfStyles.tableCell}>{row.dni}</Text></View>
-                            <View style={{ ...pdfStyles.tableCol, width: '25%' }}><Text style={pdfStyles.tableCell}>{row.name}</Text></View>
-                            <View style={{ ...pdfStyles.tableCol, width: '20%' }}><Text style={pdfStyles.tableCell}>{row.company}</Text></View>
-                            <View style={{ ...pdfStyles.tableCol, width: '15%' }}><Text style={pdfStyles.tableCell}>{row.area}</Text></View>
-                            <View style={{ ...pdfStyles.tableCol, width: '15%' }}><Text style={pdfStyles.tableCell}>{row.cargo}</Text></View>
-                            <View style={{ ...pdfStyles.tableCol, width: '15%' }}><Text style={pdfStyles.tableCell}>{row.ingresos}</Text></View>
-                        </View>
-                    ))}
-                </View>
-            </View>
-
-            <View style={pdfStyles.section} wrap={false} break>
-                <Text style={pdfStyles.sectionTitle}>Distribución por Sexo</Text>
-                {charts.sex && (
-                    <View style={pdfStyles.chartContainer}>
-                        <Image src={charts.sex} style={[pdfStyles.chartImage, { height: 250 }]} />
-                    </View>
-                )}
-            </View>
-
-            <View style={pdfStyles.section} wrap={false}>
+            <View style={[pdfStyles.section, { marginTop: 15 }]} wrap={false}>
                 <Text style={pdfStyles.sectionTitle}>Resumen Ejecutivo</Text>
                 <View style={pdfStyles.summaryGrid}>
                     <View style={pdfStyles.summaryItem}>
@@ -232,6 +129,54 @@ const MembersReportPDF = ({ data, charts, stats, locationName, tableDataCompany,
                     </View>
                 </View>
             </View>
+
+            <View style={pdfStyles.section} wrap={false}>
+                <Text style={pdfStyles.sectionTitle}>Tendencia de Ingresos</Text>
+                {charts.timeline && (
+                    <View style={pdfStyles.chartContainer}>
+                        <Image src={charts.timeline} style={[pdfStyles.chartImage, { height: 170 }]} />
+                    </View>
+                )}
+            </View>
+
+            <View style={pdfStyles.section} wrap={false}>
+                <Text style={pdfStyles.sectionTitle}>Ingresos por Empresa</Text>
+                {charts.company && (
+                    <View style={pdfStyles.chartContainer}>
+                        <Image src={charts.company} style={[pdfStyles.chartImage, { height: 250 }]} />
+                    </View>
+                )}
+            </View>
+
+            <View style={pdfStyles.section} wrap={false} break>
+                <Text style={pdfStyles.sectionTitle}>Usuarios Únicos por Empresa</Text>
+                {charts.uniqueCompany && (
+                    <View style={pdfStyles.chartContainer}>
+                        <Image src={charts.uniqueCompany} style={[pdfStyles.chartImage, { height: 240 }]} />
+                    </View>
+                )}
+            </View>
+
+            <View style={pdfStyles.section} wrap={false}>
+                <Text style={pdfStyles.sectionTitle}>Ingresos por Área</Text>
+                {charts.area && (
+                    <View style={pdfStyles.chartContainer}>
+                        <Image src={charts.area} style={[pdfStyles.chartImage, { height: 240 }]} />
+                    </View>
+                )}
+            </View>
+
+
+            <View style={pdfStyles.section} wrap={false}>
+                <Text style={pdfStyles.sectionTitle}>Distribución por Sexo</Text>
+                {charts.sex && (
+                    <View style={pdfStyles.chartContainer}>
+                        <Image src={charts.sex} style={[pdfStyles.chartImage, { height: 180 }]} />
+                    </View>
+                )}
+            </View>
+
+
 
             <View style={pdfStyles.footer}>
                 <Text style={pdfStyles.footerText}>
@@ -752,6 +697,18 @@ const DynamicReportsPage: NextPage = () => {
         }
     }
 
+    const handleExportExcel = (data: any[], filename: string) => {
+        import('xlsx').then(({ utils, writeFile }) => {
+            const ws = utils.json_to_sheet(data);
+            const wb = utils.book_new();
+            utils.book_append_sheet(wb, ws, "Reporte");
+            writeFile(wb, `${filename}_${new Date().toISOString().split('T')[0]}.xlsx`);
+        }).catch(err => {
+            console.error("Error cargando xlsx:", err);
+            alert("No se pudo exportar a Excel.");
+        });
+    }
+
     if (loading && !location) {
         return (
             <div className={styles.loadingContainer}>
@@ -806,7 +763,6 @@ const DynamicReportsPage: NextPage = () => {
                                 }}
                                 className={styles.select}
                             >
-                                <option value="all">Todo el Historial</option>
                                 <option value="this_month">Este Mes</option>
                                 <option value="today">Hoy</option>
                                 <option value="custom">Rango Personalizado</option>
@@ -1174,6 +1130,11 @@ const DynamicReportsPage: NextPage = () => {
                                     </button>
                                     {showCompanyTable && (
                                         <div className={styles.accordionContent}>
+                                            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '10px' }}>
+                                                <button onClick={() => handleExportExcel(tableDataCompany, `Ingresos_Empresa_${location?.name?.replace(/\s+/g, '_')}`)} className={styles.exportButton} style={{ backgroundColor: '#10b981', borderColor: '#10b981', color: 'white' }}>
+                                                    <FaFileExcel /> Exportar Excel
+                                                </button>
+                                            </div>
                                             <div style={{ overflowX: 'auto' }}>
                                                 <table className={styles.dataTable}>
                                                     <thead>
@@ -1208,6 +1169,11 @@ const DynamicReportsPage: NextPage = () => {
                                     </button>
                                     {showAreaTable && (
                                         <div className={styles.accordionContent}>
+                                            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '10px' }}>
+                                                <button onClick={() => handleExportExcel(tableDataArea, `Ingresos_Area_${location?.name?.replace(/\s+/g, '_')}`)} className={styles.exportButton} style={{ backgroundColor: '#10b981', borderColor: '#10b981', color: 'white' }}>
+                                                    <FaFileExcel /> Exportar Excel
+                                                </button>
+                                            </div>
                                             <div style={{ overflowX: 'auto' }}>
                                                 <table className={styles.dataTable}>
                                                     <thead>
@@ -1240,6 +1206,11 @@ const DynamicReportsPage: NextPage = () => {
                                     </button>
                                     {showUsersTable && (
                                         <div className={styles.accordionContent}>
+                                            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '10px' }}>
+                                                <button onClick={() => handleExportExcel(tableDataUniqueUsers, `Usuarios_Unicos_${location?.name?.replace(/\s+/g, '_')}`)} className={styles.exportButton} style={{ backgroundColor: '#10b981', borderColor: '#10b981', color: 'white' }}>
+                                                    <FaFileExcel /> Exportar Excel
+                                                </button>
+                                            </div>
                                             <div style={{ overflowX: 'auto' }}>
                                                 <table className={styles.dataTable}>
                                                     <thead>
