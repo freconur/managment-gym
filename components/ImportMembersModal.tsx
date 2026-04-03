@@ -163,7 +163,7 @@ export const ImportMembersModal: React.FC<ImportMembersModalProps> = ({ isOpen, 
                         createdAt: serverTimestamp() // Added to ensure visibility in ordered queries
                     };
 
-                    if (member.area) updateData.area = member.area;
+                    if (member.area) updateData.area = member.area.toLowerCase();
                     if (member.cargo) updateData.cargo = member.cargo;
 
                     batch.set(docRef, updateData, { merge: true });

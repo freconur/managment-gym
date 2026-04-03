@@ -44,6 +44,14 @@ export const SmartSelect: React.FC<SmartSelectProps> = ({
         const normalize = (str: string) =>
             str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
+        // If the current search exactly matches the confirmed value, display all options
+        // instead of filtering perfectly to itself. This allows users to see other options
+        // when they click into an already-filled input.
+        if (value && searchTerm.trim() === value.trim()) {
+            setFilteredOptions(options);
+            return;
+        }
+
         const query = normalize(searchTerm);
         const queryWords = query.split(/\s+/).filter(Boolean);
 
@@ -53,9 +61,9 @@ export const SmartSelect: React.FC<SmartSelectProps> = ({
             return queryWords.every(word => normalizedOpt.includes(word));
         });
 
-        // Limit results to avoid massive lists
-        setFilteredOptions(filtered.slice(0, 10));
-    }, [searchTerm, options]);
+        // Show all results (removed the 10-item limit to allow seeing all areas/cargos)
+        setFilteredOptions(filtered);
+    }, [searchTerm, options, value]);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -83,11 +91,10 @@ export const SmartSelect: React.FC<SmartSelectProps> = ({
         setIsOpen(false);
     };
 
-    const handleInputFocus = () => {
+    const handleInputFocus = (e: React.FocusEvent<HTMLInputElement>) => {
         setIsOpen(true);
-        // On focus, if we have a value, maybe clear it to allow search? 
-        // Or select all text? Native behavior is best left alone usually, but selecting all helps.
-        // For this requirement, "allow filter" implies typing.
+        // Select all text so that typing immediately overrides it and filters fresh
+        e.target.select();
     };
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
