@@ -213,6 +213,7 @@ const DynamicReportsPage: NextPage = () => {
     const [customStart, setCustomStart] = useState('')
     const [customEnd, setCustomEnd] = useState('')
     const [selectedCompany, setSelectedCompany] = useState<string>('all')
+    const [selectedArea, setSelectedArea] = useState<string>('all')
     const [exporting, setExporting] = useState(false)
     const reportRef = useRef<HTMLDivElement>(null)
 
@@ -242,6 +243,7 @@ const DynamicReportsPage: NextPage = () => {
         if (q.customStart) setCustomStart(q.customStart as string)
         if (q.customEnd) setCustomEnd(q.customEnd as string)
         if (q.company) setSelectedCompany(q.company as string)
+        if (q.area) setSelectedArea(q.area as string)
         if (q.sex) setSelectedSex(q.sex as string)
         if (q.subEnv) setSelectedSubEnv(q.subEnv as string)
         if (q.timeRange) setTimeRange(q.timeRange as string)
@@ -258,6 +260,7 @@ const DynamicReportsPage: NextPage = () => {
             customStart,
             customEnd,
             company: selectedCompany,
+            area: selectedArea,
             sex: selectedSex,
             subEnv: selectedSubEnv,
             timeRange,
@@ -269,7 +272,7 @@ const DynamicReportsPage: NextPage = () => {
         const cleaned: Record<string, string> = {}
         const defaults: Record<string, string> = {
             dateRange: 'this_month', customStart: '', customEnd: '',
-            company: 'all', sex: 'all', subEnv: 'all',
+            company: 'all', area: 'all', sex: 'all', subEnv: 'all',
             timeRange: 'all', startTime: '', endTime: ''
         }
         Object.entries(current).forEach(([k, v]) => {
@@ -458,6 +461,77 @@ const DynamicReportsPage: NextPage = () => {
         return Array.from(unique).sort()
     }, [accessData, dateRange, customStart, customEnd, selectedSex, selectedSubEnv, timeRange, customStartTime, customEndTime])
 
+    const areas = useMemo(() => {
+        let filtered = accessData
+
+        // Date filter
+        const now = new Date()
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+        if (dateRange === 'this_month') {
+            filtered = filtered.filter(item => item.timestamp?.toDate() >= startOfMonth)
+        } else if (dateRange === 'today') {
+            const startOfDay = new Date(now.setHours(0, 0, 0, 0))
+            filtered = filtered.filter(item => item.timestamp?.toDate() >= startOfDay)
+        } else if (dateRange === 'custom' && customStart && customEnd) {
+            const start = new Date(customStart)
+            start.setMinutes(start.getMinutes() + start.getTimezoneOffset())
+            const end = new Date(customEnd)
+            end.setMinutes(end.getMinutes() + end.getTimezoneOffset())
+            end.setHours(23, 59, 59, 999)
+            filtered = filtered.filter(item => {
+                const date = item.timestamp?.toDate()
+                return date >= start && date <= end
+            })
+        }
+
+        // Company filter
+        if (selectedCompany !== 'all') {
+            filtered = filtered.filter(item => item.company === selectedCompany)
+        }
+
+        // Sex filter
+        if (selectedSex !== 'all') {
+            filtered = filtered.filter(item => item.sexo === selectedSex)
+        }
+
+        // SubEnvironment filter
+        if (selectedSubEnv !== 'all') {
+            filtered = filtered.filter(item =>
+                item.subEnvironments && item.subEnvironments.includes(selectedSubEnv)
+            )
+        }
+
+        // Time filter
+        if (timeRange !== 'all') {
+            let startMin: number | null = null
+            let endMin: number | null = null
+            if (timeRange === '07:00-11:00') { startMin = 7 * 60; endMin = 11 * 60 }
+            else if (timeRange === '14:00-17:00') { startMin = 14 * 60; endMin = 17 * 60 }
+            else if (timeRange === '18:30-19:30') { startMin = 18 * 60 + 30; endMin = 19 * 60 + 30 }
+            else if (timeRange === '19:30-20:30') { startMin = 19 * 60 + 30; endMin = 20 * 60 + 30 }
+            else if (timeRange === '20:30-21:30') { startMin = 20 * 60 + 30; endMin = 21 * 60 + 30 }
+            else if (timeRange === '21:30-22:30') { startMin = 21 * 60 + 30; endMin = 22 * 60 + 30 }
+            else if (timeRange === 'custom' && customStartTime && customEndTime) {
+                const [sH, sM] = customStartTime.split(':').map(Number)
+                const [eH, eM] = customEndTime.split(':').map(Number)
+                startMin = sH * 60 + sM
+                endMin = eH * 60 + eM
+            }
+            if (startMin !== null && endMin !== null) {
+                filtered = filtered.filter(item => {
+                    const date = item.timestamp?.toDate ? item.timestamp.toDate() : new Date(item.timestamp)
+                    const itemMin = date.getHours() * 60 + date.getMinutes()
+                    return startMin! <= endMin!
+                        ? itemMin >= startMin! && itemMin < endMin!
+                        : itemMin >= startMin! || itemMin < endMin!
+                })
+            }
+        }
+
+        const unique = new Set(filtered.map(item => item.area).filter(Boolean))
+        return Array.from(unique).sort()
+    }, [accessData, dateRange, customStart, customEnd, selectedCompany, selectedSex, selectedSubEnv, timeRange, customStartTime, customEndTime])
+
     const tableDataCompany = useMemo(() => {
         const uniqueByComp: Record<string, Set<string>> = {}
         const incomesByComp: Record<string, number> = {}
@@ -502,7 +576,7 @@ const DynamicReportsPage: NextPage = () => {
                     name: item.memberName || 'Usuario',
                     company: item.company || 'Sin Empresa',
                     cargo: item.cargo || 'N/A',
-                    area: item.area || 'N/A',
+                    area: item.area || 'Sin Área',
                     ingresos: 1,
                 })
             } else {
@@ -511,8 +585,14 @@ const DynamicReportsPage: NextPage = () => {
             }
         })
         const arr = Array.from(uniqueMap.values())
-        return arr.sort((a, b) => b.ingresos - a.ingresos)
-    }, [filteredData])
+
+        // Apply Local Area Filter
+        const filteredArr = selectedArea === 'all'
+            ? arr
+            : arr.filter(u => u.area === selectedArea)
+
+        return filteredArr.sort((a, b) => b.ingresos - a.ingresos)
+    }, [filteredData, selectedArea])
 
 
     const companyChartData = useMemo(() => {
@@ -1206,7 +1286,21 @@ const DynamicReportsPage: NextPage = () => {
                                     </button>
                                     {showUsersTable && (
                                         <div className={styles.accordionContent}>
-                                            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '10px' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '10px', gap: '10px' }}>
+                                                <select
+                                                    value={selectedArea}
+                                                    onChange={(e) => {
+                                                        setSelectedArea(e.target.value)
+                                                        pushFiltersToUrl({ area: e.target.value })
+                                                    }}
+                                                    className={styles.select}
+                                                    style={{ width: 'auto', textTransform: 'uppercase' }}
+                                                >
+                                                    <option value="all">TODAS LAS ÁREAS</option>
+                                                    {areas.map(a => <option key={a} value={a}>{a}</option>)}
+                                                    {accessData.some(item => !item.area) && <option value="Sin Área">SIN ÁREA</option>}
+                                                </select>
+
                                                 <button onClick={() => handleExportExcel(tableDataUniqueUsers, `Usuarios_Unicos_${location?.name?.replace(/\s+/g, '_')}`)} className={styles.exportButton} style={{ backgroundColor: '#10b981', borderColor: '#10b981', color: 'white' }}>
                                                     <FaFileExcel /> Exportar Excel
                                                 </button>

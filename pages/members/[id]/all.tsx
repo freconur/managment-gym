@@ -11,8 +11,9 @@ import {
     query,
     orderBy,
     deleteDoc,
-    updateDoc, // Added
-    where, // Added
+    updateDoc,
+    setDoc, // Add this
+    where,
     Timestamp, // Added
     writeBatch,
     serverTimestamp,
@@ -20,7 +21,7 @@ import {
 } from 'firebase/firestore'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage' // Added
 import { db, storage } from '@/firebase/firebase.config' // Added storage
-import { FaArrowLeft, FaUsers, FaSpinner } from 'react-icons/fa'
+import { FaArrowLeft, FaUsers, FaSpinner, FaFileExcel } from 'react-icons/fa'
 import { MembersTable } from '@/components/MembersTable'
 import { Member, Company, Area, Cargo } from '@/features/types/types'
 import { ThemeToggle } from '@/components/ThemeToggle'
@@ -29,6 +30,16 @@ import { MembersForm } from '@/components/MembersForm'
 import CompanyModal from '@/components/CompanyModal'
 import AreaModal from '@/components/AreaModal'
 import CargoModal from '@/components/CargoModal'
+
+const updateMembersSentinel = async (locationId: string | string[] | undefined) => {
+    if (!locationId || locationId === 'all') return;
+    try {
+        const sentinelRef = doc(db, 'ubicaciones', locationId as string, 'sentinel', 'members_data');
+        await setDoc(sentinelRef, { updatedAt: serverTimestamp() }, { merge: true });
+    } catch (error) {
+        console.error("Error updating sentinel:", error);
+    }
+};
 
 const AllMembersPage: NextPage = () => {
     const router = useRouter()
@@ -161,14 +172,48 @@ const AllMembersPage: NextPage = () => {
         if (!id) return
         setLoadingMembers(true)
         try {
-            const membersCol = collection(db, 'ubicaciones', id as string, 'members')
-            const q = query(membersCol, orderBy('createdAt', 'desc'))
-            const snapshot = await getDocs(q)
-            const membersData = snapshot.docs.map(doc => ({
-                ...doc.data(),
-                id: doc.id
-            })) as Member[]
-            setMembers(membersData)
+            // 1. Get Sentinel from Firestore
+            const sentinelRef = doc(db, 'ubicaciones', id as string, 'sentinel', 'members_data');
+            const sentinelSnap = await getDoc(sentinelRef);
+            
+            // Handle serverTimestamp which might be null locally right after a write
+            const firestoreUpdatedAt = sentinelSnap.exists()
+                ? (sentinelSnap.data().updatedAt?.toMillis() || Date.now()) 
+                : 0;
+
+            // Update sentinel if missing to start the cache process
+            if (!sentinelSnap.exists() && id) {
+                console.log("🛠️ Inicializando centinela por primera vez...");
+                await updateMembersSentinel(id);
+            }
+
+            // 2. Get Local Cache
+            const cacheKey = `members_cache_${id}`;
+            const timeKey = `members_updated_${id}`;
+            const localUpdatedAt = parseInt(localStorage.getItem(timeKey) || '0');
+            const cachedData = localStorage.getItem(cacheKey);
+
+            // 3. Compare and decide
+            if (cachedData && localUpdatedAt === firestoreUpdatedAt && firestoreUpdatedAt !== 0) {
+                const parsed = JSON.parse(cachedData);
+                console.log(`🚀 [Cache] Cargando ${parsed.length} miembros desde localStorage (0 lecturas de Firestore)`);
+                setMembers(parsed);
+            } else {
+                console.log("📡 [Firestore] Cargando miembros desde el servidor (Centinela modificado o inexistente)...");
+                const membersCol = collection(db, 'ubicaciones', id as string, 'members')
+                const q = query(membersCol, orderBy('createdAt', 'desc'))
+                const snapshot = await getDocs(q)
+                const membersData = snapshot.docs.map(doc => ({
+                    ...doc.data(),
+                    id: doc.id
+                })) as Member[]
+                setMembers(membersData)
+
+                // Update Cache
+                localStorage.setItem(cacheKey, JSON.stringify(membersData));
+                localStorage.setItem(timeKey, firestoreUpdatedAt.toString());
+                console.log(`💾 [Cache] Descarga completa: ${membersData.length} miembros guardados localmente.`);
+            }
         } catch (error) {
             console.error("Error fetching members:", error)
         } finally {
@@ -228,6 +273,7 @@ const AllMembersPage: NextPage = () => {
                 const docRef = doc(db, 'ubicaciones', id as string, 'members', memberId)
                 await deleteDoc(docRef)
                 alert("Usuario eliminado correctamente.")
+                await updateMembersSentinel(id)
                 fetchAllMembers()
             } catch (error) {
                 console.error("Error deleting member:", error)
@@ -254,6 +300,7 @@ const AllMembersPage: NextPage = () => {
                 await batch.commit()
             }
             alert("Empresas actualizadas correctamente.")
+            await updateMembersSentinel(id)
             fetchAllMembers()
         } catch (error) {
             console.error("Error batch updating companies:", error)
@@ -261,6 +308,40 @@ const AllMembersPage: NextPage = () => {
         } finally {
             setIsLoading(false)
         }
+    }
+
+    const handleExportExcel = () => {
+        if (members.length === 0) {
+            alert("No hay miembros para exportar.");
+            return;
+        }
+
+        import('xlsx').then(({ utils, writeFile }) => {
+            const dataToExport = members.map(m => ({
+                'ID': m.id || '',
+                'Nombre': (m.nombre || '').toLowerCase(),
+                'Apellidos': (m.apellidos || '').toLowerCase(),
+                'DNI': m.dni || '',
+                'Empresa': (m.empresa || '').toLowerCase(),
+                'Área': (m.area || '').toLowerCase(),
+                'Cargo': (m.cargo || '').toLowerCase(),
+                'Sexo': (m.sexo || '').toLowerCase(),
+                'Fecha de Registro': m.createdAt instanceof Timestamp
+                    ? m.createdAt.toDate().toLocaleDateString()
+                    : (m as any).createdAt?.toDate ? (m as any).createdAt.toDate().toLocaleDateString() : 'N/A'
+            }));
+
+            const ws = utils.json_to_sheet(dataToExport);
+            const wb = utils.book_new();
+            utils.book_append_sheet(wb, ws, "Miembros");
+
+            const date = new Date().toISOString().split('T')[0];
+            const cleanLocationName = locationName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+            writeFile(wb, `miembros_${cleanLocationName}_${date}.xlsx`);
+        }).catch(err => {
+            console.error("Error al exportar Excel:", err);
+            alert("Error al generar el archivo Excel.");
+        });
     }
 
     if (isLoading && !locationName) {
@@ -291,6 +372,15 @@ const AllMembersPage: NextPage = () => {
                             <FaUsers style={{ marginRight: '10px', color: '#3b82f6' }} /> Todos los Miembros
                         </h1>
                         <p className={styles.headerSubtitle}>{locationName}</p>
+                    </div>
+                    <div className={styles.responsiveHeaderActions}>
+                        <button
+                            onClick={handleExportExcel}
+                            className={`${styles.actionButton} ${styles.btnPremiumGreen}`}
+                            style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+                        >
+                            <FaFileExcel /> Exportar Excel
+                        </button>
                     </div>
                 </div>
 
@@ -376,6 +466,7 @@ const AllMembersPage: NextPage = () => {
                             alert("Usuario actualizado correctamente.")
                             setIsModalOpen(false)
                             setSelectedImage(null)
+                            await updateMembersSentinel(id)
                             fetchAllMembers()
                         } catch (error) {
                             console.error("Error updating member:", error)

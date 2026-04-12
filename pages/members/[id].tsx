@@ -47,6 +47,16 @@ const getMembersCollectionPath = (locationId: string | string[] | undefined) => 
   return collection(db, 'ubicaciones', locationId as string, 'members')
 }
 
+const updateMembersSentinel = async (locationId: string | string[] | undefined) => {
+  if (!locationId || locationId === 'all') return;
+  try {
+    const sentinelRef = doc(db, 'ubicaciones', locationId as string, 'sentinel', 'members_data');
+    await setDoc(sentinelRef, { updatedAt: serverTimestamp() }, { merge: true });
+  } catch (error) {
+    console.error("Error updating sentinel:", error);
+  }
+};
+
 const DynamicMembersPage: NextPage = () => {
   const router = useRouter()
   const { id } = router.query
@@ -458,6 +468,8 @@ const DynamicMembersPage: NextPage = () => {
         nombre: formData.nombre.trim().toLowerCase(),
         apellidos: formData.apellidos.trim().toLowerCase(),
         empresa: formData.empresa.trim().toLowerCase(),
+        area: formData.area?.trim().toLowerCase() || '',
+        cargo: formData.cargo?.trim().toLowerCase() || '',
       }
 
       if (isEditing && editingId) {
@@ -482,6 +494,9 @@ const DynamicMembersPage: NextPage = () => {
         setSelectedImage(null)
         setPreviewUrl(null)
       }
+
+      // Update sentinel to flag changes for the cache
+      await updateMembersSentinel(id)
 
       if (isEditing) {
         handleCancel()
@@ -524,6 +539,7 @@ const DynamicMembersPage: NextPage = () => {
         setMembers(prev => prev.filter(m => m.id !== memberId))
 
         alert("Usuario eliminado correctamente")
+        await updateMembersSentinel(id)
         refreshCurrentPage()
       } catch (error) {
         console.error("Error deleting member:", error)

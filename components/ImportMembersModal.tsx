@@ -164,7 +164,7 @@ export const ImportMembersModal: React.FC<ImportMembersModalProps> = ({ isOpen, 
                     };
 
                     if (member.area) updateData.area = member.area.toLowerCase();
-                    if (member.cargo) updateData.cargo = member.cargo;
+                    if (member.cargo) updateData.cargo = member.cargo.toLowerCase();
 
                     batch.set(docRef, updateData, { merge: true });
                 });
