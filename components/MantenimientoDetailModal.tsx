@@ -20,7 +20,7 @@ interface MantenimientoDetailModalProps {
   usuarios?: Usuario[]
   onUpdateTareas?: (tareas: Tarea[], estado?: string) => Promise<void>
   onUpdateNotas?: (notas: string) => Promise<void>
-  onUpdate?: (data: { tecnicoAsignado?: Usuario | {}, descripcion?: string, tareas?: Tarea[] }) => Promise<void>
+  onUpdate?: (data: { tecnicoAsignado?: Usuario | {}, descripcion?: string, tareas?: Tarea[], numOT?: string }) => Promise<void>
   onDelete?: (id: string) => Promise<void>
 
   onUpdateMachineStatus?: (status: string) => Promise<void>
@@ -51,6 +51,7 @@ export const MantenimientoDetailModal: React.FC<MantenimientoDetailModalProps> =
   const [descripcionEditada, setDescripcionEditada] = useState<string>('')
   const [tecnicoEditado, setTecnicoEditado] = useState<Usuario | {}>({})
   const [statusEditado, setStatusEditado] = useState<string>('')
+  const [numOTEditado, setNumOTEditado] = useState<string>('')
   const [nuevaTarea, setNuevaTarea] = useState('')
   const [isSaving, setIsSaving] = useState(false)
 
@@ -60,6 +61,8 @@ export const MantenimientoDetailModal: React.FC<MantenimientoDetailModalProps> =
 
   const [isDeleting, setIsDeleting] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
+  const [isSavingOT, setIsSavingOT] = useState(false)
+  const [showOTSuccess, setShowOTSuccess] = useState(false)
 
   const { user } = useAuth();
 
@@ -95,14 +98,10 @@ export const MantenimientoDetailModal: React.FC<MantenimientoDetailModalProps> =
     }
   }, [mantenimiento])
 
-  // Sincronizar técnico cuando cambia el mantenimiento
+  // Sincronizar N° OT cuando cambia el mantenimiento
   useEffect(() => {
-    if (mantenimiento?.tecnicoAsignado) {
-      setTecnicoEditado(mantenimiento.tecnicoAsignado)
-    } else {
-      setTecnicoEditado({})
-    }
-  }, [mantenimiento])
+    setNumOTEditado(mantenimiento?.numOT || '')
+  }, [mantenimiento?.numOT])
 
   // Sincronizar status de máquina cuando cambia el mantenimiento o la máquina en tiempo real
   useEffect(() => {
@@ -276,7 +275,11 @@ export const MantenimientoDetailModal: React.FC<MantenimientoDetailModalProps> =
         await onUpdateMachineStatus(statusEditado)
       }
 
-      const updateData: { tecnicoAsignado?: Usuario | {}, descripcion?: string, tareas?: Tarea[] } = {}
+      const updateData: { tecnicoAsignado?: Usuario | {}, descripcion?: string, tareas?: Tarea[], numOT?: string } = {}
+
+      if (numOTEditado !== mantenimiento?.numOT) {
+        updateData.numOT = numOTEditado
+      }
 
       if (descripcionEditada !== mantenimiento?.descripcion) {
         updateData.descripcion = descripcionEditada
@@ -302,7 +305,6 @@ export const MantenimientoDetailModal: React.FC<MantenimientoDetailModalProps> =
         await onUpdate(updateData)
       }
 
-      setIsEditing(false)
       setIsEditing(false)
     } catch (error) {
       console.error('Error al guardar cambios:', error)
@@ -439,6 +441,11 @@ export const MantenimientoDetailModal: React.FC<MantenimientoDetailModalProps> =
                       if (maquinaRealTime?.status || mantenimiento?.maquina?.status) {
                         setStatusEditado(maquinaRealTime?.status || mantenimiento?.maquina?.status || '')
                       }
+                      if (mantenimiento?.numOT) {
+                        setNumOTEditado(mantenimiento.numOT)
+                      } else {
+                        setNumOTEditado('')
+                      }
                       if (mantenimiento?.tareas) {
                         setTareas(mantenimiento.tareas)
                       } else {
@@ -478,6 +485,8 @@ export const MantenimientoDetailModal: React.FC<MantenimientoDetailModalProps> =
               setDescripcionEditada={setDescripcionEditada}
               statusEditado={statusEditado}
               setStatusEditado={setStatusEditado}
+              numOTEditado={numOTEditado}
+              setNumOTEditado={setNumOTEditado}
               maquinaRealTime={maquinaRealTime}
             />
 
@@ -495,6 +504,80 @@ export const MantenimientoDetailModal: React.FC<MantenimientoDetailModalProps> =
               handleEditTarea={handleEditTarea}
               handleToggleTarea={handleToggleTarea}
             />
+
+            {/* N° de OT para el Técnico */}
+            {hasStarted && (
+              <div className={styles.mantenimientoDetailSection}>
+                <h4 className={styles.mantenimientoDetailSectionTitleWithIcon}>
+                  <FaTools size={14} />
+                  N° de OT
+                </h4>
+                <div className={styles.mantenimientoDetailStatusSectionContainer}>
+                  <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', alignItems: 'center' }}>
+                    <input
+                      type="text"
+                      value={numOTEditado}
+                      onChange={(e) => setNumOTEditado(e.target.value)}
+                      className={styles.input}
+                      placeholder="Escriba el N° de OT aquí..."
+                      style={{ flex: 1, textTransform: 'uppercase' }}
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          const handleSave = async () => {
+                            if (!isEditing && numOTEditado !== mantenimiento.numOT && onUpdate) {
+                              setIsSavingOT(true);
+                              try {
+                                await onUpdate({ numOT: numOTEditado });
+                                setShowOTSuccess(true);
+                                setTimeout(() => setShowOTSuccess(false), 3000);
+                              } catch (error) {
+                                console.error("Error al actualizar N° de OT:", error);
+                              } finally {
+                                setIsSavingOT(false);
+                              }
+                            }
+                          };
+                          handleSave();
+                        }
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (!isEditing && onUpdate) {
+                          setIsSavingOT(true);
+                          try {
+                            await onUpdate({ numOT: numOTEditado });
+                            setShowOTSuccess(true);
+                            setTimeout(() => setShowOTSuccess(false), 3000);
+                          } catch (error) {
+                            console.error("Error:", error);
+                          } finally {
+                            setIsSavingOT(false);
+                          }
+                        }
+                      }}
+                      className={showOTSuccess ? styles.mantenimientoDetailActionButtonSave : styles.mantenimientoDetailSaveButton}
+                      disabled={isSavingOT || numOTEditado === mantenimiento.numOT}
+                      style={{ whiteSpace: 'nowrap', transition: 'all 0.3s' }}
+                    >
+                      {isSavingOT ? (
+                        <FaSpinner className={styles.spinAnimation} />
+                      ) : showOTSuccess ? (
+                        <>
+                          <FaCheckCircle /> ¡Guardado!
+                        </>
+                      ) : (
+                        <>
+                          <FaSave /> Guardar OT
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Selector de Estado del Equipo para el Técnico */}
             {!isEditing && hasStarted && (

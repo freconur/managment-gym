@@ -4,7 +4,7 @@ import { useRouter } from "next/router";
 import { useAuth } from "@/features/context/AuthContext";
 import { db } from "@/firebase/firebase.config";
 import { collection, onSnapshot, doc, updateDoc, deleteDoc, setDoc, serverTimestamp, query, orderBy } from "firebase/firestore";
-import { FaArrowLeft, FaCheck, FaTimes, FaTrash, FaCog, FaPlus, FaSignOutAlt, FaPen } from "react-icons/fa";
+import { FaArrowLeft, FaCheck, FaTimes, FaTrash, FaCog, FaPlus, FaSignOutAlt, FaPen, FaShieldAlt } from "react-icons/fa";
 import styles from "../../styles/UsersManagement.module.css";
 
 interface UserData {
@@ -42,6 +42,13 @@ const UsersPage = () => {
     const [editApellidos, setEditApellidos] = useState("");
     const [editDni, setEditDni] = useState("");
     const [isUpdatingUser, setIsUpdatingUser] = useState(false);
+    
+    // Global Config State
+    const [globalPin, setGlobalPin] = useState("2026");
+    const [isEditingPin, setIsEditingPin] = useState(false);
+    const [newPinValue, setNewPinValue] = useState("");
+    const [isUpdatingPin, setIsUpdatingPin] = useState(false);
+    const [showPinRaw, setShowPinRaw] = useState(false);
 
     useEffect(() => {
         if (!loading) {
@@ -96,6 +103,22 @@ const UsersPage = () => {
                         ...doc.data()
                     } as Role));
                     setRoles(loadedRoles);
+                }
+            });
+            return () => unsubscribe();
+        }
+    }, [loading, userProfile]);
+
+    // Global Config Listener (PIN)
+    useEffect(() => {
+        if (!loading && userProfile?.role === "admin") {
+            const configRef = doc(db, 'configs', 'security');
+            const unsubscribe = onSnapshot(configRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    setGlobalPin(docSnap.data().adminPin || '2026');
+                } else {
+                    // Initialize if missing
+                    setDoc(configRef, { adminPin: '2026', updatedAt: serverTimestamp() });
                 }
             });
             return () => unsubscribe();
@@ -201,6 +224,32 @@ const UsersPage = () => {
         }
     };
 
+    const handleUpdatePin = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (newPinValue.length !== 4) {
+            alert("El PIN debe ser de 4 dígitos");
+            return;
+        }
+
+        setIsUpdatingPin(true);
+        try {
+            const configRef = doc(db, 'configs', 'security');
+            await updateDoc(configRef, {
+                adminPin: newPinValue,
+                updatedAt: serverTimestamp(),
+                updatedBy: userProfile?.uid
+            });
+            setIsEditingPin(false);
+            setNewPinValue("");
+            alert("PIN de seguridad actualizado correctamente");
+        } catch (error) {
+            console.error("Error updating PIN:", error);
+            alert("Error al actualizar PIN");
+        } finally {
+            setIsUpdatingPin(false);
+        }
+    };
+
 
     if (loading || isLoadingUsers) {
         return (
@@ -234,6 +283,13 @@ const UsersPage = () => {
                     </div>
 
                     <div className={styles.headerActions}>
+                        <button
+                            onClick={() => setIsEditingPin(true)}
+                            className={styles.rolesButton}
+                            style={{ backgroundColor: '#fef2f2', color: '#ef4444', border: '1px solid #fee2e2' }}
+                        >
+                            <FaShieldAlt /> PIN de Seguridad
+                        </button>
                         <button
                             onClick={() => setIsRoleManagerOpen(true)}
                             className={styles.rolesButton}
@@ -339,7 +395,7 @@ const UsersPage = () => {
                                         {user.name ? user.name.charAt(0).toUpperCase() : user.email.charAt(0).toUpperCase()}
                                     </div>
                                     <div>
-                                        <p style={{ fontWeight: '600', color: '#111827', margin: 0, fontSize: '1rem' }}>{user.name || "Sin nombre"}</p>
+                                        <p style={{ fontWeight: '600', color: 'var(--text-primary)', margin: 0, fontSize: '1rem' }}>{user.name || "Sin nombre"}</p>
                                         <p className={styles.userEmail}>{user.email}</p>
                                     </div>
                                 </div>
@@ -566,6 +622,106 @@ const UsersPage = () => {
                                     }
                                 `}</style>
                             </form>
+                        </div>
+                    </div>
+                )
+            }
+
+            {/* PIN Manager Modal */}
+            {
+                isEditingPin && (
+                    <div className={styles.modalOverlay}>
+                        <div className={styles.modalContent} style={{ maxWidth: '400px' }}>
+                            <div className={styles.modalHeader}>
+                                <h2 className={styles.modalTitle}>
+                                    PIN de Seguridad Global
+                                </h2>
+                                <button onClick={() => setIsEditingPin(false)} className={styles.modalCloseBtn}>
+                                    <FaTimes size={20} />
+                                </button>
+                            </div>
+
+                            <div className={styles.modalBody} style={{ padding: '1.5rem' }}>
+                                <p style={{ fontSize: '0.875rem', color: '#64748b', marginBottom: '1.5rem', lineHeight: '1.4' }}>
+                                    Este PIN es requerido para acciones críticas como eliminar registros de acceso en toda la plataforma.
+                                </p>
+
+                                <div style={{ marginBottom: '1.5rem', backgroundColor: '#f8fafc', padding: '1rem', borderRadius: '0.5rem', border: '1px solid #e2e8f0' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.875rem', fontWeight: '600', color: '#475569' }}>
+                                        <span>PIN Actual:</span>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                            <span style={{ color: '#3b82f6', letterSpacing: '0.1em', fontFamily: 'monospace', fontSize: '1.1rem' }}>
+                                                {showPinRaw ? globalPin : '••••'}
+                                            </span>
+                                            <button 
+                                                type="button" 
+                                                onClick={() => setShowPinRaw(!showPinRaw)}
+                                                style={{ background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer', fontSize: '0.75rem', fontWeight: '500' }}
+                                            >
+                                                {showPinRaw ? "Ocultar" : "Mostrar"}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <form onSubmit={handleUpdatePin}>
+                                    <div style={{ marginBottom: '1.5rem' }}>
+                                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500', color: '#1e293b' }}>
+                                            Nuevo PIN (4 dígitos)
+                                        </label>
+                                        <input
+                                            type="text"
+                                            maxLength={4}
+                                            pattern="\d{4}"
+                                            value={newPinValue}
+                                            onChange={(e) => setNewPinValue(e.target.value.replace(/\D/g, ''))}
+                                            className={styles.roleInput}
+                                            placeholder="XXXX"
+                                            required
+                                            style={{ width: '100%', textAlign: 'center', fontSize: '1.75rem', letterSpacing: '0.4em', fontWeight: '800', border: '2px solid #e2e8f0', borderRadius: '0.5rem', padding: '0.75rem' }}
+                                        />
+                                    </div>
+
+                                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsEditingPin(false)}
+                                            style={{ 
+                                                padding: '0.75rem 1rem', 
+                                                borderRadius: '0.5rem', 
+                                                border: '1px solid #e2e8f0', 
+                                                background: 'white',
+                                                color: '#64748b',
+                                                cursor: 'pointer',
+                                                fontSize: '0.875rem',
+                                                fontWeight: '500'
+                                            }}
+                                        >
+                                            Cancelar
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            disabled={isUpdatingPin || newPinValue.length !== 4}
+                                            style={{ 
+                                                padding: '0.75rem 1rem', 
+                                                borderRadius: '0.5rem', 
+                                                border: 'none', 
+                                                background: (isUpdatingPin || newPinValue.length !== 4) ? '#94a3b8' : '#ef4444', 
+                                                color: 'white',
+                                                fontWeight: '600',
+                                                fontSize: '0.875rem',
+                                                cursor: (isUpdatingPin || newPinValue.length !== 4) ? 'not-allowed' : 'pointer',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '0.5rem'
+                                            }}
+                                        >
+                                            <FaShieldAlt size={14} />
+                                            {isUpdatingPin ? 'Actualizando...' : 'Guardar Nuevo PIN'}
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
                         </div>
                     </div>
                 )

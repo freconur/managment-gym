@@ -88,6 +88,7 @@ export type Incidencia = {
   maquina?: Machine;
   maquinaDejoFuncionar?: boolean;
   fotoUrl?: string;
+  numOT?: string;
   userChecklist?: Usuario;
 }
 
@@ -99,6 +100,7 @@ export type Usuario = {
   nombres?: string;
   apellidos?: string;
   rol?: string;
+  name?: string;
   pin?: number;
   createdAt?: any; // Timestamp de Firebase
   updatedAt?: any; // Timestamp de Firebase

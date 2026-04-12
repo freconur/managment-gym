@@ -1,15 +1,17 @@
 import type { NextPage } from 'next'
 import Head from 'next/head'
 import Link from 'next/link'
-import { FaDumbbell, FaChartLine, FaUsers, FaArrowRight, FaPhone, FaEnvelope, FaCode, FaCalendarAlt } from 'react-icons/fa'
+import { FaDumbbell, FaChartLine, FaUsers, FaArrowRight, FaPhone, FaEnvelope, FaCode, FaCalendarAlt, FaSignOutAlt } from 'react-icons/fa'
 import { useState } from 'react'
 import { db } from '@/firebase/firebase.config'
 import styles from './Home.module.css'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import SelectEntryModal from '@/components/SelectEntryModal'
+import { useAuth } from '@/features/context/AuthContext'
 
 const Home: NextPage = () => {
   const [isSelectionModalOpen, setIsSelectionModalOpen] = useState(false)
+  const { user, userProfile, logout } = useAuth()
 
   return (
     <div className={styles.container}>
@@ -22,6 +24,18 @@ const Home: NextPage = () => {
         <div className={styles.heroBackground} />
         <div className={styles.heroContent}>
           <div className={styles.heroTop}>
+            {user && (
+              <>
+                <div className={styles.userInfo}>
+                  <span className={styles.userName}>{userProfile?.name || userProfile?.email?.split('@')[0]}</span>
+                  <span className={styles.userRole}>{userProfile?.role}</span>
+                </div>
+                <button onClick={() => logout()} className={styles.logoutButton} title="Cerrar Sesión">
+                  <FaSignOutAlt />
+                  <span>SALIR</span>
+                </button>
+              </>
+            )}
             <ThemeToggle />
           </div>
           <h1 className={styles.heroTitle}>Management Gym</h1>

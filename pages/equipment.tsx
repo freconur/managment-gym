@@ -530,6 +530,9 @@ const Equipment: NextPage = () => {
                 if (data.tareas !== undefined) {
                   updateData.tareas = data.tareas;
                 }
+                if (data.numOT !== undefined) {
+                  updateData.numOT = data.numOT;
+                }
                 await updateIncidencia(
                   selectedIncidencia.machineId,
                   selectedIncidencia.id,

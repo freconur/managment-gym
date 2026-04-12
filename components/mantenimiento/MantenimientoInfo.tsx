@@ -13,6 +13,8 @@ interface MantenimientoInfoProps {
     setDescripcionEditada: (s: string) => void
     statusEditado: string
     setStatusEditado: (s: string) => void
+    numOTEditado: string
+    setNumOTEditado: (s: string) => void
     maquinaRealTime?: Machine
 }
 
@@ -26,6 +28,8 @@ export default function MantenimientoInfo({
     setDescripcionEditada,
     statusEditado,
     setStatusEditado,
+    numOTEditado,
+    setNumOTEditado,
     maquinaRealTime
 }: MantenimientoInfoProps) {
 
@@ -175,22 +179,18 @@ export default function MantenimientoInfo({
                         </div>
                     )}
 
-                    {/* Fecha de Compra */}
-                    {/* {infoMaquina?.purchaseDate && (
+                    {/* N° de OT (Display) */}
+                    {mantenimiento.numOT && !isEditing && (
                         <div className={styles.mantenimientoDetailMachineInfoRow}>
                             <FaCalendarAlt size={12} className={styles.mantenimientoDetailIconGray} />
                             <span className={styles.mantenimientoDetailMachineInfoLabel}>
-                                N°OT:
+                                N° de OT:
                             </span>
-                            <span className={styles.mantenimientoDetailMachineInfoValue}>
-                                {convertTimestampToDate(infoMaquina.purchaseDate)?.toLocaleDateString('es-ES', {
-                                    year: 'numeric',
-                                    month: 'long',
-                                    day: 'numeric'
-                                }) || 'N/A'}
+                            <span className={styles.mantenimientoDetailMachineInfoValue} style={{ fontWeight: '600', color: '#111827' }}>
+                                {mantenimiento.numOT}
                             </span>
                         </div>
-                    )} */}
+                    )}
 
                     {/* ID de la máquina */}
                     {infoMaquina?.id && (
@@ -247,7 +247,7 @@ export default function MantenimientoInfo({
                             <span className={styles.mantenimientoDetailInfoLabelText}>Técnico</span>
                         </div>
                         <p className={styles.mantenimientoDetailInfoValue}>
-                            {mantenimiento.tecnicoAsignado.nombres} {mantenimiento.tecnicoAsignado.apellidos}
+                            {mantenimiento.tecnicoAsignado.name || (mantenimiento.tecnicoAsignado.nombres + ' ' + mantenimiento.tecnicoAsignado.apellidos)}
                         </p>
                     </div>
                 )}
@@ -275,12 +275,32 @@ export default function MantenimientoInfo({
                             className={`${styles.select} ${styles.mantenimientoDetailSelectMargin}`}
                         >
                             <option value="">Seleccione un técnico</option>
-                            {usuarios.map((usuario) => (
-                                <option key={usuario.id || usuario.dni} value={usuario.dni || usuario.id || ''}>
-                                    {usuario.nombres} {usuario.apellidos} {usuario.dni ? `(${usuario.dni})` : ''}
-                                </option>
-                            ))}
+                            {usuarios
+                                .filter(u => u.rol?.toLowerCase() === 'instructor')
+                                .map((usuario) => (
+                                    <option key={usuario.id || usuario.dni} value={usuario.dni || usuario.id || ''}>
+                                        {usuario.name || (usuario.nombres + ' ' + usuario.apellidos)} {usuario.dni ? `(${usuario.dni})` : ''}
+                                    </option>
+                                ))}
                         </select>
+                    </div>
+                )}
+
+                {/* N° de OT (Edición) */}
+                {isEditing && (
+                    <div className={styles.mantenimientoDetailInfoCard}>
+                        <div className={styles.mantenimientoDetailInfoLabel}>
+                            <FaCalendarAlt size={12} className={styles.mantenimientoDetailIconGray} />
+                            <span className={styles.mantenimientoDetailInfoLabelText}>N° de OT</span>
+                        </div>
+                        <input
+                            type="text"
+                            value={numOTEditado}
+                            onChange={(e) => setNumOTEditado(e.target.value)}
+                            className={styles.input}
+                            placeholder="Número de OT"
+                            style={{ padding: '0.25rem 0.5rem', width: '100%' }}
+                        />
                     </div>
                 )}
 

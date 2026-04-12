@@ -366,11 +366,13 @@ export const MantenimientoModal: React.FC<MantenimientoModalProps> = ({
                   className={styles.select}
                 >
                   <option value="">Seleccione un responsable</option>
-                  {usuarios.map((usuario) => (
-                    <option key={usuario.id || usuario.dni} value={usuario.dni || usuario.id || ''}>
-                      {usuario.nombres} {usuario.apellidos} {usuario.dni ? `(${usuario.dni})` : ''}
-                    </option>
-                  ))}
+                  {usuarios
+                    .filter(u => u.rol?.toLowerCase() === 'instructor')
+                    .map((usuario) => (
+                      <option key={usuario.id || usuario.dni} value={usuario.dni || usuario.id || ''}>
+                        {usuario.name || (usuario.nombres + ' ' + usuario.apellidos)} {usuario.dni ? `(${usuario.dni})` : ''}
+                      </option>
+                    ))}
                 </select>
               </div>
             </div>

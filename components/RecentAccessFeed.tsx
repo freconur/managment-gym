@@ -68,6 +68,8 @@ export const RecentAccessFeed: React.FC<RecentAccessFeedProps> = ({ environment,
         currentEndTime: any;
         duration: number;
     } | null>(null);
+    const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+    const [globalPin, setGlobalPin] = useState('2026');
 
     // Sync propLocationId to internal locationId state
     useEffect(() => {
@@ -180,7 +182,16 @@ export const RecentAccessFeed: React.FC<RecentAccessFeedProps> = ({ environment,
 
     const [hasAmenities, setHasAmenities] = useState(false);
 
-    // Listens for config changes in real-time
+    // Global PIN Listener
+    useEffect(() => {
+        const unsubscribe = onSnapshot(doc(db, 'configs', 'security'), (docSnap) => {
+            if (docSnap.exists()) {
+                setGlobalPin(docSnap.data().adminPin || '2026');
+            }
+        });
+        return () => unsubscribe();
+    }, []);
+
     useEffect(() => {
         let unsubscribe: () => void;
 
@@ -233,7 +244,9 @@ export const RecentAccessFeed: React.FC<RecentAccessFeedProps> = ({ environment,
 
     const handleDeleteClick = (id: string) => {
         if (confirm("¿Estás seguro de eliminar este registro?")) {
-            handlePinSuccess('DELETE', id);
+            setPendingDeleteId(id);
+            setPendingExtendAction(null); // Clear other actions
+            setIsAdminPinModalOpen(true);
         }
     };
 
@@ -252,18 +265,26 @@ export const RecentAccessFeed: React.FC<RecentAccessFeedProps> = ({ environment,
     };
 
     const handleTowelNumberChange = async (id: string, value: string) => {
-        // Enforce 2 digits max
-        if (value.length > 2) return;
-
         try {
             const asistenciasCol = locationId
                 ? collection(db, 'ubicaciones', locationId, 'asistencias')
                 : collection(db, 'asistencias');
-
-            await updateDoc(doc(asistenciasCol, id), { towelNumber: value });
+            const docRef = doc(asistenciasCol, id);
+            await updateDoc(docRef, { towelNumber: value });
         } catch (error) {
             console.error("Error updating towel number:", error);
         }
+    };
+
+    const handleMasterPinSuccess = async () => {
+        if (pendingDeleteId) {
+            await handlePinSuccess('DELETE', pendingDeleteId);
+            setPendingDeleteId(null);
+        } else if (pendingExtendAction) {
+            await executeExtendAction();
+            setPendingExtendAction(null);
+        }
+        setIsAdminPinModalOpen(false);
     };
 
     const handlePinSuccess = async (type: PinActionType, payload: any) => {
@@ -274,6 +295,7 @@ export const RecentAccessFeed: React.FC<RecentAccessFeedProps> = ({ environment,
 
             if (type === 'DELETE') {
                 await deleteDoc(doc(asistenciasCol, payload));
+                console.log("Registro eliminado exitosamente");
             } else if (type === 'TOGGLE_TOWEL') {
                 const { id, enable } = payload;
                 if (enable) {
@@ -293,6 +315,7 @@ export const RecentAccessFeed: React.FC<RecentAccessFeedProps> = ({ environment,
 
     const handleExtendClick = (recordId: string, subName: string, currentEndTime: any, duration: number) => {
         setPendingExtendAction({ recordId, subName, currentEndTime, duration });
+        setPendingDeleteId(null); // Clear other actions
         setIsAdminPinModalOpen(true);
     };
 
@@ -560,8 +583,10 @@ export const RecentAccessFeed: React.FC<RecentAccessFeedProps> = ({ environment,
                 onClose={() => {
                     setIsAdminPinModalOpen(false);
                     setPendingExtendAction(null);
+                    setPendingDeleteId(null);
                 }}
-                onSuccess={executeExtendAction}
+                onSuccess={handleMasterPinSuccess}
+                expectedPin={globalPin}
             />
 
             <AccessModal

@@ -6,12 +6,14 @@ interface AdminPinModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSuccess: () => void;
+    expectedPin?: string; // Prop opcional para PIN dinámico
 }
 
 export const AdminPinModal: React.FC<AdminPinModalProps> = ({
     isOpen,
     onClose,
     onSuccess,
+    expectedPin = '2026' // Fallback a 2026 si no hay PIN en DB
 }) => {
     const [pin, setPin] = useState('');
     const [error, setError] = useState('');
@@ -19,7 +21,7 @@ export const AdminPinModal: React.FC<AdminPinModalProps> = ({
     if (!isOpen) return null;
 
     const handleVerify = (value: string) => {
-        if (value === '2026') {
+        if (value === expectedPin) {
             onSuccess();
             setPin('');
             onClose();

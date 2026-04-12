@@ -42,8 +42,69 @@
 .heroTop {
     display: flex;
     justify-content: flex-end;
+    align-items: center;
+    gap: 1rem;
     margin-bottom: 2rem;
     padding: 0 1rem;
+}
+
+.logoutButton {
+    background-color: rgba(254, 226, 226, 0.1);
+    color: #ef4444;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s;
+}
+
+.logoutButton:hover {
+    background-color: rgba(239, 68, 68, 0.2);
+    transform: translateY(-2px);
+}
+
+@media (max-width: 768px) {
+    .logoutButton span {
+        display: none;
+    }
+
+    .userInfo {
+        display: none;
+    }
+}
+
+.userInfo {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-right: 0.5rem;
+}
+
+.userName {
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    line-height: 1.2;
+    margin-bottom: 0.25rem;
+    text-transform: uppercase;
+    text-align: center;
+    max-width: 150px;
+}
+
+.userRole {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--accent-primary);
+    background: rgba(59, 130, 246, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
 }
 
 .heroTitle {
