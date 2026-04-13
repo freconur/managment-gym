@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { FaTools, FaTimes, FaUser, FaCalendarAlt, FaPlus, FaCheckSquare, FaCog, FaEdit, FaTrash, FaCheck, FaSpinner } from 'react-icons/fa'
 import { tipoDeMantenimiento, estadoDeMantenimiento, prioridadDeMantenimiento } from '@/utils/data'
 import { Tarea, Usuario } from '@/features/types/types'
@@ -66,6 +66,8 @@ export const MantenimientoModal: React.FC<MantenimientoModalProps> = ({
     frecuenciaDias: 7
   })
   const [nuevaTarea, setNuevaTarea] = useState('')
+  const dateInputRef = useRef<HTMLInputElement>(null)
+
   const [saveAsReusable, setSaveAsReusable] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
 
@@ -302,16 +304,22 @@ export const MantenimientoModal: React.FC<MantenimientoModalProps> = ({
                   <FaCalendarAlt size={14} style={{ marginRight: '0.5rem' }} />
                   Fecha Programada
                 </label>
-                <input
-                  type="date"
-                  value={formatDateToString(mantenimientoForm.fechaProgramada)}
-                  onChange={(e) => {
-                    const [year, month, day] = e.target.value.split('-').map(Number)
-                    const fecha = new Date(year, month - 1, day)
-                    setMantenimientoForm(prev => ({ ...prev, fechaProgramada: fecha }))
-                  }}
-                  className={styles.input}
-                />
+                <div className={styles.dateInputWrapper}>
+                  <input
+                    ref={dateInputRef}
+                    type="date"
+                    value={formatDateToString(mantenimientoForm.fechaProgramada)}
+                    onChange={(e) => {
+                      const [year, month, day] = e.target.value.split('-').map(Number)
+                      const fecha = new Date(year, month - 1, day)
+                      setMantenimientoForm(prev => ({ ...prev, fechaProgramada: fecha }))
+                    }}
+                    onClick={() => dateInputRef.current?.showPicker()}
+                    className={styles.input}
+                  />
+                  <FaCalendarAlt className={styles.calendarIconOverlay} />
+                </div>
+
               </div>
 
               {/* Recurrente */}
