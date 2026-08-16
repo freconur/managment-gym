@@ -13,7 +13,7 @@ import {
     Timestamp
 } from 'firebase/firestore'
 import { db } from '@/firebase/firebase.config'
-import { FaChartBar, FaArrowLeft, FaFilter, FaFilePdf, FaSpinner, FaChevronDown, FaChevronUp, FaFileExcel } from 'react-icons/fa'
+import { FaChartBar, FaArrowLeft, FaFilter, FaFilePdf, FaSpinner, FaChevronDown, FaChevronUp, FaFileExcel, FaTimes } from 'react-icons/fa'
 import { SubEnvironment, Ubicacion } from '@/features/types/types'
 import {
     Chart as ChartJS,
@@ -233,6 +233,169 @@ const DynamicReportsPage: NextPage = () => {
     const [showCompanyTable, setShowCompanyTable] = useState(false)
     const [showAreaTable, setShowAreaTable] = useState(false)
     const [showUsersTable, setShowUsersTable] = useState(false)
+
+    // ── Monthly Excel Export State & Handlers ────────────────────────────────
+    const [isExcelModalOpen, setIsExcelModalOpen] = useState(false)
+    const [selectedExportMonth, setSelectedExportMonth] = useState<string>('')
+
+    const availableMonths = useMemo(() => {
+        const monthsSet = new Set<string>()
+        const now = new Date()
+        const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+        monthsSet.add(currentMonthStr)
+
+        accessData.forEach(item => {
+            if (item.timestamp) {
+                const dateObj = item.timestamp?.toDate ? item.timestamp.toDate() : new Date(item.timestamp)
+                if (!isNaN(dateObj.getTime())) {
+                    const y = dateObj.getFullYear()
+                    const m = String(dateObj.getMonth() + 1).padStart(2, '0')
+                    monthsSet.add(`${y}-${m}`)
+                }
+            }
+        })
+        return Array.from(monthsSet).sort().reverse()
+    }, [accessData])
+
+    useEffect(() => {
+        if (availableMonths.length > 0 && !selectedExportMonth) {
+            setSelectedExportMonth(availableMonths[0])
+        }
+    }, [availableMonths, selectedExportMonth])
+
+    const formatMonthLabel = (yearMonth: string) => {
+        if (!yearMonth) return ''
+        const [yearStr, monthStr] = yearMonth.split('-')
+        const year = parseInt(yearStr, 10)
+        const month = parseInt(monthStr, 10) - 1
+        const date = new Date(year, month, 1)
+        const monthName = date.toLocaleString('es-ES', { month: 'long' })
+        return `${monthName.charAt(0).toUpperCase() + monthName.slice(1)} ${year}`
+    }
+
+    const handleExportExcelMonth = (yearMonth: string) => {
+        if (!yearMonth) return
+        const [targetYear, targetMonth] = yearMonth.split('-').map(Number)
+
+        const monthData = accessData.filter(item => {
+            if (!item.timestamp) return false
+            const date = item.timestamp?.toDate ? item.timestamp.toDate() : new Date(item.timestamp)
+            if (isNaN(date.getTime())) return false
+            return date.getFullYear() === targetYear && (date.getMonth() + 1) === targetMonth
+        })
+
+        if (monthData.length === 0) {
+            alert(`No hay registros de asistencias para el mes de ${formatMonthLabel(yearMonth)}.`)
+            return
+        }
+
+        const toUpper = (str?: string | null) => str ? String(str).toUpperCase() : 'N/A'
+
+        const detailedRows = monthData.map((item, idx) => {
+            const date = item.timestamp?.toDate ? item.timestamp.toDate() : new Date(item.timestamp)
+            return {
+                '#': idx + 1,
+                'FECHA': date.toLocaleDateString('es-ES').toUpperCase(),
+                'HORA': date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' }).toUpperCase(),
+                'DNI / DOC': toUpper(item.memberDni || item.dni || item.memberId),
+                'USUARIO': toUpper(item.memberName),
+                'EMPRESA': toUpper(item.company || 'SIN EMPRESA'),
+                'ÁREA': toUpper(item.area || 'SIN ÁREA'),
+                'CARGO': toUpper(item.cargo),
+                'SEXO': toUpper(item.sexo),
+                'SUB-AMBIENTES': toUpper(item.subEnvironments ? item.subEnvironments.join(', ') : 'N/A'),
+            }
+        })
+
+        const companyAgg: Record<string, { total: number; uniqueUsers: Set<string> }> = {}
+        monthData.forEach(item => {
+            const comp = item.company || 'Sin Empresa'
+            const userId = item.memberDni || item.dni || item.memberId || item.id
+            if (!companyAgg[comp]) {
+                companyAgg[comp] = { total: 0, uniqueUsers: new Set() }
+            }
+            companyAgg[comp].total += 1
+            companyAgg[comp].uniqueUsers.add(userId)
+        })
+
+        const companyRows = Object.entries(companyAgg)
+            .map(([company, data]) => ({
+                'EMPRESA': company.toUpperCase(),
+                'TOTAL INGRESOS': data.total,
+                'USUARIOS ÚNICOS': data.uniqueUsers.size
+            }))
+            .sort((a, b) => b['TOTAL INGRESOS'] - a['TOTAL INGRESOS'])
+
+        const areaAgg: Record<string, number> = {}
+        monthData.forEach(item => {
+            const ar = item.area || 'Sin Área'
+            areaAgg[ar] = (areaAgg[ar] || 0) + 1
+        })
+
+        const areaRows = Object.entries(areaAgg)
+            .map(([area, total]) => ({
+                'ÁREA': area.toUpperCase(),
+                'TOTAL INGRESOS': total
+            }))
+            .sort((a, b) => b['TOTAL INGRESOS'] - a['TOTAL INGRESOS'])
+
+        import('xlsx').then(({ utils, writeFile }) => {
+            const wb = utils.book_new()
+
+            const wsDetailed = utils.json_to_sheet(detailedRows)
+            utils.book_append_sheet(wb, wsDetailed, "ASISTENCIAS DETALLADAS")
+
+            const wsCompany = utils.json_to_sheet(companyRows)
+            utils.book_append_sheet(wb, wsCompany, "RESUMEN POR EMPRESA")
+
+            const wsArea = utils.json_to_sheet(areaRows)
+            utils.book_append_sheet(wb, wsArea, "RESUMEN POR ÁREA")
+
+            const locName = (location?.name || 'Ubicacion').replace(/\s+/g, '_').toUpperCase()
+            writeFile(wb, `REPORTE_MENSUAL_${locName}_${yearMonth}.xlsx`)
+        }).catch(err => {
+            console.error("Error exportando Excel mensual:", err)
+            alert("Hubo un error al exportar el archivo Excel.")
+        })
+    }
+
+    const handleExportFilteredDataExcel = () => {
+        if (filteredData.length === 0) {
+            alert("No hay asistencias registradas con los filtros actuales.")
+            return
+        }
+
+        const toUpper = (str?: string | null) => str ? String(str).toUpperCase() : 'N/A'
+
+        const rows = filteredData.map((item, idx) => {
+            const date = item.timestamp?.toDate ? item.timestamp.toDate() : new Date(item.timestamp)
+            return {
+                '#': idx + 1,
+                'FECHA': date.toLocaleDateString('es-ES').toUpperCase(),
+                'HORA': date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' }).toUpperCase(),
+                'DNI / DOC': toUpper(item.memberDni || item.dni || item.memberId),
+                'USUARIO': toUpper(item.memberName),
+                'EMPRESA': toUpper(item.company || 'SIN EMPRESA'),
+                'ÁREA': toUpper(item.area || 'SIN ÁREA'),
+                'CARGO': toUpper(item.cargo),
+                'SEXO': toUpper(item.sexo),
+                'SUB-AMBIENTES': toUpper(item.subEnvironments ? item.subEnvironments.join(', ') : 'N/A'),
+            }
+        })
+
+        import('xlsx').then(({ utils, writeFile }) => {
+            const wb = utils.book_new()
+            const ws = utils.json_to_sheet(rows)
+            utils.book_append_sheet(wb, ws, "ASISTENCIAS FILTRADAS")
+
+            const locName = (location?.name || 'Ubicacion').replace(/\s+/g, '_').toUpperCase()
+            const dateStr = new Date().toISOString().split('T')[0]
+            writeFile(wb, `REPORTE_ASISTENCIAS_${locName}_${dateStr}.xlsx`)
+        }).catch(err => {
+            console.error("Error exportando Excel filtrado:", err)
+            alert("Hubo un error al exportar el archivo Excel.")
+        })
+    }
 
     // ── Sync filters from URL on initial load ────────────────────────────────
     const [queryReady, setQueryReady] = useState(false)
@@ -778,11 +941,24 @@ const DynamicReportsPage: NextPage = () => {
     }
 
     const handleExportExcel = (data: any[], filename: string) => {
+        const uppercaseData = data.map(row => {
+            const newRow: Record<string, any> = {}
+            Object.entries(row).forEach(([key, val]) => {
+                const upperKey = key.toUpperCase()
+                if (typeof val === 'string') {
+                    newRow[upperKey] = val.toUpperCase()
+                } else {
+                    newRow[upperKey] = val
+                }
+            })
+            return newRow
+        })
+
         import('xlsx').then(({ utils, writeFile }) => {
-            const ws = utils.json_to_sheet(data);
+            const ws = utils.json_to_sheet(uppercaseData);
             const wb = utils.book_new();
-            utils.book_append_sheet(wb, ws, "Reporte");
-            writeFile(wb, `${filename}_${new Date().toISOString().split('T')[0]}.xlsx`);
+            utils.book_append_sheet(wb, ws, "REPORTE");
+            writeFile(wb, `${filename.toUpperCase()}_${new Date().toISOString().split('T')[0]}.xlsx`);
         }).catch(err => {
             console.error("Error cargando xlsx:", err);
             alert("No se pudo exportar a Excel.");
@@ -816,8 +992,18 @@ const DynamicReportsPage: NextPage = () => {
                             </h1>
                         </div>
                         {!loading && (
-                            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
                                 <ThemeToggle />
+
+                                <button
+                                    onClick={() => setIsExcelModalOpen(true)}
+                                    className={styles.exportButton}
+                                    style={{ backgroundColor: '#10b981', borderColor: '#10b981', color: 'white' }}
+                                    title="Abrir modal para exportar reporte a Excel por mes"
+                                >
+                                    <FaFileExcel /> Exportar Excel
+                                </button>
+
                                 <button
                                     onClick={handleExportPDF}
                                     disabled={exporting}
@@ -1375,6 +1561,98 @@ const DynamicReportsPage: NextPage = () => {
                         </div>
                     )}
                 </main >
+
+                {/* ── Modal Exportar Excel por Mes ────────────────────────── */}
+                {isExcelModalOpen && (
+                    <div
+                        style={{
+                            position: 'fixed',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            backgroundColor: 'rgba(0, 0, 0, 0.65)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            zIndex: 9999,
+                            backdropFilter: 'blur(5px)',
+                            padding: '1rem'
+                        }}
+                        onClick={() => setIsExcelModalOpen(false)}
+                    >
+                        <div
+                            style={{
+                                backgroundColor: 'var(--bg-card)',
+                                border: '1px solid var(--border-glass)',
+                                borderRadius: '1rem',
+                                width: '100%',
+                                maxWidth: '460px',
+                                padding: '1.75rem',
+                                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.4)',
+                                color: 'var(--text-primary)',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '1.25rem'
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-glass)', paddingBottom: '0.75rem' }}>
+                                <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                                    <FaFileExcel style={{ color: '#10b981' }} /> Exportar Asistencias a Excel
+                                </h3>
+                                <button
+                                    onClick={() => setIsExcelModalOpen(false)}
+                                    style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '1.2rem', padding: '0.25rem' }}
+                                >
+                                    <FaTimes />
+                                </button>
+                            </div>
+
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>
+                                    Seleccionar Mes:
+                                </label>
+                                <select
+                                    value={selectedExportMonth}
+                                    onChange={(e) => setSelectedExportMonth(e.target.value)}
+                                    className={styles.select}
+                                    style={{ width: '100%', padding: '0.75rem', fontSize: '0.95rem', fontWeight: 600, backgroundColor: 'rgba(255, 255, 255, 0.05)', cursor: 'pointer' }}
+                                >
+                                    {availableMonths.map(m => (
+                                        <option key={m} value={m}>
+                                            {formatMonthLabel(m)}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                                Se generará un libro Excel en MAYÚSCULAS con los 9 campos de información: FECHA, HORA, DNI / DOC, USUARIO, EMPRESA, ÁREA, CARGO, SEXO y SUB-AMBIENTES.
+                            </p>
+
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
+                                <button
+                                    onClick={() => setIsExcelModalOpen(false)}
+                                    className={styles.paginationButton}
+                                    style={{ padding: '0.6rem 1.2rem' }}
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        handleExportExcelMonth(selectedExportMonth)
+                                        setIsExcelModalOpen(false)
+                                    }}
+                                    className={styles.exportButton}
+                                    style={{ backgroundColor: '#10b981', borderColor: '#10b981', color: 'white', padding: '0.6rem 1.2rem' }}
+                                >
+                                    <FaFileExcel /> Descargar Excel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div >
         </>
     )

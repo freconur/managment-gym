@@ -27,7 +27,7 @@ import {
 } from 'firebase/firestore'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { db, storage } from '@/firebase/firebase.config'
-import { FaEdit, FaTrash, FaUserPlus, FaSpinner, FaChartBar, FaArrowLeft, FaUserClock, FaUsers } from 'react-icons/fa'
+import { FaEdit, FaTrash, FaUserPlus, FaSpinner, FaChartBar, FaArrowLeft, FaUserClock, FaUsers, FaFileExcel } from 'react-icons/fa'
 import CompanyModal from '@/components/CompanyModal'
 import AreaModal from '@/components/AreaModal'
 import CargoModal from '@/components/CargoModal'
@@ -294,6 +294,56 @@ const DynamicMembersPage: NextPage = () => {
   // Refresh list when a member is added/edited/deleted
   const refreshCurrentPage = () => {
     fetchAllMembers()
+  }
+
+  // Export all members of this environment to Excel in UPPERCASE
+  const [exportingExcel, setExportingExcel] = useState(false)
+  const handleExportMembersExcel = async () => {
+    if (!id) return
+    setExportingExcel(true)
+    try {
+      let dataToExport = members
+      if (dataToExport.length === 0 || dataToExport.length < totalCount) {
+        const membersCol = getMembersCollectionPath(id)
+        const q = query(membersCol, orderBy('createdAt', 'desc'))
+        const snapshot = await getDocs(q)
+        dataToExport = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as Member[]
+      }
+
+      if (dataToExport.length === 0) {
+        alert("No hay miembros registrados en este ambiente para exportar.")
+        return
+      }
+
+      const rows = dataToExport.map((m, idx) => ({
+        '#': idx + 1,
+        'TIPO DOC': (m.tipoDocumento || 'DNI').toUpperCase(),
+        'DOCUMENTO': (m.dni || 'N/A').toUpperCase(),
+        'NOMBRES': (m.nombre || 'N/A').toUpperCase(),
+        'APELLIDOS': (m.apellidos || 'N/A').toUpperCase(),
+        'EMPRESA': (m.empresa || 'SIN EMPRESA').toUpperCase(),
+        'ÁREA': (m.area || 'SIN ÁREA').toUpperCase(),
+        'CARGO': (m.cargo || 'N/A').toUpperCase(),
+        'SEXO': (m.sexo || 'N/A').toUpperCase(),
+      }))
+
+      const { utils, writeFile } = await import('xlsx')
+      const wb = utils.book_new()
+      const ws = utils.json_to_sheet(rows)
+      utils.book_append_sheet(wb, ws, "MIEMBROS")
+
+      const cleanLocName = (locationName || 'AMBIENTE').replace(/\s+/g, '_').toUpperCase()
+      const dateStr = new Date().toISOString().split('T')[0]
+      writeFile(wb, `MIEMBROS_${cleanLocName}_${dateStr}.xlsx`)
+    } catch (error) {
+      console.error("Error al exportar miembros a Excel:", error)
+      alert("Hubo un error al exportar los miembros a Excel.")
+    } finally {
+      setExportingExcel(false)
+    }
   }
 
   // Global Collections for selects
@@ -713,6 +763,14 @@ const DynamicMembersPage: NextPage = () => {
           <div className={styles.responsiveHeaderActions}>
             <button onClick={openNewMemberModal} className={`${styles.actionButton} ${styles.btnPremium}`}>
               <FaUserPlus /> Nuevo Miembro
+            </button>
+            <button
+              onClick={handleExportMembersExcel}
+              disabled={exportingExcel}
+              className={`${styles.actionButton} ${styles.btnPremiumGreen}`}
+              title="Descargar archivo Excel con todos los usuarios de este ambiente"
+            >
+              <FaFileExcel /> {exportingExcel ? 'Exportando...' : 'Exportar Excel'}
             </button>
             <Link href={`/members/${id}/all`} className={`${styles.actionButton} ${styles.btnPremiumSecondary}`} style={{ textDecoration: 'none' }}>
               <FaUsers /> Miembros

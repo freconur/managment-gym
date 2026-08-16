@@ -317,27 +317,25 @@ const AllMembersPage: NextPage = () => {
         }
 
         import('xlsx').then(({ utils, writeFile }) => {
-            const dataToExport = members.map(m => ({
-                'ID': m.id || '',
-                'Nombre': (m.nombre || '').toLowerCase(),
-                'Apellidos': (m.apellidos || '').toLowerCase(),
-                'DNI': m.dni || '',
-                'Empresa': (m.empresa || '').toLowerCase(),
-                'Área': (m.area || '').toLowerCase(),
-                'Cargo': (m.cargo || '').toLowerCase(),
-                'Sexo': (m.sexo || '').toLowerCase(),
-                'Fecha de Registro': m.createdAt instanceof Timestamp
-                    ? m.createdAt.toDate().toLocaleDateString()
-                    : (m as any).createdAt?.toDate ? (m as any).createdAt.toDate().toLocaleDateString() : 'N/A'
+            const dataToExport = members.map((m, idx) => ({
+                '#': idx + 1,
+                'TIPO DOC': (m.tipoDocumento || 'DNI').toUpperCase(),
+                'DOCUMENTO': (m.dni || 'N/A').toUpperCase(),
+                'NOMBRES': (m.nombre || 'N/A').toUpperCase(),
+                'APELLIDOS': (m.apellidos || 'N/A').toUpperCase(),
+                'EMPRESA': (m.empresa || 'SIN EMPRESA').toUpperCase(),
+                'ÁREA': (m.area || 'SIN ÁREA').toUpperCase(),
+                'CARGO': (m.cargo || 'N/A').toUpperCase(),
+                'SEXO': (m.sexo || 'N/A').toUpperCase(),
             }));
 
             const ws = utils.json_to_sheet(dataToExport);
             const wb = utils.book_new();
-            utils.book_append_sheet(wb, ws, "Miembros");
+            utils.book_append_sheet(wb, ws, "MIEMBROS");
 
             const date = new Date().toISOString().split('T')[0];
-            const cleanLocationName = locationName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-            writeFile(wb, `miembros_${cleanLocationName}_${date}.xlsx`);
+            const cleanLocationName = (locationName || 'AMBIENTE').replace(/[^a-z0-9]/gi, '_').toUpperCase();
+            writeFile(wb, `MIEMBROS_${cleanLocationName}_${date}.xlsx`);
         }).catch(err => {
             console.error("Error al exportar Excel:", err);
             alert("Error al generar el archivo Excel.");
